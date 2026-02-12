@@ -9,17 +9,14 @@
 /* Begin PBXBuildFile section */
 		40A77A482F3CD39800BC4E39 /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A382F3CD39800BC4E39 /* GlassCard.swift */; };
 		40A77A492F3CD39800BC4E39 /* ProgressIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */; };
-		40A77A4A2F3CD39800BC4E39 /* OnboardingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A3F2F3CD39800BC4E39 /* OnboardingScreen.swift */; };
 		40A77A4B2F3CD39800BC4E39 /* LockedInApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A362F3CD39800BC4E39 /* LockedInApp.swift */; };
 		40A77A4C2F3CD39800BC4E39 /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A392F3CD39800BC4E39 /* PrimaryButton.swift */; };
-		40A77A4D2F3CD39800BC4E39 /* IdentityWarningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A432F3CD39800BC4E39 /* IdentityWarningView.swift */; };
 		40A77A4E2F3CD39800BC4E39 /* IdentityWarningViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A412F3CD39800BC4E39 /* IdentityWarningViewModel.swift */; };
 		40A77A4F2F3CD39800BC4E39 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A3C2F3CD39800BC4E39 /* Theme.swift */; };
 		40A77A542F3CD49800BC4E39 /* Locked_INApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A532F3CD49800BC4E39 /* Locked_INApp.swift */; };
 		40A77A562F3CD55C00BC4E39 /* identity_warning_screen.png in Resources */ = {isa = PBXBuildFile; fileRef = 40A77A552F3CD55C00BC4E39 /* identity_warning_screen.png */; };
 		40A77A582F3CD70400BC4E39 /* Subtle abstract stoic statue of a Roman philosopher.png in Resources */ = {isa = PBXBuildFile; fileRef = 40A77A572F3CD70400BC4E39 /* Subtle abstract stoic statue of a Roman philosopher.png */; };
 		40A77A592F3CD80000BC4E39 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 40A77A5A2F3CD80000BC4E39 /* Assets.xcassets */; };
-		40A77A5C2F3CE00000BC4E39 /* FailureLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A5D2F3CE00000BC4E39 /* FailureLoopView.swift */; };
 		40A77A5E2F3CE00000BC4E39 /* FailureLoopViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A5F2F3CE00000BC4E39 /* FailureLoopViewModel.swift */; };
 		40A77A612F3CF00000BC4E39 /* OnboardingShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A622F3CF00000BC4E39 /* OnboardingShellView.swift */; };
 		40A77A632F3CF00000BC4E39 /* OnboardingShellViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A642F3CF00000BC4E39 /* OnboardingShellViewModel.swift */; };
@@ -47,30 +44,15 @@
 		40A77A392F3CD39800BC4E39 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressIndicator.swift; sourceTree = "<group>"; };
 		40A77A3C2F3CD39800BC4E39 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		40A77A3F2F3CD39800BC4E39 /* OnboardingScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingScreen.swift; sourceTree = "<group>"; };
 		40A77A412F3CD39800BC4E39 /* IdentityWarningViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentityWarningViewModel.swift; sourceTree = "<group>"; };
-		40A77A432F3CD39800BC4E39 /* IdentityWarningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentityWarningView.swift; sourceTree = "<group>"; };
 		40A77A502F3CD43A00BC4E39 /* Locked IN.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Locked IN.xcodeproj"; sourceTree = "<group>"; };
 		40A77A532F3CD49800BC4E39 /* Locked_INApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Locked_INApp.swift; sourceTree = "<group>"; };
 		40A77A552F3CD55C00BC4E39 /* identity_warning_screen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = identity_warning_screen.png; sourceTree = "<group>"; };
 		40A77A572F3CD70400BC4E39 /* Subtle abstract stoic statue of a Roman philosopher.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Subtle abstract stoic statue of a Roman philosopher.png"; sourceTree = "<group>"; };
-		40A77A5A2F3CD80000BC4E39 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		40A77A5D2F3CE00000BC4E39 /* FailureLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FailureLoopView.swift; sourceTree = "<group>"; };
-		40A77A5F2F3CE00000BC4E39 /* FailureLoopViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FailureLoopViewModel.swift; sourceTree = "<group>"; };
-		40A77A622F3CF00000BC4E39 /* OnboardingShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingShellView.swift; sourceTree = "<group>"; };
-		40A77A642F3CF00000BC4E39 /* OnboardingShellViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingShellViewModel.swift; sourceTree = "<group>"; };
-		40A77A662F3CF00000BC4E39 /* IdentityWarningContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentityWarningContentView.swift; sourceTree = "<group>"; };
-		40A77A682F3CF00000BC4E39 /* FailureLoopContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FailureLoopContentView.swift; sourceTree = "<group>"; };
-		40A77A6A2F3D000000BC4E39 /* CoreDifferentiationContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDifferentiationContentView.swift; sourceTree = "<group>"; };
-		40A77A6C2F3D100000BC4E39 /* UserHistoryContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserHistoryContentView.swift; sourceTree = "<group>"; };
-		40A77A6E2F3D200000BC4E39 /* NonNegotiablesContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NonNegotiablesContentView.swift; sourceTree = "<group>"; };
-		40A77A702F3D300000BC4E39 /* NonNegotiableCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NonNegotiableCard.swift; sourceTree = "<group>"; };
-		40A77A722F3D400000BC4E39 /* CreateNonNegotiableContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateNonNegotiableContentView.swift; sourceTree = "<group>"; };
-		40A77A742F3D500000BC4E39 /* AIRegulatorContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIRegulatorContentView.swift; sourceTree = "<group>"; };
-		40A77A762F3D600000BC4E39 /* CommitmentAgreementContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommitmentAgreementContentView.swift; sourceTree = "<group>"; };
-		40A77A7A2F3D900000BC4E39 /* PaywallContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallContentView.swift; sourceTree = "<group>"; };
-		40A77A782F3D700000BC4E39 /* Fonts/Inter-VariableFont_opsz,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/Inter-VariableFont_opsz,wght.ttf"; sourceTree = "<group>"; };
-		40A77A792F3D800000BC4E39 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		40A77A5A2F3CD80000BC4E39 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = LockedIn/Resources/Assets.xcassets; sourceTree = SOURCE_ROOT; };
+		40A77A782F3D700000BC4E39 /* Fonts/Inter-VariableFont_opsz,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Inter-VariableFont_opsz,wght.ttf"; path = "LockedIn/Resources/Fonts/Inter-VariableFont_opsz,wght.ttf"; sourceTree = SOURCE_ROOT; };
+		40A77A792F3D800000BC4E39 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = LockedIn/Resources/Info.plist; sourceTree = SOURCE_ROOT; };
+
 		40A77A7D2F3DA00000BC4E39 /* OnboardingStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStep.swift; sourceTree = "<group>"; };
 		40A77A7F2F3DA10000BC4E39 /* OnboardingData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingData.swift; sourceTree = "<group>"; };
 		40A77A812F3DA20000BC4E39 /* OnboardingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingEngine.swift; sourceTree = "<group>"; };
@@ -93,7 +75,6 @@
 			children = (
 				40A77A552F3CD55C00BC4E39 /* identity_warning_screen.png */,
 				40A77A572F3CD70400BC4E39 /* Subtle abstract stoic statue of a Roman philosopher.png */,
-				40A77A5B2F3CD80000BC4E39 /* Locked IN */,
 				40A77A472F3CD39800BC4E39 /* LockedIn */,
 				40A779F32F3CCA1E00BC4E39 /* Products */,
 				40A77A502F3CD43A00BC4E39 /* Locked IN.xcodeproj */,
@@ -149,7 +130,6 @@
 		40A77A402F3CD39800BC4E39 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				40A77A3F2F3CD39800BC4E39 /* OnboardingScreen.swift */,
 				40A77A7D2F3DA00000BC4E39 /* OnboardingStep.swift */,
 			);
 			path = Models;
@@ -168,8 +148,6 @@
 		40A77A442F3CD39800BC4E39 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				40A77A432F3CD39800BC4E39 /* IdentityWarningView.swift */,
-				40A77A5D2F3CE00000BC4E39 /* FailureLoopView.swift */,
 				40A77A622F3CF00000BC4E39 /* OnboardingShellView.swift */,
 				40A77A662F3CF00000BC4E39 /* IdentityWarningContentView.swift */,
 				40A77A682F3CF00000BC4E39 /* FailureLoopContentView.swift */,
@@ -242,6 +220,7 @@
 				40A77A3E2F3CD39800BC4E39 /* Core */,
 				40A77A462F3CD39800BC4E39 /* Features */,
 				40A77A852F3DA50000BC4E39 /* Domain */,
+				40A77A882F3DB00000BC4E39 /* Resources */,
 			);
 			path = LockedIn;
 			sourceTree = "<group>";
@@ -251,15 +230,16 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		40A77A5B2F3CD80000BC4E39 /* Locked IN */ = {
+		40A77A882F3DB00000BC4E39 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
 				40A77A5A2F3CD80000BC4E39 /* Assets.xcassets */,
 				40A77A782F3D700000BC4E39 /* Fonts/Inter-VariableFont_opsz,wght.ttf */,
 				40A77A792F3D800000BC4E39 /* Info.plist */,
 			);
-			path = "Locked IN";
-			sourceTree = "<group>";
+			name = Resources;
+			path = LockedIn/Resources;
+			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
 
@@ -345,13 +325,10 @@
 				40A77A482F3CD39800BC4E39 /* GlassCard.swift in Sources */,
 				40A77A492F3CD39800BC4E39 /* ProgressIndicator.swift in Sources */,
 				40A77A6F2F3D300000BC4E39 /* NonNegotiableCard.swift in Sources */,
-				40A77A4A2F3CD39800BC4E39 /* OnboardingScreen.swift in Sources */,
 				40A77A4B2F3CD39800BC4E39 /* LockedInApp.swift in Sources */,
 				40A77A4C2F3CD39800BC4E39 /* PrimaryButton.swift in Sources */,
-				40A77A4D2F3CD39800BC4E39 /* IdentityWarningView.swift in Sources */,
 				40A77A542F3CD49800BC4E39 /* Locked_INApp.swift in Sources */,
 				40A77A4E2F3CD39800BC4E39 /* IdentityWarningViewModel.swift in Sources */,
-				40A77A5C2F3CE00000BC4E39 /* FailureLoopView.swift in Sources */,
 				40A77A5E2F3CE00000BC4E39 /* FailureLoopViewModel.swift in Sources */,
 				40A77A612F3CF00000BC4E39 /* OnboardingShellView.swift in Sources */,
 				40A77A632F3CF00000BC4E39 /* OnboardingShellViewModel.swift in Sources */,
@@ -507,7 +484,7 @@
 				DEVELOPMENT_TEAM = 2A6452539P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Locked IN/Info.plist";
+				INFOPLIST_FILE = "LockedIn/Resources/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -543,7 +520,7 @@
 				DEVELOPMENT_TEAM = 2A6452539P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Locked IN/Info.plist";
+				INFOPLIST_FILE = "LockedIn/Resources/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
