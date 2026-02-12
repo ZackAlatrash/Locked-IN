@@ -44,7 +44,7 @@
 		40A77A392F3CD39800BC4E39 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressIndicator.swift; sourceTree = "<group>"; };
 		40A77A3C2F3CD39800BC4E39 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		40A77A412F3CD39800BC4E39 /* IdentityWarningViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentityWarningViewModel.swift; sourceTree = "<group>"; };
+		40A77A412F3CD39800BC4E39 /* IdentityWarningViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = IdentityWarningViewModel.swift; path = LockedIn/Features/Onboarding/SubFeatures/IdentityWarning/ViewModels/IdentityWarningViewModel.swift; sourceTree = SOURCE_ROOT; };
 		40A77A502F3CD43A00BC4E39 /* Locked IN.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Locked IN.xcodeproj"; sourceTree = "<group>"; };
 		40A77A532F3CD49800BC4E39 /* Locked_INApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Locked_INApp.swift; sourceTree = "<group>"; };
 		40A77A552F3CD55C00BC4E39 /* identity_warning_screen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = identity_warning_screen.png; sourceTree = "<group>"; };
