@@ -6,17 +6,68 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		40A77A482F3CD39800BC4E39 /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A382F3CD39800BC4E39 /* GlassCard.swift */; };
+		40A77A492F3CD39800BC4E39 /* ProgressIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */; };
+		40A77A4A2F3CD39800BC4E39 /* OnboardingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A3F2F3CD39800BC4E39 /* OnboardingScreen.swift */; };
+		40A77A4B2F3CD39800BC4E39 /* LockedInApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A362F3CD39800BC4E39 /* LockedInApp.swift */; };
+		40A77A4C2F3CD39800BC4E39 /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A392F3CD39800BC4E39 /* PrimaryButton.swift */; };
+		40A77A4D2F3CD39800BC4E39 /* IdentityWarningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A432F3CD39800BC4E39 /* IdentityWarningView.swift */; };
+		40A77A4E2F3CD39800BC4E39 /* IdentityWarningViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A412F3CD39800BC4E39 /* IdentityWarningViewModel.swift */; };
+		40A77A4F2F3CD39800BC4E39 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A3C2F3CD39800BC4E39 /* Theme.swift */; };
+		40A77A542F3CD49800BC4E39 /* Locked_INApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A532F3CD49800BC4E39 /* Locked_INApp.swift */; };
+		40A77A562F3CD55C00BC4E39 /* identity_warning_screen.png in Resources */ = {isa = PBXBuildFile; fileRef = 40A77A552F3CD55C00BC4E39 /* identity_warning_screen.png */; };
+		40A77A582F3CD70400BC4E39 /* Subtle abstract stoic statue of a Roman philosopher.png in Resources */ = {isa = PBXBuildFile; fileRef = 40A77A572F3CD70400BC4E39 /* Subtle abstract stoic statue of a Roman philosopher.png */; };
+		40A77A592F3CD80000BC4E39 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 40A77A5A2F3CD80000BC4E39 /* Assets.xcassets */; };
+		40A77A5C2F3CE00000BC4E39 /* FailureLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A5D2F3CE00000BC4E39 /* FailureLoopView.swift */; };
+		40A77A5E2F3CE00000BC4E39 /* FailureLoopViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A5F2F3CE00000BC4E39 /* FailureLoopViewModel.swift */; };
+		40A77A612F3CF00000BC4E39 /* OnboardingShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A622F3CF00000BC4E39 /* OnboardingShellView.swift */; };
+		40A77A632F3CF00000BC4E39 /* OnboardingShellViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A642F3CF00000BC4E39 /* OnboardingShellViewModel.swift */; };
+		40A77A652F3CF00000BC4E39 /* IdentityWarningContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A662F3CF00000BC4E39 /* IdentityWarningContentView.swift */; };
+		40A77A672F3CF00000BC4E39 /* FailureLoopContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A682F3CF00000BC4E39 /* FailureLoopContentView.swift */; };
+		40A77A692F3D000000BC4E39 /* CoreDifferentiationContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A6A2F3D000000BC4E39 /* CoreDifferentiationContentView.swift */; };
+		40A77A6B2F3D100000BC4E39 /* UserHistoryContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A6C2F3D100000BC4E39 /* UserHistoryContentView.swift */; };
+		40A77A6D2F3D200000BC4E39 /* NonNegotiablesContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A6E2F3D200000BC4E39 /* NonNegotiablesContentView.swift */; };
+		40A77A6F2F3D300000BC4E39 /* NonNegotiableCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A702F3D300000BC4E39 /* NonNegotiableCard.swift */; };
+		40A77A712F3D400000BC4E39 /* CreateNonNegotiableContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A722F3D400000BC4E39 /* CreateNonNegotiableContentView.swift */; };
+		40A77A732F3D500000BC4E39 /* AIRegulatorContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A742F3D500000BC4E39 /* AIRegulatorContentView.swift */; };
+		40A77A752F3D600000BC4E39 /* CommitmentAgreementContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A762F3D600000BC4E39 /* CommitmentAgreementContentView.swift */; };
+		40A77A7B2F3D900000BC4E39 /* PaywallContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A7A2F3D900000BC4E39 /* PaywallContentView.swift */; };
+		40A77A772F3D700000BC4E39 /* Fonts/Inter-VariableFont_opsz,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 40A77A782F3D700000BC4E39 /* Fonts/Inter-VariableFont_opsz,wght.ttf */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		40A779F22F3CCA1E00BC4E39 /* Locked IN.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Locked IN.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		40A77A362F3CD39800BC4E39 /* LockedInApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockedInApp.swift; sourceTree = "<group>"; };
+		40A77A382F3CD39800BC4E39 /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCard.swift; sourceTree = "<group>"; };
+		40A77A392F3CD39800BC4E39 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
+		40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressIndicator.swift; sourceTree = "<group>"; };
+		40A77A3C2F3CD39800BC4E39 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		40A77A3F2F3CD39800BC4E39 /* OnboardingScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingScreen.swift; sourceTree = "<group>"; };
+		40A77A412F3CD39800BC4E39 /* IdentityWarningViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentityWarningViewModel.swift; sourceTree = "<group>"; };
+		40A77A432F3CD39800BC4E39 /* IdentityWarningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentityWarningView.swift; sourceTree = "<group>"; };
+		40A77A502F3CD43A00BC4E39 /* Locked IN.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Locked IN.xcodeproj"; sourceTree = "<group>"; };
+		40A77A532F3CD49800BC4E39 /* Locked_INApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Locked_INApp.swift; sourceTree = "<group>"; };
+		40A77A552F3CD55C00BC4E39 /* identity_warning_screen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = identity_warning_screen.png; sourceTree = "<group>"; };
+		40A77A572F3CD70400BC4E39 /* Subtle abstract stoic statue of a Roman philosopher.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Subtle abstract stoic statue of a Roman philosopher.png"; sourceTree = "<group>"; };
+		40A77A5A2F3CD80000BC4E39 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		40A77A5D2F3CE00000BC4E39 /* FailureLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FailureLoopView.swift; sourceTree = "<group>"; };
+		40A77A5F2F3CE00000BC4E39 /* FailureLoopViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FailureLoopViewModel.swift; sourceTree = "<group>"; };
+		40A77A622F3CF00000BC4E39 /* OnboardingShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingShellView.swift; sourceTree = "<group>"; };
+		40A77A642F3CF00000BC4E39 /* OnboardingShellViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingShellViewModel.swift; sourceTree = "<group>"; };
+		40A77A662F3CF00000BC4E39 /* IdentityWarningContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentityWarningContentView.swift; sourceTree = "<group>"; };
+		40A77A682F3CF00000BC4E39 /* FailureLoopContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FailureLoopContentView.swift; sourceTree = "<group>"; };
+		40A77A6A2F3D000000BC4E39 /* CoreDifferentiationContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDifferentiationContentView.swift; sourceTree = "<group>"; };
+		40A77A6C2F3D100000BC4E39 /* UserHistoryContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserHistoryContentView.swift; sourceTree = "<group>"; };
+		40A77A6E2F3D200000BC4E39 /* NonNegotiablesContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NonNegotiablesContentView.swift; sourceTree = "<group>"; };
+		40A77A702F3D300000BC4E39 /* NonNegotiableCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NonNegotiableCard.swift; sourceTree = "<group>"; };
+		40A77A722F3D400000BC4E39 /* CreateNonNegotiableContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateNonNegotiableContentView.swift; sourceTree = "<group>"; };
+		40A77A742F3D500000BC4E39 /* AIRegulatorContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIRegulatorContentView.swift; sourceTree = "<group>"; };
+		40A77A762F3D600000BC4E39 /* CommitmentAgreementContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommitmentAgreementContentView.swift; sourceTree = "<group>"; };
+		40A77A7A2F3D900000BC4E39 /* PaywallContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallContentView.swift; sourceTree = "<group>"; };
+		40A77A782F3D700000BC4E39 /* Fonts/Inter-VariableFont_opsz,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/Inter-VariableFont_opsz,wght.ttf"; sourceTree = "<group>"; };
+		40A77A792F3D800000BC4E39 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		40A779F42F3CCA1E00BC4E39 /* Locked IN */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "Locked IN";
-			sourceTree = "<group>";
-		};
-/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		40A779EF2F3CCA1E00BC4E39 /* Frameworks */ = {
@@ -32,8 +83,12 @@
 		40A779E92F3CCA1E00BC4E39 = {
 			isa = PBXGroup;
 			children = (
-				40A779F42F3CCA1E00BC4E39 /* Locked IN */,
+				40A77A552F3CD55C00BC4E39 /* identity_warning_screen.png */,
+				40A77A572F3CD70400BC4E39 /* Subtle abstract stoic statue of a Roman philosopher.png */,
+				40A77A5B2F3CD80000BC4E39 /* Locked IN */,
+				40A77A472F3CD39800BC4E39 /* LockedIn */,
 				40A779F32F3CCA1E00BC4E39 /* Products */,
+				40A77A502F3CD43A00BC4E39 /* Locked IN.xcodeproj */,
 			);
 			sourceTree = "<group>";
 		};
@@ -43,6 +98,123 @@
 				40A779F22F3CCA1E00BC4E39 /* Locked IN.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		40A77A372F3CD39800BC4E39 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A362F3CD39800BC4E39 /* LockedInApp.swift */,
+				40A77A532F3CD49800BC4E39 /* Locked_INApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		40A77A3B2F3CD39800BC4E39 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A382F3CD39800BC4E39 /* GlassCard.swift */,
+				40A77A392F3CD39800BC4E39 /* PrimaryButton.swift */,
+				40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */,
+				40A77A702F3D300000BC4E39 /* NonNegotiableCard.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		40A77A3D2F3CD39800BC4E39 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A3C2F3CD39800BC4E39 /* Theme.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		40A77A3E2F3CD39800BC4E39 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A3B2F3CD39800BC4E39 /* Components */,
+				40A77A3D2F3CD39800BC4E39 /* Theme */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		40A77A402F3CD39800BC4E39 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A3F2F3CD39800BC4E39 /* OnboardingScreen.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		40A77A422F3CD39800BC4E39 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A412F3CD39800BC4E39 /* IdentityWarningViewModel.swift */,
+				40A77A5F2F3CE00000BC4E39 /* FailureLoopViewModel.swift */,
+				40A77A642F3CF00000BC4E39 /* OnboardingShellViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		40A77A442F3CD39800BC4E39 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A432F3CD39800BC4E39 /* IdentityWarningView.swift */,
+				40A77A5D2F3CE00000BC4E39 /* FailureLoopView.swift */,
+				40A77A622F3CF00000BC4E39 /* OnboardingShellView.swift */,
+				40A77A662F3CF00000BC4E39 /* IdentityWarningContentView.swift */,
+				40A77A682F3CF00000BC4E39 /* FailureLoopContentView.swift */,
+				40A77A6A2F3D000000BC4E39 /* CoreDifferentiationContentView.swift */,
+				40A77A6C2F3D100000BC4E39 /* UserHistoryContentView.swift */,
+				40A77A6E2F3D200000BC4E39 /* NonNegotiablesContentView.swift */,
+				40A77A722F3D400000BC4E39 /* CreateNonNegotiableContentView.swift */,
+				40A77A742F3D500000BC4E39 /* AIRegulatorContentView.swift */,
+				40A77A762F3D600000BC4E39 /* CommitmentAgreementContentView.swift */,
+				40A77A7A2F3D900000BC4E39 /* PaywallContentView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		40A77A452F3CD39800BC4E39 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A402F3CD39800BC4E39 /* Models */,
+				40A77A422F3CD39800BC4E39 /* ViewModels */,
+				40A77A442F3CD39800BC4E39 /* Views */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		40A77A462F3CD39800BC4E39 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A452F3CD39800BC4E39 /* Onboarding */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		40A77A472F3CD39800BC4E39 /* LockedIn */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A372F3CD39800BC4E39 /* App */,
+				40A77A3E2F3CD39800BC4E39 /* Core */,
+				40A77A462F3CD39800BC4E39 /* Features */,
+			);
+			path = LockedIn;
+			sourceTree = "<group>";
+		};
+		40A77A512F3CD43A00BC4E39 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		40A77A5B2F3CD80000BC4E39 /* Locked IN */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A5A2F3CD80000BC4E39 /* Assets.xcassets */,
+				40A77A782F3D700000BC4E39 /* Fonts/Inter-VariableFont_opsz,wght.ttf */,
+				40A77A792F3D800000BC4E39 /* Info.plist */,
+			);
+			path = "Locked IN";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -59,9 +231,6 @@
 			buildRules = (
 			);
 			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				40A779F42F3CCA1E00BC4E39 /* Locked IN */,
 			);
 			name = "Locked IN";
 			packageProductDependencies = (
@@ -97,6 +266,12 @@
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 40A779F32F3CCA1E00BC4E39 /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 40A77A512F3CD43A00BC4E39 /* Products */;
+					ProjectRef = 40A77A502F3CD43A00BC4E39 /* Locked IN.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				40A779F12F3CCA1E00BC4E39 /* Locked IN */,
@@ -109,6 +284,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				40A77A592F3CD80000BC4E39 /* Assets.xcassets in Resources */,
+				40A77A562F3CD55C00BC4E39 /* identity_warning_screen.png in Resources */,
+				40A77A582F3CD70400BC4E39 /* Subtle abstract stoic statue of a Roman philosopher.png in Resources */,
+				40A77A772F3D700000BC4E39 /* Fonts/Inter-VariableFont_opsz,wght.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,6 +298,30 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				40A77A482F3CD39800BC4E39 /* GlassCard.swift in Sources */,
+				40A77A492F3CD39800BC4E39 /* ProgressIndicator.swift in Sources */,
+				40A77A6F2F3D300000BC4E39 /* NonNegotiableCard.swift in Sources */,
+				40A77A4A2F3CD39800BC4E39 /* OnboardingScreen.swift in Sources */,
+				40A77A4B2F3CD39800BC4E39 /* LockedInApp.swift in Sources */,
+				40A77A4C2F3CD39800BC4E39 /* PrimaryButton.swift in Sources */,
+				40A77A4D2F3CD39800BC4E39 /* IdentityWarningView.swift in Sources */,
+				40A77A542F3CD49800BC4E39 /* Locked_INApp.swift in Sources */,
+				40A77A4E2F3CD39800BC4E39 /* IdentityWarningViewModel.swift in Sources */,
+				40A77A5C2F3CE00000BC4E39 /* FailureLoopView.swift in Sources */,
+				40A77A5E2F3CE00000BC4E39 /* FailureLoopViewModel.swift in Sources */,
+				40A77A612F3CF00000BC4E39 /* OnboardingShellView.swift in Sources */,
+				40A77A632F3CF00000BC4E39 /* OnboardingShellViewModel.swift in Sources */,
+				40A77A652F3CF00000BC4E39 /* IdentityWarningContentView.swift in Sources */,
+				40A77A672F3CF00000BC4E39 /* FailureLoopContentView.swift in Sources */,
+				40A77A692F3D000000BC4E39 /* CoreDifferentiationContentView.swift in Sources */,
+				40A77A6B2F3D100000BC4E39 /* UserHistoryContentView.swift in Sources */,
+				40A77A6D2F3D200000BC4E39 /* NonNegotiablesContentView.swift in Sources */,
+				40A77A712F3D400000BC4E39 /* CreateNonNegotiableContentView.swift in Sources */,
+				40A77A732F3D500000BC4E39 /* AIRegulatorContentView.swift in Sources */,
+				40A77A752F3D600000BC4E39 /* CommitmentAgreementContentView.swift in Sources */,
+				40A77A7B2F3D900000BC4E39 /* PaywallContentView.swift in Sources */,
+				40A77A4F2F3CD39800BC4E39 /* Theme.swift in Sources */,
+
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -251,16 +454,19 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2A6452539P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Locked IN/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -268,6 +474,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Epistles-of-Wisdom.Locked-IN";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -283,16 +490,19 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2A6452539P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Locked IN/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -300,6 +510,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Epistles-of-Wisdom.Locked-IN";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
