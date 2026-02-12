@@ -10,7 +10,9 @@
 import SwiftUI
 
 struct UserHistoryContentView: View {
-    @EnvironmentObject var shellVM: OnboardingShellViewModel
+    // MARK: - Bindings (explicit dependency injection)
+    @Binding var selectedOption: String?
+    @Binding var showValidationError: Bool
     
     enum UserHistoryOption: String, CaseIterable, Identifiable {
         case stoppedUsing = "Yes, and I stopped using them"
@@ -112,14 +114,14 @@ private extension UserHistoryContentView {
     func selectionCard(for option: UserHistoryOption) -> some View {
         Button(action: {
             withAnimation(.easeInOut(duration: 0.2)) {
-                shellVM.selectedUserHistoryOption = option.rawValue
-                shellVM.showValidationError = false
+                selectedOption = option.rawValue
+                showValidationError = false
             }
         }) {
             HStack {
                 Text(option.rawValue)
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(shellVM.selectedUserHistoryOption == option.rawValue ? Theme.Colors.textPrimary : Theme.Colors.textSecondary.opacity(0.7))
+                    .foregroundColor(selectedOption == option.rawValue ? Theme.Colors.textPrimary : Theme.Colors.textSecondary.opacity(0.7))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 
@@ -129,12 +131,12 @@ private extension UserHistoryContentView {
                 ZStack {
                     Circle()
                         .strokeBorder(
-                            shellVM.selectedUserHistoryOption == option.rawValue ? Theme.Colors.authority : Color.white.opacity(0.2),
+                            selectedOption == option.rawValue ? Theme.Colors.authority : Color.white.opacity(0.2),
                             lineWidth: 2
                         )
                         .frame(width: 20, height: 20)
                     
-                    if shellVM.selectedUserHistoryOption == option.rawValue {
+                    if selectedOption == option.rawValue {
                         Circle()
                             .fill(Theme.Colors.authority)
                             .frame(width: 20, height: 20)
@@ -150,7 +152,7 @@ private extension UserHistoryContentView {
             .background(
                 RoundedRectangle(cornerRadius: Theme.CornerRadius.lg)
                     .fill(
-                        shellVM.selectedUserHistoryOption == option.rawValue
+                        selectedOption == option.rawValue
                             ? LinearGradient(
                                 gradient: Gradient(colors: [
                                     Theme.Colors.authority.opacity(0.15),
@@ -171,17 +173,17 @@ private extension UserHistoryContentView {
                     .overlay(
                         RoundedRectangle(cornerRadius: Theme.CornerRadius.lg)
                             .stroke(
-                                shellVM.selectedUserHistoryOption == option.rawValue
+                                selectedOption == option.rawValue
                                     ? Theme.Colors.authority.opacity(0.5)
                                     : Color.white.opacity(0.1),
                                 lineWidth: 1
                             )
                     )
                     .shadow(
-                        color: shellVM.selectedUserHistoryOption == option.rawValue
+                        color: selectedOption == option.rawValue
                             ? Theme.Colors.authority.opacity(0.2)
                             : Color.clear,
-                        radius: shellVM.selectedUserHistoryOption == option.rawValue ? 20 : 0
+                        radius: selectedOption == option.rawValue ? 20 : 0
                     )
             )
         }
@@ -205,8 +207,11 @@ private extension UserHistoryContentView {
 // MARK: - Preview
 struct UserHistoryContentView_Previews: PreviewProvider {
     static var previews: some View {
-        UserHistoryContentView()
-            .ignoresSafeArea()
-            .preferredColorScheme(.dark)
+        UserHistoryContentView(
+            selectedOption: .constant(nil),
+            showValidationError: .constant(false)
+        )
+        .ignoresSafeArea()
+        .preferredColorScheme(.dark)
     }
 }

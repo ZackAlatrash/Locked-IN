@@ -34,6 +34,10 @@
 		40A77A752F3D600000BC4E39 /* CommitmentAgreementContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A762F3D600000BC4E39 /* CommitmentAgreementContentView.swift */; };
 		40A77A7B2F3D900000BC4E39 /* PaywallContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A7A2F3D900000BC4E39 /* PaywallContentView.swift */; };
 		40A77A772F3D700000BC4E39 /* Fonts/Inter-VariableFont_opsz,wght.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 40A77A782F3D700000BC4E39 /* Fonts/Inter-VariableFont_opsz,wght.ttf */; };
+		40A77A7C2F3DA00000BC4E39 /* OnboardingStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A7D2F3DA00000BC4E39 /* OnboardingStep.swift */; };
+		40A77A7E2F3DA10000BC4E39 /* OnboardingData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A7F2F3DA10000BC4E39 /* OnboardingData.swift */; };
+		40A77A802F3DA20000BC4E39 /* OnboardingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A812F3DA20000BC4E39 /* OnboardingEngine.swift */; };
+		40A77A822F3DA30000BC4E39 /* AIServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A832F3DA30000BC4E39 /* AIServiceProtocol.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -67,6 +71,10 @@
 		40A77A7A2F3D900000BC4E39 /* PaywallContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallContentView.swift; sourceTree = "<group>"; };
 		40A77A782F3D700000BC4E39 /* Fonts/Inter-VariableFont_opsz,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/Inter-VariableFont_opsz,wght.ttf"; sourceTree = "<group>"; };
 		40A77A792F3D800000BC4E39 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		40A77A7D2F3DA00000BC4E39 /* OnboardingStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStep.swift; sourceTree = "<group>"; };
+		40A77A7F2F3DA10000BC4E39 /* OnboardingData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingData.swift; sourceTree = "<group>"; };
+		40A77A812F3DA20000BC4E39 /* OnboardingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingEngine.swift; sourceTree = "<group>"; };
+		40A77A832F3DA30000BC4E39 /* AIServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIServiceProtocol.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -133,6 +141,7 @@
 			children = (
 				40A77A3B2F3CD39800BC4E39 /* Components */,
 				40A77A3D2F3CD39800BC4E39 /* Theme */,
+				40A77A842F3DA40000BC4E39 /* Services */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -141,6 +150,7 @@
 			isa = PBXGroup;
 			children = (
 				40A77A3F2F3CD39800BC4E39 /* OnboardingScreen.swift */,
+				40A77A7D2F3DA00000BC4E39 /* OnboardingStep.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -192,12 +202,46 @@
 			path = Features;
 			sourceTree = "<group>";
 		};
+		40A77A852F3DA50000BC4E39 /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A862F3DA60000BC4E39 /* Models */,
+				40A77A872F3DA70000BC4E39 /* Engines */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		40A77A862F3DA60000BC4E39 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A7F2F3DA10000BC4E39 /* OnboardingData.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		40A77A872F3DA70000BC4E39 /* Engines */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A812F3DA20000BC4E39 /* OnboardingEngine.swift */,
+			);
+			path = Engines;
+			sourceTree = "<group>";
+		};
+		40A77A842F3DA40000BC4E39 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				40A77A832F3DA30000BC4E39 /* AIServiceProtocol.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		40A77A472F3CD39800BC4E39 /* LockedIn */ = {
 			isa = PBXGroup;
 			children = (
 				40A77A372F3CD39800BC4E39 /* App */,
 				40A77A3E2F3CD39800BC4E39 /* Core */,
 				40A77A462F3CD39800BC4E39 /* Features */,
+				40A77A852F3DA50000BC4E39 /* Domain */,
 			);
 			path = LockedIn;
 			sourceTree = "<group>";
@@ -321,7 +365,10 @@
 				40A77A752F3D600000BC4E39 /* CommitmentAgreementContentView.swift in Sources */,
 				40A77A7B2F3D900000BC4E39 /* PaywallContentView.swift in Sources */,
 				40A77A4F2F3CD39800BC4E39 /* Theme.swift in Sources */,
-
+				40A77A7C2F3DA00000BC4E39 /* OnboardingStep.swift in Sources */,
+				40A77A7E2F3DA10000BC4E39 /* OnboardingData.swift in Sources */,
+				40A77A802F3DA20000BC4E39 /* OnboardingEngine.swift in Sources */,
+				40A77A822F3DA30000BC4E39 /* AIServiceProtocol.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

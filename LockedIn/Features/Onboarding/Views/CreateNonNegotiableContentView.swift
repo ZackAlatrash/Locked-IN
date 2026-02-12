@@ -10,7 +10,11 @@
 import SwiftUI
 
 struct CreateNonNegotiableContentView: View {
-    @EnvironmentObject var shellVM: OnboardingShellViewModel
+    // MARK: - Bindings (explicit dependency injection)
+    @Binding var action: String
+    @Binding var frequency: String
+    @Binding var minimum: String
+    @Binding var showValidationError: Bool
     
     enum Frequency: String, CaseIterable, Identifiable {
         case daily = "Every Day"
@@ -108,11 +112,11 @@ private extension CreateNonNegotiableContentView {
                 label: "ACTION",
                 icon: "bolt.fill",
                 content: {
-                    TextField("", text: $shellVM.nonNegotiableAction, prompt: Text("e.g. Cold Shower").foregroundColor(Theme.Colors.textTertiary.opacity(0.5)))
+                    TextField("", text: $action, prompt: Text("e.g. Cold Shower").foregroundColor(Theme.Colors.textTertiary.opacity(0.5)))
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(Theme.Colors.textPrimary)
-                        .onChange(of: shellVM.nonNegotiableAction) { _ in
-                            shellVM.showValidationError = false
+                        .onChange(of: action) { _ in
+                            showValidationError = false
                         }
                 }
             )
@@ -125,7 +129,7 @@ private extension CreateNonNegotiableContentView {
                     Menu {
                         ForEach(Frequency.allCases) { freq in
                             Button(action: {
-                                shellVM.nonNegotiableFrequency = freq.rawValue
+                                frequency = freq.rawValue
                             }) {
                                 Text(freq.rawValue)
                                     .foregroundColor(Theme.Colors.textPrimary)
@@ -133,7 +137,7 @@ private extension CreateNonNegotiableContentView {
                         }
                     } label: {
                         HStack {
-                            Text(shellVM.nonNegotiableFrequency)
+                            Text(frequency)
                                 .font(.system(size: 20, weight: .medium))
                                 .foregroundColor(Theme.Colors.textPrimary)
                             
@@ -153,11 +157,11 @@ private extension CreateNonNegotiableContentView {
                 label: "MINIMUM REQUIREMENT",
                 icon: "speedometer",
                 content: {
-                    TextField("", text: $shellVM.nonNegotiableMinimum, prompt: Text("e.g. 5 Minutes").foregroundColor(Theme.Colors.textTertiary.opacity(0.5)))
+                    TextField("", text: $minimum, prompt: Text("e.g. 5 Minutes").foregroundColor(Theme.Colors.textTertiary.opacity(0.5)))
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(Theme.Colors.textPrimary)
-                        .onChange(of: shellVM.nonNegotiableMinimum) { _ in
-                            shellVM.showValidationError = false
+                        .onChange(of: minimum) { _ in
+                            showValidationError = false
                         }
                 }
             )
@@ -204,8 +208,13 @@ private extension CreateNonNegotiableContentView {
 // MARK: - Preview
 struct CreateNonNegotiableContentView_Previews: PreviewProvider {
     static var previews: some View {
-        CreateNonNegotiableContentView()
-            .ignoresSafeArea()
-            .preferredColorScheme(.dark)
+        CreateNonNegotiableContentView(
+            action: .constant(""),
+            frequency: .constant("Every Day"),
+            minimum: .constant(""),
+            showValidationError: .constant(false)
+        )
+        .ignoresSafeArea()
+        .preferredColorScheme(.dark)
     }
 }

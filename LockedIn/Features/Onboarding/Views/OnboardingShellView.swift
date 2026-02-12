@@ -88,11 +88,10 @@ private extension OnboardingShellView {
             .padding(.top, 60)
             .padding(.bottom, Theme.Spacing.xl)
             
-            // 7-Segment Progress Bar with loading animation
+            // 7-Segment Progress Bar
             ProgressIndicator(
                 totalSteps: shellVM.totalSteps,
-                currentStep: shellVM.currentStep,
-                animatingProgress: shellVM.progressAnimationProgress
+                currentStep: shellVM.currentStep.rawValue
             )
             .padding(.horizontal, Theme.Spacing.xl)
             
@@ -116,91 +115,81 @@ private extension OnboardingShellView {
     var contentForCurrentStep: some View {
         ZStack {
             switch shellVM.currentStep {
-            case 1:
+            case .identityWarning:
                 IdentityWarningContentView()
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
-                    .id(1)
+                    .id(OnboardingStep.identityWarning.id)
                 
-            case 2:
+            case .failureLoop:
                 FailureLoopContentView()
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
-                    .id(2)
+                    .id(OnboardingStep.failureLoop.id)
                 
-            case 3:
-                UserHistoryContentView()
-                    .environmentObject(shellVM)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .leading).combined(with: .opacity)
-                    ))
-                    .id(3)
+            case .userHistory:
+                UserHistoryContentView(
+                    selectedOption: $shellVM.data.selectedUserHistoryOption,
+                    showValidationError: $shellVM.data.showValidationError
+                )
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
+                .id(OnboardingStep.userHistory.id)
                 
-            case 4:
+            case .coreDifferentiation:
                 CoreDifferentiationContentView()
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
-                    .id(4)
+                    .id(OnboardingStep.coreDifferentiation.id)
             
-            case 5:
+            case .nonNegotiables:
                 NonNegotiablesContentView()
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
-                    .id(5)
+                    .id(OnboardingStep.nonNegotiables.id)
             
-            case 6:
-                CreateNonNegotiableContentView()
-                    .environmentObject(shellVM)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .leading).combined(with: .opacity)
-                    ))
-                    .id(6)
+            case .createNonNegotiable:
+                CreateNonNegotiableContentView(
+                    action: $shellVM.data.nonNegotiableAction,
+                    frequency: $shellVM.data.nonNegotiableFrequency,
+                    minimum: $shellVM.data.nonNegotiableMinimum,
+                    showValidationError: $shellVM.data.showValidationError
+                )
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
+                .id(OnboardingStep.createNonNegotiable.id)
             
-            case 7:
+            case .aiRegulator:
                 AIRegulatorContentView()
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
-                    .id(7)
+                    .id(OnboardingStep.aiRegulator.id)
             
-            case 8:
-                CommitmentAgreementContentView()
-                    .environmentObject(shellVM)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .leading).combined(with: .opacity)
-                    ))
-                    .id(8)
-            
-            default:
-                // Placeholder for screens 3-7
-                ZStack {
-                    Theme.Colors.backgroundPrimary
-                    VStack(spacing: Theme.Spacing.md) {
-                        Text("Screen \(shellVM.currentStep)")
-                            .font(Theme.Typography.displayLarge())
-                            .foregroundColor(Theme.Colors.textPrimary)
-                        Text("Coming Soon")
-                            .font(Theme.Typography.bodyLarge())
-                            .foregroundColor(Theme.Colors.textTertiary)
-                    }
-                }
+            case .commitmentAgreement:
+                CommitmentAgreementContentView(
+                    hasAcceptedTerms: $shellVM.data.hasAcceptedTerms,
+                    fullName: $shellVM.data.fullName,
+                    showValidationError: $shellVM.data.showValidationError
+                )
                 .transition(.asymmetric(
                     insertion: .move(edge: .trailing).combined(with: .opacity),
                     removal: .move(edge: .leading).combined(with: .opacity)
                 ))
-                .id(shellVM.currentStep)
+                .id(OnboardingStep.commitmentAgreement.id)
             }
         }
         .animation(.easeInOut(duration: 0.35), value: shellVM.currentStep)
@@ -232,8 +221,8 @@ private extension OnboardingShellView {
                         shellVM.advanceToNextScreen()
                     }
                 )
-                .disabled(shellVM.isTransitioning || (shellVM.currentStep == 3 && !shellVM.canCompleteScreen3) || (shellVM.currentStep == 6 && !shellVM.canCompleteScreen6) || (shellVM.isLastStep && !shellVM.canCompleteFinalStep))
-                .opacity((shellVM.isTransitioning || (shellVM.currentStep == 3 && !shellVM.canCompleteScreen3) || (shellVM.currentStep == 6 && !shellVM.canCompleteScreen6) || (shellVM.isLastStep && !shellVM.canCompleteFinalStep)) ? 0.5 : 1.0)
+                .disabled(shellVM.isTransitioning || !shellVM.canAdvanceCurrentStep)
+                .opacity((shellVM.isTransitioning || !shellVM.canAdvanceCurrentStep) ? 0.5 : 1.0)
                 
                 Text(shellVM.ctaSubtitle.uppercased())
                     .font(Theme.Typography.captionSmall())
