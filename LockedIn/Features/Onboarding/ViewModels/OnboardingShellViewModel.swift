@@ -20,6 +20,7 @@ final class OnboardingShellViewModel: ObservableObject {
     
     // MARK: - Dependencies
     private let engine: OnboardingEngine
+    private let flow: OnboardingFlow
     var onComplete: (() -> Void)?
     
     // MARK: - Computed Properties (from StepConfig)
@@ -34,8 +35,8 @@ final class OnboardingShellViewModel: ObservableObject {
     var ctaTitle: String { currentStep.config.ctaTitle }
     var ctaSubtitle: String { currentStep.config.ctaSubtitle }
     
-    var canGoBack: Bool { currentStep.previous != nil }
-    var isLastStep: Bool { currentStep == .commitmentAgreement }
+    var canGoBack: Bool { flow.previousStep(before: currentStep) != nil }
+    var isLastStep: Bool { currentStep == flow.lastStep }
     
     /// Whether the current step can advance (delegated to engine)
     var canAdvanceCurrentStep: Bool {
@@ -45,9 +46,11 @@ final class OnboardingShellViewModel: ObservableObject {
     // MARK: - Initialization
     init(
         engine: OnboardingEngine = .shared,
+        flow: OnboardingFlow = OnboardingFlow(),
         onComplete: (() -> Void)? = nil
     ) {
         self.engine = engine
+        self.flow = flow
         self.onComplete = onComplete
     }
     
@@ -71,7 +74,7 @@ final class OnboardingShellViewModel: ObservableObject {
     }
     
     private func proceedToNext() {
-        guard let next = currentStep.next else {
+        guard let next = flow.nextStep(after: currentStep, data: data) else {
             // Last step - complete onboarding
             onComplete?()
             return
@@ -88,7 +91,7 @@ final class OnboardingShellViewModel: ObservableObject {
     
     /// Goes back to the previous screen
     func goToPreviousScreen() {
-        guard !isTransitioning, let previous = currentStep.previous else { return }
+        guard !isTransitioning, let previous = flow.previousStep(before: currentStep) else { return }
         
         isTransitioning = true
         currentStep = previous

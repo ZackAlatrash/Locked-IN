@@ -24,17 +24,6 @@ enum OnboardingStep: Int, CaseIterable, Identifiable {
     static var last: OnboardingStep { .commitmentAgreement }
     static var totalCount: Int { allCases.count }
     
-    var next: OnboardingStep? {
-        let nextRaw = rawValue + 1
-        return OnboardingStep(rawValue: nextRaw)
-    }
-    
-    var previous: OnboardingStep? {
-        let prevRaw = rawValue - 1
-        guard prevRaw >= 1 else { return nil }
-        return OnboardingStep(rawValue: prevRaw)
-    }
-    
     var stepLabel: String {
         String(format: "Step %02d / %02d", rawValue, OnboardingStep.totalCount)
     }
