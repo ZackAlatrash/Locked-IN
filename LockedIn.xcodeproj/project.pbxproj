@@ -38,17 +38,14 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		40A779F22F3CCA1E00BC4E39 /* Locked IN.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Locked IN.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		40A779F22F3CCA1E00BC4E39 /* LockedIn.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LockedIn.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		40A77A362F3CD39800BC4E39 /* LockedInApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockedInApp.swift; sourceTree = "<group>"; };
 		40A77A382F3CD39800BC4E39 /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCard.swift; sourceTree = "<group>"; };
 		40A77A392F3CD39800BC4E39 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressIndicator.swift; sourceTree = "<group>"; };
 		40A77A3C2F3CD39800BC4E39 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		40A77A412F3CD39800BC4E39 /* IdentityWarningViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = IdentityWarningViewModel.swift; path = LockedIn/Features/Onboarding/SubFeatures/IdentityWarning/ViewModels/IdentityWarningViewModel.swift; sourceTree = SOURCE_ROOT; };
-		40A77A502F3CD43A00BC4E39 /* Locked IN.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "Locked IN.xcodeproj"; sourceTree = "<group>"; };
 		40A77A532F3CD49800BC4E39 /* Locked_INApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Locked_INApp.swift; sourceTree = "<group>"; };
-		40A77A552F3CD55C00BC4E39 /* identity_warning_screen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = identity_warning_screen.png; sourceTree = "<group>"; };
-		40A77A572F3CD70400BC4E39 /* Subtle abstract stoic statue of a Roman philosopher.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Subtle abstract stoic statue of a Roman philosopher.png"; sourceTree = "<group>"; };
 		40A77A5A2F3CD80000BC4E39 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = LockedIn/Resources/Assets.xcassets; sourceTree = SOURCE_ROOT; };
 		40A77A782F3D700000BC4E39 /* Fonts/Inter-VariableFont_opsz,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Inter-VariableFont_opsz,wght.ttf"; path = "LockedIn/Resources/Fonts/Inter-VariableFont_opsz,wght.ttf"; sourceTree = SOURCE_ROOT; };
 		40A77A792F3D800000BC4E39 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = LockedIn/Resources/Info.plist; sourceTree = SOURCE_ROOT; };
@@ -86,18 +83,15 @@
 		40A779E92F3CCA1E00BC4E39 = {
 			isa = PBXGroup;
 			children = (
-				40A77A552F3CD55C00BC4E39 /* identity_warning_screen.png */,
-				40A77A572F3CD70400BC4E39 /* Subtle abstract stoic statue of a Roman philosopher.png */,
 				40A77A472F3CD39800BC4E39 /* LockedIn */,
 				40A779F32F3CCA1E00BC4E39 /* Products */,
-				40A77A502F3CD43A00BC4E39 /* Locked IN.xcodeproj */,
 			);
 			sourceTree = "<group>";
 		};
 		40A779F32F3CCA1E00BC4E39 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				40A779F22F3CCA1E00BC4E39 /* Locked IN.app */,
+				40A779F22F3CCA1E00BC4E39 /* LockedIn.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -238,11 +232,6 @@
 			path = LockedIn;
 			sourceTree = "<group>";
 		};
-		40A77A512F3CD43A00BC4E39 /* Products */ = {
-			isa = PBXGroup;
-			name = Products;
-			sourceTree = "<group>";
-		};
 		40A77A882F3DB00000BC4E39 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -257,9 +246,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		40A779F12F3CCA1E00BC4E39 /* Locked IN */ = {
+		40A779F12F3CCA1E00BC4E39 /* LockedIn */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 40A779FF2F3CCA1F00BC4E39 /* Build configuration list for PBXNativeTarget "Locked IN" */;
+			buildConfigurationList = 40A779FF2F3CCA1F00BC4E39 /* Build configuration list for PBXNativeTarget "LockedIn" */;
 			buildPhases = (
 				40A779EE2F3CCA1E00BC4E39 /* Sources */,
 				40A779EF2F3CCA1E00BC4E39 /* Frameworks */,
@@ -269,11 +258,11 @@
 			);
 			dependencies = (
 			);
-			name = "Locked IN";
+			name = LockedIn;
 			packageProductDependencies = (
 			);
-			productName = "Locked IN";
-			productReference = 40A779F22F3CCA1E00BC4E39 /* Locked IN.app */;
+			productName = LockedIn;
+			productReference = 40A779F22F3CCA1E00BC4E39 /* LockedIn.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -303,15 +292,9 @@
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 40A779F32F3CCA1E00BC4E39 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = 40A77A512F3CD43A00BC4E39 /* Products */;
-					ProjectRef = 40A77A502F3CD43A00BC4E39 /* Locked IN.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
-				40A779F12F3CCA1E00BC4E39 /* Locked IN */,
+				40A779F12F3CCA1E00BC4E39 /* LockedIn */,
 			);
 		};
 /* End PBXProject section */
@@ -322,8 +305,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				40A77A592F3CD80000BC4E39 /* Assets.xcassets in Resources */,
-				40A77A562F3CD55C00BC4E39 /* identity_warning_screen.png in Resources */,
-				40A77A582F3CD70400BC4E39 /* Subtle abstract stoic statue of a Roman philosopher.png in Resources */,
 				40A77A772F3D700000BC4E39 /* Fonts/Inter-VariableFont_opsz,wght.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -496,7 +477,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2A6452539P;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "LockedIn/Resources/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -509,8 +490,8 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "Epistles-of-Wisdom.Locked-IN";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "Epistles-of-Wisdom.LockedIn";
+				PRODUCT_NAME = LockedIn;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -532,7 +513,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2A6452539P;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "LockedIn/Resources/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -545,8 +526,8 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "Epistles-of-Wisdom.Locked-IN";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "Epistles-of-Wisdom.LockedIn";
+				PRODUCT_NAME = LockedIn;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -570,7 +551,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		40A779FF2F3CCA1F00BC4E39 /* Build configuration list for PBXNativeTarget "Locked IN" */ = {
+		40A779FF2F3CCA1F00BC4E39 /* Build configuration list for PBXNativeTarget "LockedIn" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				40A77A002F3CCA1F00BC4E39 /* Debug */,
