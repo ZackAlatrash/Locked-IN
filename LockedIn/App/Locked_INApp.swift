@@ -11,7 +11,7 @@ import SwiftUI
 struct Locked_INApp: App {
     var body: some Scene {
         WindowGroup {
-            LockedInAppRoot.makeRootView()
+            LockedInAppRoot()
         }
     }
 }
