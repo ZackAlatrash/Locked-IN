@@ -182,6 +182,21 @@ private extension OnboardingShellView {
                     removal: .move(edge: .leading).combined(with: .opacity)
                 ))
                 .id(OnboardingStep.commitmentAgreement.id)
+            
+            case .paywall:
+                PaywallContentView(
+                    onStartTrial: {
+                        shellVM.completeOnboarding()
+                    },
+                    onDismiss: {
+                        shellVM.completeOnboarding()
+                    }
+                )
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
+                .id(OnboardingStep.paywall.id)
             }
         }
         .animation(.easeInOut(duration: 0.35), value: shellVM.currentStep)

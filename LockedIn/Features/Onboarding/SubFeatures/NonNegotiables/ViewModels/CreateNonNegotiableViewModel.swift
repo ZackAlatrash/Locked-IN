@@ -15,6 +15,7 @@ final class CreateNonNegotiableViewModel: ObservableObject {
     @Published var action: String = ""
     @Published var frequency: String = "Every Day"
     @Published var minimum: String = ""
+    @Published var showValidationError: Bool = false
     
     // MARK: - Output
     var isValid: Bool {
@@ -24,14 +25,17 @@ final class CreateNonNegotiableViewModel: ObservableObject {
     // MARK: - Actions
     func updateAction(_ value: String) {
         action = value
+        showValidationError = false
     }
     
     func updateFrequency(_ value: String) {
         frequency = value
+        showValidationError = false
     }
     
     func updateMinimum(_ value: String) {
         minimum = value
+        showValidationError = false
     }
     
     /// Export data for parent ViewModel

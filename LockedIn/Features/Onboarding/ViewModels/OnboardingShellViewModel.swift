@@ -25,6 +25,9 @@ final class OnboardingShellViewModel: ObservableObject {
     let createNonNegotiableViewModel = CreateNonNegotiableViewModel()
     let commitmentAgreementViewModel = CommitmentAgreementViewModel()
     
+    // MARK: - Cancellables
+    private var cancellables = Set<AnyCancellable>()
+    
     // MARK: - Computed Properties (from StepConfig)
     var stepLabel: String { currentStep.stepLabel }
     var totalSteps: Int { OnboardingStep.totalCount }
@@ -63,6 +66,30 @@ final class OnboardingShellViewModel: ObservableObject {
         self.engine = engine
         self.flow = flow
         self.onComplete = onComplete
+        
+        setupBindings()
+    }
+    
+    // MARK: - Bindings
+    private func setupBindings() {
+        // Observe changes from child ViewModels to trigger UI updates
+        userHistoryViewModel.objectWillChange
+            .sink { [weak self] in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+        
+        createNonNegotiableViewModel.objectWillChange
+            .sink { [weak self] in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+        
+        commitmentAgreementViewModel.objectWillChange
+            .sink { [weak self] in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - Navigation Actions
@@ -74,6 +101,7 @@ final class OnboardingShellViewModel: ObservableObject {
         guard canAdvanceCurrentStep else {
             withAnimation {
                 // Validation error handled by individual ViewModels
+                triggerValidationError()
             }
             return
         }
@@ -81,10 +109,23 @@ final class OnboardingShellViewModel: ObservableObject {
         proceedToNext()
     }
     
+    private func triggerValidationError() {
+        switch currentStep {
+        case .userHistory:
+            break // No validation error to show
+        case .createNonNegotiable:
+            createNonNegotiableViewModel.showValidationError = true
+        case .commitmentAgreement:
+            commitmentAgreementViewModel.showValidationError = true
+        default:
+            break
+        }
+    }
+    
     private func proceedToNext() {
         guard let next = flow.nextStep(after: currentStep, data: buildOnboardingData()) else {
-            // Last step - complete onboarding
-            onComplete?()
+            // Last step - show paywall instead of completing immediately
+            showPaywall()
             return
         }
         
@@ -94,6 +135,20 @@ final class OnboardingShellViewModel: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
             self?.isTransitioning = false
         }
+    }
+    
+    private func showPaywall() {
+        isTransitioning = true
+        currentStep = .paywall
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+            self?.isTransitioning = false
+        }
+    }
+    
+    /// Called when paywall is dismissed (user subscribed or skipped)
+    func completeOnboarding() {
+        onComplete?()
     }
     
     /// Goes back to the previous screen
