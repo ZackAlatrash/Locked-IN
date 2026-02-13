@@ -36,9 +36,13 @@ struct PaywallContentView: View {
             ZStack {
                 // Full-screen dark background
                 backgroundLayer
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .clipped()
                 
-                // Decorative glow effects
+                // Decorative glow effects - clipped to bounds
                 decorativeGlows
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .clipped()
                 
                 // Main content - ScrollView for smaller screens
                 ScrollView(.vertical, showsIndicators: false) {
@@ -65,15 +69,15 @@ struct PaywallContentView: View {
                         // Spacer that adapts to screen size
                         Spacer(minLength: geometry.size.height * 0.05)
                         
-                // Liquid Glass Card
-                liquidGlassCard
-                    .padding(.horizontal, Theme.Spacing.lg)
-
+                        // Liquid Glass Card
+                        liquidGlassCard
+                            .padding(.horizontal, Theme.Spacing.lg)
                         
                         // Bottom spacer for safe area
                         Spacer(minLength: geometry.safeAreaInsets.bottom + 20)
                     }
                     .frame(minHeight: geometry.size.height)
+                    .frame(maxWidth: .infinity) // Constrain width to screen bounds
                 }
             }
         }
@@ -98,52 +102,55 @@ private extension PaywallContentView {
                 endPoint: .bottom
             )
             
-            // Subtle grid pattern effect (simulated with lines)
-            VStack(spacing: 40) {
-                ForEach(0..<8) { _ in
-                    HStack(spacing: 40) {
-                        ForEach(0..<4) { _ in
+            // Subtle grid pattern effect - scaled to fit screen
+            VStack(spacing: 30) {
+                ForEach(0..<6) { _ in
+                    HStack(spacing: 20) {
+                        ForEach(0..<5) { _ in
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(Color.white.opacity(0.03))
-                                .frame(width: 60, height: 40)
+                                .frame(width: 50, height: 30)
                         }
                     }
                 }
             }
             .opacity(0.5)
+            .scaleEffect(0.9)
             .rotationEffect(.degrees(-5))
         }
     }
     
     var decorativeGlows: some View {
-        ZStack {
-            // Top right blue glow
-            Circle()
-                .fill(accentBlue.opacity(0.2))
-                .frame(width: 350, height: 350)
-                .blur(radius: 120)
-                .offset(x: 120, y: -180)
-            
-            // Bottom left green glow
-            Circle()
-                .fill(accentGreen.opacity(0.15))
-                .frame(width: 400, height: 400)
-                .blur(radius: 120)
-                .offset(x: -180, y: 250)
-            
-            // Center subtle gradient glow
-            Circle()
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [accentBlue, accentGreen]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+        GeometryReader { geometry in
+            ZStack {
+                // Top right blue glow - constrained to screen
+                Circle()
+                    .fill(accentBlue.opacity(0.2))
+                    .frame(width: 300, height: 300)
+                    .blur(radius: 100)
+                    .offset(x: geometry.size.width * 0.25, y: -geometry.size.height * 0.2)
+                
+                // Bottom left green glow - constrained to screen
+                Circle()
+                    .fill(accentGreen.opacity(0.15))
+                    .frame(width: 350, height: 350)
+                    .blur(radius: 100)
+                    .offset(x: -geometry.size.width * 0.3, y: geometry.size.height * 0.3)
+                
+                // Center subtle gradient glow - constrained
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [accentBlue, accentGreen]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .opacity(0.1)
                     )
-                    .opacity(0.1)
-                )
-                .frame(width: 500, height: 500)
-                .blur(radius: 150)
-                .offset(y: 50)
+                    .frame(width: min(400, geometry.size.width), height: min(400, geometry.size.width))
+                    .blur(radius: 120)
+                    .offset(y: geometry.size.height * 0.05)
+            }
         }
         .allowsHitTesting(false)
     }
