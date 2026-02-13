@@ -10,13 +10,20 @@ import SwiftUI
 
 /// Root view factory for the LockedIn app
 /// Used by the existing @main entry point to bootstrap the onboarding flow
-enum LockedInAppRoot {
+struct LockedInAppRoot: View {
+    @State private var showPaywall = false
     
-    /// Creates the root onboarding flow view
-    /// - Returns: The onboarding shell view configured with dark mode
-    @ViewBuilder
-    static func makeRootView() -> some View {
-        OnboardingShellView()
-            .preferredColorScheme(.dark)
+    var body: some View {
+        Group {
+            if showPaywall {
+                PaywallContentView()
+                    .preferredColorScheme(.dark)
+            } else {
+                OnboardingShellView(onComplete: {
+                    showPaywall = true
+                })
+                .preferredColorScheme(.dark)
+            }
+        }
     }
 }

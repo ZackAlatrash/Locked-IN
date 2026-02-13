@@ -35,7 +35,7 @@ final class OnboardingShellViewModel: ObservableObject {
     var ctaSubtitle: String { currentStep.config.ctaSubtitle }
     
     var canGoBack: Bool { currentStep.previous != nil }
-    var isLastStep: Bool { currentStep == .paywall }
+    var isLastStep: Bool { currentStep == .commitmentAgreement }
     
     /// Whether the current step can advance (delegated to engine)
     var canAdvanceCurrentStep: Bool {
@@ -99,9 +99,17 @@ final class OnboardingShellViewModel: ObservableObject {
         }
     }
     
-    /// Skip action (same as advance for now)
+    /// Skip action - jumps directly to commitment agreement
     func skip() {
-        advanceToNextScreen()
+        guard !isTransitioning else { return }
+        
+        isTransitioning = true
+        currentStep = .commitmentAgreement
+        data.showValidationError = false
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+            self?.isTransitioning = false
+        }
     }
     
     /// Close/dismiss onboarding

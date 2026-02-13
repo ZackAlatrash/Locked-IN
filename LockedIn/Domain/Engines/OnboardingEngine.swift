@@ -34,10 +34,6 @@ final class OnboardingEngine {
             
         case .commitmentAgreement:
             return validateCommitment(data)
-            
-        case .paywall:
-            // Paywall has no validation requirements - user can always proceed
-            return .valid
         }
     }
     
