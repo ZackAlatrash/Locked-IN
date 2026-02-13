@@ -57,10 +57,11 @@ private extension CoreDifferentiationContentView {
                     .foregroundColor(Theme.Colors.authority)
                     .italic()
             )
-            .font(.system(size: 30, weight: .heavy))
+            .font(.system(size: 28, weight: .heavy))
             .tracking(-0.5)
-            .lineSpacing(2)
+            .lineSpacing(4)
             .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
             
             // Body text
             Text("You commit to a small number of non-negotiables. The system locks them in place.")
@@ -286,8 +287,8 @@ private extension CoreDifferentiationContentView {
     var descriptiveList: some View {
         VStack(spacing: Theme.Spacing.sm) {
             // Hard Commitments
-            descriptiveItem(
-                icon: "gavel",
+            descriptiveItemWithImage(
+                imageName: "gavel",
                 title: "Hard Commitments",
                 description: "Once you set your non-negotiables, the \"Edit\" button disappears until the period ends."
             )
@@ -314,6 +315,39 @@ private extension CoreDifferentiationContentView {
                 
                 Image(systemName: icon)
                     .font(.system(size: 18))
+                    .foregroundColor(Theme.Colors.authority)
+            }
+            .frame(width: 32, height: 32)
+            
+            // Text
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(Theme.Colors.textPrimary)
+                
+                Text(description)
+                    .font(.system(size: 11))
+                    .foregroundColor(Theme.Colors.textTertiary)
+                    .lineSpacing(2)
+            }
+        }
+    }
+    
+    func descriptiveItemWithImage(imageName: String, title: String, description: String) -> some View {
+        HStack(alignment: .top, spacing: Theme.Spacing.sm) {
+            // Image container
+            ZStack {
+                RoundedRectangle(cornerRadius: Theme.CornerRadius.sm)
+                    .fill(Theme.Colors.authority.opacity(0.1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Theme.CornerRadius.sm)
+                            .stroke(Theme.Colors.authority.opacity(0.2), lineWidth: 1)
+                    )
+                
+                Image(imageName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20, height: 20)
                     .foregroundColor(Theme.Colors.authority)
             }
             .frame(width: 32, height: 32)
