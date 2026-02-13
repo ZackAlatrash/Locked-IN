@@ -32,43 +32,51 @@ struct PaywallContentView: View {
     ]
     
     var body: some View {
-        ZStack {
-            // Full-screen dark background
-            backgroundLayer
-            
-            // Decorative glow effects
-            decorativeGlows
-            
-            // Main content
-            VStack {
-                // Dismiss button
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        onDismiss?()
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(Color.white.opacity(0.6))
-                            .frame(width: 44, height: 44)
-                            .background(
-                                Circle()
-                                    .fill(Color.white.opacity(0.1))
-                            )
+        GeometryReader { geometry in
+            ZStack {
+                // Full-screen dark background
+                backgroundLayer
+                
+                // Decorative glow effects
+                decorativeGlows
+                
+                // Main content - ScrollView for smaller screens
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        // Dismiss button
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                onDismiss?()
+                            }) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(Color.white.opacity(0.6))
+                                    .frame(width: 44, height: 44)
+                                    .background(
+                                        Circle()
+                                            .fill(Color.white.opacity(0.1))
+                                    )
+                            }
+                            .padding(.trailing, Theme.Spacing.xl)
+                        }
+                        .padding(.top, geometry.safeAreaInsets.top + 20)
+                        
+                        // Spacer that adapts to screen size
+                        Spacer(minLength: geometry.size.height * 0.05)
+                        
+                        // Liquid Glass Card
+                        liquidGlassCard
+                            .padding(.horizontal, Theme.Spacing.xl)
+                        
+                        // Bottom spacer for safe area
+                        Spacer(minLength: geometry.safeAreaInsets.bottom + 20)
                     }
-                    .padding(.trailing, Theme.Spacing.xl)
+                    .frame(minHeight: geometry.size.height)
                 }
-                .padding(.top, 60)
-                
-                Spacer()
-                
-                // Liquid Glass Card
-                liquidGlassCard
-                    .padding(.horizontal, Theme.Spacing.xl)
-                
-                Spacer()
             }
         }
+        .ignoresSafeArea()
     }
 }
 
@@ -214,9 +222,9 @@ private extension PaywallContentView {
                     .fill(Color.white.opacity(0.05))
             )
             
-            // Headline with gradient
+            // Headline with gradient - responsive font size
             Text(headline)
-                .font(.custom("Inter", size: 32).weight(.black))
+                .font(.system(size: min(32, UIScreen.main.bounds.width * 0.08), weight: .black))
                 .tracking(-0.5)
                 .foregroundStyle(
                     LinearGradient(
@@ -307,8 +315,9 @@ private extension PaywallContentView {
                         .tracking(Theme.Typography.letterSpacingWide * 12)
                         .foregroundColor(Color.white)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                     
-                    Spacer(minLength: 16)
+                    Spacer(minLength: 8)
                     
                     Image(systemName: "arrow.right")
                         .font(.system(size: 18, weight: .bold))
@@ -316,7 +325,7 @@ private extension PaywallContentView {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .frame(height: 56)
-                .padding(.horizontal, Theme.Spacing.xxl)
+                .padding(.horizontal, Theme.Spacing.lg)
                 .background(
                     LinearGradient(
                         gradient: Gradient(colors: [gradientStart, gradientEnd]),
