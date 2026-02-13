@@ -136,10 +136,7 @@ private extension OnboardingShellView {
                     .id(OnboardingStep.failureLoop.id)
                 
             case .userHistory:
-                UserHistoryContentView(
-                    selectedOption: $shellVM.data.selectedUserHistoryOption,
-                    showValidationError: $shellVM.data.showValidationError
-                )
+                UserHistoryContentView(viewModel: shellVM.userHistoryViewModel)
                 .transition(.asymmetric(
                     insertion: .move(edge: .trailing).combined(with: .opacity),
                     removal: .move(edge: .leading).combined(with: .opacity)
@@ -163,12 +160,7 @@ private extension OnboardingShellView {
                     .id(OnboardingStep.nonNegotiables.id)
             
             case .createNonNegotiable:
-                CreateNonNegotiableContentView(
-                    action: $shellVM.data.nonNegotiableAction,
-                    frequency: $shellVM.data.nonNegotiableFrequency,
-                    minimum: $shellVM.data.nonNegotiableMinimum,
-                    showValidationError: $shellVM.data.showValidationError
-                )
+                CreateNonNegotiableContentView(viewModel: shellVM.createNonNegotiableViewModel)
                 .transition(.asymmetric(
                     insertion: .move(edge: .trailing).combined(with: .opacity),
                     removal: .move(edge: .leading).combined(with: .opacity)
@@ -184,11 +176,7 @@ private extension OnboardingShellView {
                     .id(OnboardingStep.aiRegulator.id)
             
             case .commitmentAgreement:
-                CommitmentAgreementContentView(
-                    hasAcceptedTerms: $shellVM.data.hasAcceptedTerms,
-                    fullName: $shellVM.data.fullName,
-                    showValidationError: $shellVM.data.showValidationError
-                )
+                CommitmentAgreementContentView(viewModel: shellVM.commitmentAgreementViewModel)
                 .transition(.asymmetric(
                     insertion: .move(edge: .trailing).combined(with: .opacity),
                     removal: .move(edge: .leading).combined(with: .opacity)

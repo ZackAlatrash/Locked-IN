@@ -14,6 +14,7 @@ final class CommitmentAgreementViewModel: ObservableObject {
     // MARK: - Published Properties
     @Published var hasAcceptedTerms: Bool = false
     @Published var fullName: String = ""
+    @Published var showValidationError: Bool = false
     
     // MARK: - Output
     var isValid: Bool {
@@ -23,10 +24,12 @@ final class CommitmentAgreementViewModel: ObservableObject {
     // MARK: - Actions
     func toggleTermsAccepted() {
         hasAcceptedTerms.toggle()
+        showValidationError = false
     }
     
     func updateFullName(_ value: String) {
         fullName = value
+        showValidationError = false
     }
     
     /// Export data for parent ViewModel

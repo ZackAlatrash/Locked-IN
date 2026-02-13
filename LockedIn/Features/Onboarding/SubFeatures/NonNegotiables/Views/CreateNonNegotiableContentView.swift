@@ -10,11 +10,8 @@
 import SwiftUI
 
 struct CreateNonNegotiableContentView: View {
-    // MARK: - Bindings (explicit dependency injection)
-    @Binding var action: String
-    @Binding var frequency: String
-    @Binding var minimum: String
-    @Binding var showValidationError: Bool
+    // MARK: - ViewModel (explicit dependency injection)
+    @ObservedObject var viewModel: CreateNonNegotiableViewModel
     
     enum Frequency: String, CaseIterable, Identifiable {
         case daily = "Every Day"
@@ -107,19 +104,17 @@ private extension CreateNonNegotiableContentView {
 private extension CreateNonNegotiableContentView {
     var inputFields: some View {
         VStack(spacing: Theme.Spacing.md) {
-            // Action Field
-            inputCard(
-                label: "ACTION",
-                icon: "bolt.fill",
-                content: {
-                    TextField("", text: $action, prompt: Text("e.g. Cold Shower").foregroundColor(Theme.Colors.textTertiary.opacity(0.5)))
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(Theme.Colors.textPrimary)
-                        .onChange(of: action) { _ in
-                            showValidationError = false
-                        }
-                }
-            )
+                // Action Field
+                inputCard(
+                    label: "ACTION",
+                    icon: "bolt.fill",
+                    content: {
+                        TextField("", text: $viewModel.action, prompt: Text("e.g. Cold Shower").foregroundColor(Theme.Colors.textTertiary.opacity(0.5)))
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(Theme.Colors.textPrimary)
+                    }
+                )
+
             
             // Frequency Field
             inputCard(
@@ -129,7 +124,7 @@ private extension CreateNonNegotiableContentView {
                     Menu {
                         ForEach(Frequency.allCases) { freq in
                             Button(action: {
-                                frequency = freq.rawValue
+                                viewModel.updateFrequency(freq.rawValue)
                             }) {
                                 Text(freq.rawValue)
                                     .foregroundColor(Theme.Colors.textPrimary)
@@ -137,7 +132,7 @@ private extension CreateNonNegotiableContentView {
                         }
                     } label: {
                         HStack {
-                            Text(frequency)
+                            Text(viewModel.frequency)
                                 .font(.system(size: 20, weight: .medium))
                                 .foregroundColor(Theme.Colors.textPrimary)
                             
@@ -153,18 +148,16 @@ private extension CreateNonNegotiableContentView {
             )
             
             // Minimum Requirement Field
-            inputCard(
-                label: "MINIMUM REQUIREMENT",
-                icon: "speedometer",
-                content: {
-                    TextField("", text: $minimum, prompt: Text("e.g. 5 Minutes").foregroundColor(Theme.Colors.textTertiary.opacity(0.5)))
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(Theme.Colors.textPrimary)
-                        .onChange(of: minimum) { _ in
-                            showValidationError = false
-                        }
-                }
-            )
+                inputCard(
+                    label: "MINIMUM REQUIREMENT",
+                    icon: "speedometer",
+                    content: {
+                        TextField("", text: $viewModel.minimum, prompt: Text("e.g. 5 Minutes").foregroundColor(Theme.Colors.textTertiary.opacity(0.5)))
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(Theme.Colors.textPrimary)
+                    }
+                )
+
         }
     }
     
@@ -208,13 +201,8 @@ private extension CreateNonNegotiableContentView {
 // MARK: - Preview
 struct CreateNonNegotiableContentView_Previews: PreviewProvider {
     static var previews: some View {
-        CreateNonNegotiableContentView(
-            action: .constant(""),
-            frequency: .constant("Every Day"),
-            minimum: .constant(""),
-            showValidationError: .constant(false)
-        )
-        .ignoresSafeArea()
-        .preferredColorScheme(.dark)
+        CreateNonNegotiableContentView(viewModel: CreateNonNegotiableViewModel())
+            .ignoresSafeArea()
+            .preferredColorScheme(.dark)
     }
 }

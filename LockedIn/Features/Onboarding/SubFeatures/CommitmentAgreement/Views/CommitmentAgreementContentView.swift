@@ -10,10 +10,8 @@
 import SwiftUI
 
 struct CommitmentAgreementContentView: View {
-    // MARK: - Bindings (explicit dependency injection)
-    @Binding var hasAcceptedTerms: Bool
-    @Binding var fullName: String
-    @Binding var showValidationError: Bool
+    // MARK: - ViewModel (explicit dependency injection)
+    @ObservedObject var viewModel: CommitmentAgreementViewModel
     
     var body: some View {
         ZStack {
@@ -199,13 +197,13 @@ private extension CommitmentAgreementContentView {
                 }
                 
                 HStack {
-                    TextField("", text: $fullName, prompt: Text("Type your name").foregroundColor(Theme.Colors.textMuted.opacity(0.5)))
+                    TextField("", text: $viewModel.fullName, prompt: Text("Type your name").foregroundColor(Theme.Colors.textMuted.opacity(0.5)))
                         .font(.system(size: 18))
                         .foregroundColor(.white)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.words)
                     
-                    if !fullName.isEmpty {
+                    if !viewModel.fullName.isEmpty {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 18))
                             .foregroundColor(Theme.Colors.authority)
@@ -219,7 +217,7 @@ private extension CommitmentAgreementContentView {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: Theme.CornerRadius.sm)
-                        .stroke(fullName.isEmpty && showValidationError ? Theme.Colors.authority : Theme.Colors.border, lineWidth: fullName.isEmpty && showValidationError ? 2 : 1)
+                        .stroke(viewModel.fullName.isEmpty && viewModel.showValidationError ? Theme.Colors.authority : Theme.Colors.border, lineWidth: viewModel.fullName.isEmpty && viewModel.showValidationError ? 2 : 1)
                 )
                 
                 Text("By typing your name, you accept the terms above.")
@@ -231,18 +229,17 @@ private extension CommitmentAgreementContentView {
             // Terms & Conditions Checkbox
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    hasAcceptedTerms.toggle()
-                    showValidationError = false
+                    viewModel.toggleTermsAccepted()
                 }
             }) {
                 HStack(spacing: Theme.Spacing.md) {
                     // Checkbox
                     ZStack {
                         RoundedRectangle(cornerRadius: 4)
-                            .stroke(hasAcceptedTerms ? Theme.Colors.authority : Theme.Colors.border, lineWidth: 2)
+                            .stroke(viewModel.hasAcceptedTerms ? Theme.Colors.authority : Theme.Colors.border, lineWidth: 2)
                             .frame(width: 22, height: 22)
                         
-                        if hasAcceptedTerms {
+                        if viewModel.hasAcceptedTerms {
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(Theme.Colors.authority)
                                 .frame(width: 22, height: 22)
@@ -255,7 +252,7 @@ private extension CommitmentAgreementContentView {
                     
                     Text("I accept the terms and conditions")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(hasAcceptedTerms ? .white : Theme.Colors.textMuted)
+                        .foregroundColor(viewModel.hasAcceptedTerms ? .white : Theme.Colors.textMuted)
                     
                     Spacer()
                 }
@@ -263,7 +260,7 @@ private extension CommitmentAgreementContentView {
             .padding(.top, Theme.Spacing.sm)
             
             // Validation error message
-            if showValidationError {
+            if viewModel.showValidationError {
                 HStack(spacing: Theme.Spacing.xs) {
                     Image(systemName: "exclamationmark.circle.fill")
                         .font(.system(size: 12))
@@ -291,12 +288,8 @@ private extension CommitmentAgreementContentView {
 // MARK: - Preview
 struct CommitmentAgreementContentView_Previews: PreviewProvider {
     static var previews: some View {
-        CommitmentAgreementContentView(
-            hasAcceptedTerms: .constant(false),
-            fullName: .constant(""),
-            showValidationError: .constant(false)
-        )
-        .ignoresSafeArea()
-        .preferredColorScheme(.dark)
+        CommitmentAgreementContentView(viewModel: CommitmentAgreementViewModel())
+            .ignoresSafeArea()
+            .preferredColorScheme(.dark)
     }
 }
