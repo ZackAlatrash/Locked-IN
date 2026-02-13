@@ -12,10 +12,8 @@ import Foundation
 /// Called by OnboardingShellViewModel to determine if navigation can proceed
 final class OnboardingEngine {
     
-    // MARK: - Singleton (or inject for testing)
-    static let shared = OnboardingEngine()
-    
-    private init() {}
+    // MARK: - Initialization
+    init() {}
     
     // MARK: - Navigation Gating
     

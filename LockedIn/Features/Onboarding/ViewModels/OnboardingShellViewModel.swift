@@ -56,7 +56,7 @@ final class OnboardingShellViewModel: ObservableObject {
     
     // MARK: - Initialization
     init(
-        engine: OnboardingEngine = .shared,
+        engine: OnboardingEngine = OnboardingEngine(),
         flow: OnboardingFlow = OnboardingFlow(),
         onComplete: (() -> Void)? = nil
     ) {
