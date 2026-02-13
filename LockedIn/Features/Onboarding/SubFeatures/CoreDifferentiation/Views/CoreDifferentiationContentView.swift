@@ -16,27 +16,29 @@ struct CoreDifferentiationContentView: View {
             // Full-screen background
             Theme.Colors.backgroundPrimary
             
-            // Main content — compact, no scroll
+            // Main content — fixed layout for consistent CTA position
             VStack(spacing: 0) {
-                // Space for header overlay — push content toward center
-                Spacer().frame(height: 180)
+                // Space for header overlay — fixed height
+                Spacer().frame(height: 160)
                 
-                // Headline & Body
+                // Headline & Body — compact
                 headlineSection
-                    .padding(.top, Theme.Spacing.sm)
-                    .padding(.bottom, Theme.Spacing.lg)
+                    .padding(.top, Theme.Spacing.xs)
+                    .padding(.bottom, Theme.Spacing.md)
                 
-                // Comparison Diagram (2 columns) — compact height
+                // Comparison Diagram (2 columns) — fixed height
                 comparisonDiagram
-                    .padding(.bottom, Theme.Spacing.lg)
+                    .frame(height: 180)
+                    .padding(.bottom, Theme.Spacing.md)
                 
-                // Descriptive list below diagram
+                // Descriptive list below diagram — compact
                 descriptiveList
                 
+                // Push CTA space to bottom
                 Spacer()
                 
-                // Space for CTA button
-                Spacer().frame(height: 160)
+                // Space for CTA button — fixed height to match other screens
+                Spacer().frame(height: 140)
             }
             .padding(.horizontal, Theme.Spacing.xl)
         }
