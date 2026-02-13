@@ -20,7 +20,7 @@ final class OnboardingEngine {
     /// Determines if the user can advance from the current step
     func canAdvance(from step: OnboardingStep, data: OnboardingData) -> ValidationResult {
         switch step {
-        case .identityWarning, .failureLoop, .coreDifferentiation, .nonNegotiables, .aiRegulator, .paywall:
+        case .identityWarning, .failureLoop, .coreDifferentiation, .nonNegotiables, .aiRegulator:
             // These screens have no validation requirements
             return .valid
             

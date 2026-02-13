@@ -14,6 +14,7 @@ final class OnboardingShellViewModel: ObservableObject {
     // MARK: - Published Properties (Navigation Only)
     @Published private(set) var currentStep: OnboardingStep = .identityWarning
     @Published private(set) var isTransitioning: Bool = false
+    @Published var showPaywall: Bool = false
     
     // MARK: - Dependencies
     private let engine: OnboardingEngine
@@ -124,22 +125,15 @@ final class OnboardingShellViewModel: ObservableObject {
     
     private func proceedToNext() {
         guard let next = flow.nextStep(after: currentStep, data: buildOnboardingData()) else {
-            // Last step - show paywall instead of completing immediately
-            showPaywall()
+            // Last step - show paywall as separate view
+            withAnimation {
+                showPaywall = true
+            }
             return
         }
         
         isTransitioning = true
         currentStep = next
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
-            self?.isTransitioning = false
-        }
-    }
-    
-    private func showPaywall() {
-        isTransitioning = true
-        currentStep = .paywall
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
             self?.isTransitioning = false

@@ -34,9 +34,7 @@ struct OnboardingFlow {
         case .aiRegulator:
             return .commitmentAgreement
         case .commitmentAgreement:
-            return .paywall
-        case .paywall:
-            return nil // End of onboarding
+            return nil // End of onboarding - paywall shown separately
         }
     }
     
@@ -61,8 +59,6 @@ struct OnboardingFlow {
             return .createNonNegotiable
         case .commitmentAgreement:
             return .aiRegulator
-        case .paywall:
-            return .commitmentAgreement
         }
     }
     
