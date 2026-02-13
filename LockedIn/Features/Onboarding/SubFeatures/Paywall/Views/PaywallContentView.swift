@@ -65,9 +65,10 @@ struct PaywallContentView: View {
                         // Spacer that adapts to screen size
                         Spacer(minLength: geometry.size.height * 0.05)
                         
-                        // Liquid Glass Card
-                        liquidGlassCard
-                            .padding(.horizontal, Theme.Spacing.xl)
+                // Liquid Glass Card
+                liquidGlassCard
+                    .padding(.horizontal, Theme.Spacing.lg)
+
                         
                         // Bottom spacer for safe area
                         Spacer(minLength: geometry.safeAreaInsets.bottom + 20)
@@ -161,7 +162,7 @@ private extension PaywallContentView {
             // CTA Section
             ctaSection
         }
-        .padding(Theme.Spacing.xxl)
+        .padding(Theme.Spacing.xl)
         .background(
             // Liquid glass effect
             ZStack {
@@ -325,7 +326,7 @@ private extension PaywallContentView {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .frame(height: 56)
-                .padding(.horizontal, Theme.Spacing.lg)
+                .padding(.horizontal, Theme.Spacing.md)
                 .background(
                     LinearGradient(
                         gradient: Gradient(colors: [gradientStart, gradientEnd]),
