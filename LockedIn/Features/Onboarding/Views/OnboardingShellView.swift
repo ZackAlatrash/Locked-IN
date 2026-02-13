@@ -11,7 +11,11 @@
 import SwiftUI
 
 struct OnboardingShellView: View {
-    @StateObject private var shellVM = OnboardingShellViewModel()
+    @StateObject private var shellVM: OnboardingShellViewModel
+    
+    init(onComplete: (() -> Void)? = nil) {
+        _shellVM = StateObject(wrappedValue: OnboardingShellViewModel(onComplete: onComplete))
+    }
     
     var body: some View {
         ZStack {
