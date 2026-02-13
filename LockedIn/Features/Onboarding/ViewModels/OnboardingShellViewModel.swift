@@ -15,13 +15,15 @@ final class OnboardingShellViewModel: ObservableObject {
     @Published private(set) var currentStep: OnboardingStep = .identityWarning
     @Published private(set) var isTransitioning: Bool = false
     
-    // MARK: - Shared Data (passed to screen ViewModels)
-    @Published var data = OnboardingData()
-    
     // MARK: - Dependencies
     private let engine: OnboardingEngine
     private let flow: OnboardingFlow
     var onComplete: (() -> Void)?
+    
+    // MARK: - Screen-Specific ViewModels (injected)
+    let userHistoryViewModel = UserHistoryViewModel()
+    let createNonNegotiableViewModel = CreateNonNegotiableViewModel()
+    let commitmentAgreementViewModel = CommitmentAgreementViewModel()
     
     // MARK: - Computed Properties (from StepConfig)
     var stepLabel: String { currentStep.stepLabel }
@@ -40,7 +42,16 @@ final class OnboardingShellViewModel: ObservableObject {
     
     /// Whether the current step can advance (delegated to engine)
     var canAdvanceCurrentStep: Bool {
-        engine.isStepValid(currentStep, data: data)
+        switch currentStep {
+        case .userHistory:
+            return userHistoryViewModel.isValid
+        case .createNonNegotiable:
+            return createNonNegotiableViewModel.isValid
+        case .commitmentAgreement:
+            return commitmentAgreementViewModel.isValid
+        default:
+            return true
+        }
     }
     
     // MARK: - Initialization
@@ -60,21 +71,18 @@ final class OnboardingShellViewModel: ObservableObject {
     func advanceToNextScreen() {
         guard !isTransitioning else { return }
         
-        // Validate current step via engine
-        let validation = engine.canAdvance(from: currentStep, data: data)
-        
-        switch validation {
-        case .valid:
-            proceedToNext()
-        case .invalid:
+        guard canAdvanceCurrentStep else {
             withAnimation {
-                data.showValidationError = true
+                // Validation error handled by individual ViewModels
             }
+            return
         }
+        
+        proceedToNext()
     }
     
     private func proceedToNext() {
-        guard let next = flow.nextStep(after: currentStep, data: data) else {
+        guard let next = flow.nextStep(after: currentStep, data: buildOnboardingData()) else {
             // Last step - complete onboarding
             onComplete?()
             return
@@ -82,7 +90,6 @@ final class OnboardingShellViewModel: ObservableObject {
         
         isTransitioning = true
         currentStep = next
-        data.showValidationError = false
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
             self?.isTransitioning = false
@@ -95,7 +102,6 @@ final class OnboardingShellViewModel: ObservableObject {
         
         isTransitioning = true
         currentStep = previous
-        data.showValidationError = false
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
             self?.isTransitioning = false
@@ -108,7 +114,6 @@ final class OnboardingShellViewModel: ObservableObject {
         
         isTransitioning = true
         currentStep = .commitmentAgreement
-        data.showValidationError = false
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
             self?.isTransitioning = false
@@ -123,5 +128,21 @@ final class OnboardingShellViewModel: ObservableObject {
     /// Help action
     func showHelp() {
         // Could show a help sheet
+    }
+    
+    // MARK: - Data Assembly
+    
+    /// Builds OnboardingData from screen ViewModels for engine validation
+    private func buildOnboardingData() -> OnboardingData {
+        var data = OnboardingData()
+        data.selectedUserHistoryOption = userHistoryViewModel.exportData()
+        let nonNegData = createNonNegotiableViewModel.exportData()
+        data.nonNegotiableAction = nonNegData.action
+        data.nonNegotiableFrequency = nonNegData.frequency
+        data.nonNegotiableMinimum = nonNegData.minimum
+        let commitmentData = commitmentAgreementViewModel.exportData()
+        data.hasAcceptedTerms = commitmentData.hasAcceptedTerms
+        data.fullName = commitmentData.fullName
+        return data
     }
 }
