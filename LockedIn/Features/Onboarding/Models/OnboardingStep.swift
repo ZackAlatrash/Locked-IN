@@ -17,11 +17,12 @@ enum OnboardingStep: Int, CaseIterable, Identifiable {
     case createNonNegotiable
     case aiRegulator
     case commitmentAgreement
+    case paywall
     
     var id: Int { rawValue }
     
     static var first: OnboardingStep { .identityWarning }
-    static var last: OnboardingStep { .commitmentAgreement }
+    static var last: OnboardingStep { .paywall }
     static var totalCount: Int { allCases.count }
     
     var next: OnboardingStep? {
@@ -118,6 +119,14 @@ struct StepConfig {
             self.showSkipButton = false
             self.ctaTitle = "Sign & Lock In"
             self.ctaSubtitle = "Your commitment begins now"
+            
+        case .paywall:
+            self.showBackButton = false
+            self.showCloseButton = false
+            self.showHelpButton = false
+            self.showSkipButton = false
+            self.ctaTitle = "Subscribe"
+            self.ctaSubtitle = "Unlock your full potential"
         }
     }
 }

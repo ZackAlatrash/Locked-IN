@@ -35,7 +35,7 @@ final class OnboardingShellViewModel: ObservableObject {
     var ctaSubtitle: String { currentStep.config.ctaSubtitle }
     
     var canGoBack: Bool { currentStep.previous != nil }
-    var isLastStep: Bool { currentStep == .commitmentAgreement }
+    var isLastStep: Bool { currentStep == .paywall }
     
     /// Whether the current step can advance (delegated to engine)
     var canAdvanceCurrentStep: Bool {
