@@ -29,20 +29,28 @@ final class OnboardingShellViewModel: ObservableObject {
     // MARK: - Cancellables
     private var cancellables = Set<AnyCancellable>()
     
-    // MARK: - Computed Properties (from StepConfig)
-    var stepLabel: String { currentStep.stepLabel }
-    var totalSteps: Int { OnboardingStep.totalCount }
+    // MARK: - Computed Properties (from PresentationConfig)
+    private var presentationConfig: OnboardingPresentationConfig {
+        OnboardingPresentationConfig.config(for: currentStep)
+    }
     
-    var showBackButton: Bool { currentStep.config.showBackButton }
-    var showCloseButton: Bool { currentStep.config.showCloseButton }
-    var showHelpButton: Bool { currentStep.config.showHelpButton }
-    var showSkipButton: Bool { currentStep.config.showSkipButton }
+    var stepLabel: String { presentationConfig.stepLabel }
+    var totalSteps: Int { OnboardingPresentationConfig.totalSteps }
     
-    var ctaTitle: String { currentStep.config.ctaTitle }
-    var ctaSubtitle: String { currentStep.config.ctaSubtitle }
+    var showBackButton: Bool { presentationConfig.showBackButton }
+    var showCloseButton: Bool { presentationConfig.showCloseButton }
+    var showHelpButton: Bool { presentationConfig.showHelpButton }
+    var showSkipButton: Bool { presentationConfig.showSkipButton }
+    
+    var ctaTitle: String { presentationConfig.ctaTitle }
+    var ctaSubtitle: String { presentationConfig.ctaSubtitle }
+    
+    var currentStepIndex: Int {
+        OnboardingStep.allCases.firstIndex(of: currentStep).map { $0 + 1 } ?? 1
+    }
     
     var canGoBack: Bool { flow.previousStep(before: currentStep) != nil }
-    var isLastStep: Bool { currentStep == flow.lastStep }
+    var isLastStep: Bool { flow.isLastStep(currentStep) }
     
     /// Whether the current step can advance (delegated to engine)
     var canAdvanceCurrentStep: Bool {
@@ -157,12 +165,13 @@ final class OnboardingShellViewModel: ObservableObject {
         }
     }
     
-    /// Skip action - jumps directly to commitment agreement
+    /// Skip action - delegates to flow engine
     func skip() {
         guard !isTransitioning else { return }
+        guard let target = flow.skip(from: currentStep, data: buildOnboardingData()) else { return }
         
         isTransitioning = true
-        currentStep = .commitmentAgreement
+        currentStep = target
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
             self?.isTransitioning = false

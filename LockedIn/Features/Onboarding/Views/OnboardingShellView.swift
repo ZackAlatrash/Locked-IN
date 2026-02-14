@@ -106,7 +106,7 @@ private extension OnboardingShellView {
             // 7-Segment Progress Bar
             ProgressIndicator(
                 totalSteps: shellVM.totalSteps,
-                currentStep: shellVM.currentStep.rawValue
+                currentStep: shellVM.currentStepIndex
             )
             .padding(.horizontal, Theme.Spacing.xl)
             
@@ -201,6 +201,9 @@ private extension OnboardingShellView {
 
 // MARK: - Fixed Footer (CTA Button + Subtitle) — NEVER TRANSITIONS
 private extension OnboardingShellView {
+    // Reserve consistent subtitle space so CTA never shifts between steps.
+    private var ctaSubtitleReservedHeight: CGFloat { 32 }
+
     var footerSection: some View {
         VStack(spacing: 0) {
             // Gradient fade from content to footer
@@ -232,6 +235,9 @@ private extension OnboardingShellView {
                     .tracking(Theme.Typography.letterSpacingWidest * 11)
                     .foregroundColor(Theme.Colors.textMuted)
                     .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: ctaSubtitleReservedHeight, alignment: .top)
             }
             .padding(.horizontal, Theme.Spacing.xl)
             .padding(.bottom, 40)

@@ -62,28 +62,39 @@ struct OnboardingFlow {
         }
     }
     
-    /// Check if a step can be skipped to another step
+    /// Skip to commitment agreement from the current step
     /// - Parameters:
-    ///   - from: Source step
-    ///   - to: Target step
-    /// - Returns: True if skip is allowed
-    func canSkip(from: OnboardingStep, to: OnboardingStep) -> Bool {
-        // Only allow skip to commitment agreement from certain steps
-        switch (from, to) {
-        case (.failureLoop, .commitmentAgreement),
-             (.userHistory, .commitmentAgreement),
-             (.coreDifferentiation, .commitmentAgreement),
-             (.nonNegotiables, .commitmentAgreement),
-             (.createNonNegotiable, .commitmentAgreement):
-            return true
-        default:
-            return false
+    ///   - step: Current onboarding step
+    ///   - data: User's onboarding data (for conditional logic)
+    /// - Returns: The skip target step, or nil if skip not allowed
+    func skip(from step: OnboardingStep, data: OnboardingData) -> OnboardingStep? {
+        // Only allow skip from certain steps
+        switch step {
+        case .failureLoop,
+             .userHistory,
+             .coreDifferentiation,
+             .nonNegotiables,
+             .createNonNegotiable:
+            return .commitmentAgreement
+        case .identityWarning,
+             .aiRegulator,
+             .commitmentAgreement:
+            return nil // Skip not allowed from these steps
         }
     }
     
-    /// Get the first step of onboarding
-    var firstStep: OnboardingStep { .identityWarning }
+    /// Check if skip is allowed from the current step
+    func canSkip(from step: OnboardingStep) -> Bool {
+        skip(from: step, data: OnboardingData()) != nil
+    }
     
-    /// Get the last step of onboarding
-    var lastStep: OnboardingStep { .commitmentAgreement }
+    /// Check if the step is the first step
+    func isFirstStep(_ step: OnboardingStep) -> Bool {
+        step == .identityWarning
+    }
+    
+    /// Check if the step is the last step
+    func isLastStep(_ step: OnboardingStep) -> Bool {
+        step == .commitmentAgreement
+    }
 }

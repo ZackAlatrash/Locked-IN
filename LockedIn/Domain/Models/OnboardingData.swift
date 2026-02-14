@@ -42,17 +42,4 @@ enum ValidationReason {
     case nonNegotiableIncomplete
     case termsNotAccepted
     case nameEmpty
-    
-    var message: String {
-        switch self {
-        case .userHistoryNotSelected:
-            return "Please select an option to continue"
-        case .nonNegotiableIncomplete:
-            return "Please complete all fields"
-        case .termsNotAccepted:
-            return "You must accept the terms to continue"
-        case .nameEmpty:
-            return "Please enter your full name"
-        }
-    }
 }

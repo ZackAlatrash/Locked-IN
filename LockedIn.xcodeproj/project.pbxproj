@@ -11,13 +11,9 @@
 		40A77A492F3CD39800BC4E39 /* ProgressIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */; };
 		40A77A4B2F3CD39800BC4E39 /* LockedInApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A362F3CD39800BC4E39 /* LockedInApp.swift */; };
 		40A77A4C2F3CD39800BC4E39 /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A392F3CD39800BC4E39 /* PrimaryButton.swift */; };
-		40A77A4E2F3CD39800BC4E39 /* IdentityWarningViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A412F3CD39800BC4E39 /* IdentityWarningViewModel.swift */; };
 		40A77A4F2F3CD39800BC4E39 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A3C2F3CD39800BC4E39 /* Theme.swift */; };
 		40A77A542F3CD49800BC4E39 /* Locked_INApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A532F3CD49800BC4E39 /* Locked_INApp.swift */; };
-		40A77A562F3CD55C00BC4E39 /* identity_warning_screen.png in Resources */ = {isa = PBXBuildFile; fileRef = 40A77A552F3CD55C00BC4E39 /* identity_warning_screen.png */; };
-		40A77A582F3CD70400BC4E39 /* Subtle abstract stoic statue of a Roman philosopher.png in Resources */ = {isa = PBXBuildFile; fileRef = 40A77A572F3CD70400BC4E39 /* Subtle abstract stoic statue of a Roman philosopher.png */; };
 		40A77A592F3CD80000BC4E39 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 40A77A5A2F3CD80000BC4E39 /* Assets.xcassets */; };
-		40A77A5E2F3CE00000BC4E39 /* FailureLoopViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A5F2F3CE00000BC4E39 /* FailureLoopViewModel.swift */; };
 		40A77A612F3CF00000BC4E39 /* OnboardingShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A622F3CF00000BC4E39 /* OnboardingShellView.swift */; };
 		40A77A632F3CF00000BC4E39 /* OnboardingShellViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A642F3CF00000BC4E39 /* OnboardingShellViewModel.swift */; };
 		40A77A652F3CF00000BC4E39 /* IdentityWarningContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A662F3CF00000BC4E39 /* IdentityWarningContentView.swift */; };
@@ -39,6 +35,8 @@
 		40A77A8E2F3DB20000BC4E39 /* UserHistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A8A2F3DB20000BC4E39 /* UserHistoryViewModel.swift */; };
 		40A77A8F2F3DB30000BC4E39 /* CreateNonNegotiableViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A8B2F3DB30000BC4E39 /* CreateNonNegotiableViewModel.swift */; };
 		40A77A902F3DB40000BC4E39 /* CommitmentAgreementViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A8C2F3DB40000BC4E39 /* CommitmentAgreementViewModel.swift */; };
+		40A77A912F3DB50000BC4E39 /* OnboardingPresentationConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A922F3DB50000BC4E39 /* OnboardingPresentationConfig.swift */; };
+		40A77A912F3DB50000BC4E39 /* OnboardingPresentationConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A922F3DB50000BC4E39 /* OnboardingPresentationConfig.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -48,7 +46,6 @@
 		40A77A392F3CD39800BC4E39 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressIndicator.swift; sourceTree = "<group>"; };
 		40A77A3C2F3CD39800BC4E39 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		40A77A412F3CD39800BC4E39 /* IdentityWarningViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = IdentityWarningViewModel.swift; path = LockedIn/Features/Onboarding/SubFeatures/IdentityWarning/ViewModels/IdentityWarningViewModel.swift; sourceTree = SOURCE_ROOT; };
 		40A77A532F3CD49800BC4E39 /* Locked_INApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Locked_INApp.swift; sourceTree = "<group>"; };
 		40A77A5A2F3CD80000BC4E39 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = LockedIn/Resources/Assets.xcassets; sourceTree = SOURCE_ROOT; };
 		40A77A782F3D700000BC4E39 /* Fonts/Inter-VariableFont_opsz,wght.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Inter-VariableFont_opsz,wght.ttf"; path = "LockedIn/Resources/Fonts/Inter-VariableFont_opsz,wght.ttf"; sourceTree = SOURCE_ROOT; };
@@ -66,7 +63,6 @@
 		40A77A642F3CF00000BC4E39 /* OnboardingShellViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OnboardingShellViewModel.swift; path = LockedIn/Features/Onboarding/ViewModels/OnboardingShellViewModel.swift; sourceTree = SOURCE_ROOT; };
 		40A77A662F3CF00000BC4E39 /* IdentityWarningContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = IdentityWarningContentView.swift; path = LockedIn/Features/Onboarding/SubFeatures/IdentityWarning/Views/IdentityWarningContentView.swift; sourceTree = SOURCE_ROOT; };
 		40A77A682F3CF00000BC4E39 /* FailureLoopContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FailureLoopContentView.swift; path = LockedIn/Features/Onboarding/SubFeatures/FailureLoop/Views/FailureLoopContentView.swift; sourceTree = SOURCE_ROOT; };
-		40A77A5F2F3CE00000BC4E39 /* FailureLoopViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FailureLoopViewModel.swift; path = LockedIn/Features/Onboarding/SubFeatures/FailureLoop/ViewModels/FailureLoopViewModel.swift; sourceTree = SOURCE_ROOT; };
 		40A77A6A2F3D000000BC4E39 /* CoreDifferentiationContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CoreDifferentiationContentView.swift; path = LockedIn/Features/Onboarding/SubFeatures/CoreDifferentiation/Views/CoreDifferentiationContentView.swift; sourceTree = SOURCE_ROOT; };
 		40A77A6C2F3D100000BC4E39 /* UserHistoryContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = UserHistoryContentView.swift; path = LockedIn/Features/Onboarding/SubFeatures/UserHistory/Views/UserHistoryContentView.swift; sourceTree = SOURCE_ROOT; };
 		40A77A6E2F3D200000BC4E39 /* NonNegotiablesContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NonNegotiablesContentView.swift; path = LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/NonNegotiablesContentView.swift; sourceTree = SOURCE_ROOT; };
@@ -75,6 +71,8 @@
 		40A77A762F3D600000BC4E39 /* CommitmentAgreementContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommitmentAgreementContentView.swift; path = LockedIn/Features/Onboarding/SubFeatures/CommitmentAgreement/Views/CommitmentAgreementContentView.swift; sourceTree = SOURCE_ROOT; };
 		40A77A7A2F3D900000BC4E39 /* PaywallContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PaywallContentView.swift; path = LockedIn/Features/Onboarding/SubFeatures/Paywall/Views/PaywallContentView.swift; sourceTree = SOURCE_ROOT; };
 		40A77A702F3D300000BC4E39 /* NonNegotiableCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NonNegotiableCard.swift; sourceTree = "<group>"; };
+		40A77A922F3DB50000BC4E39 /* OnboardingPresentationConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OnboardingPresentationConfig.swift; path = LockedIn/Features/Onboarding/Models/OnboardingPresentationConfig.swift; sourceTree = SOURCE_ROOT; };
+		40A77A922F3DB50000BC4E39 /* OnboardingPresentationConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OnboardingPresentationConfig.swift; path = LockedIn/Features/Onboarding/Models/OnboardingPresentationConfig.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -152,8 +150,6 @@
 		40A77A422F3CD39800BC4E39 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
-				40A77A412F3CD39800BC4E39 /* IdentityWarningViewModel.swift */,
-				40A77A5F2F3CE00000BC4E39 /* FailureLoopViewModel.swift */,
 				40A77A642F3CF00000BC4E39 /* OnboardingShellViewModel.swift */,
 			);
 			path = ViewModels;
@@ -331,8 +327,6 @@
 				40A77A4B2F3CD39800BC4E39 /* LockedInApp.swift in Sources */,
 				40A77A4C2F3CD39800BC4E39 /* PrimaryButton.swift in Sources */,
 				40A77A542F3CD49800BC4E39 /* Locked_INApp.swift in Sources */,
-				40A77A4E2F3CD39800BC4E39 /* IdentityWarningViewModel.swift in Sources */,
-				40A77A5E2F3CE00000BC4E39 /* FailureLoopViewModel.swift in Sources */,
 				40A77A612F3CF00000BC4E39 /* OnboardingShellView.swift in Sources */,
 				40A77A632F3CF00000BC4E39 /* OnboardingShellViewModel.swift in Sources */,
 				40A77A652F3CF00000BC4E39 /* IdentityWarningContentView.swift in Sources */,
@@ -353,6 +347,7 @@
 				40A77A8E2F3DB20000BC4E39 /* UserHistoryViewModel.swift in Sources */,
 				40A77A8F2F3DB30000BC4E39 /* CreateNonNegotiableViewModel.swift in Sources */,
 				40A77A902F3DB40000BC4E39 /* CommitmentAgreementViewModel.swift in Sources */,
+				40A77A912F3DB50000BC4E39 /* OnboardingPresentationConfig.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
