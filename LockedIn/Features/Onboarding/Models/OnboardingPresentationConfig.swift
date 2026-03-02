@@ -12,8 +12,6 @@ import Foundation
 /// Presentation configuration for each onboarding step
 struct OnboardingPresentationConfig {
     let showBackButton: Bool
-    let showCloseButton: Bool
-    let showHelpButton: Bool
     let showSkipButton: Bool
     let ctaTitle: String
     let ctaSubtitle: String
@@ -31,8 +29,6 @@ struct OnboardingPresentationConfig {
         case .identityWarning:
             return OnboardingPresentationConfig(
                 showBackButton: false,
-                showCloseButton: true,
-                showHelpButton: true,
                 showSkipButton: false,
                 ctaTitle: "I Understand",
                 ctaSubtitle: "Proceeding implies absolute commitment",
@@ -42,8 +38,6 @@ struct OnboardingPresentationConfig {
         case .failureLoop:
             return OnboardingPresentationConfig(
                 showBackButton: true,
-                showCloseButton: false,
-                showHelpButton: false,
                 showSkipButton: true,
                 ctaTitle: "Break the cycle",
                 ctaSubtitle: "Momento Mori",
@@ -53,8 +47,6 @@ struct OnboardingPresentationConfig {
         case .userHistory:
             return OnboardingPresentationConfig(
                 showBackButton: true,
-                showCloseButton: false,
-                showHelpButton: false,
                 showSkipButton: true,
                 ctaTitle: "Continue",
                 ctaSubtitle: "The Dichotomy of Control",
@@ -64,8 +56,6 @@ struct OnboardingPresentationConfig {
         case .coreDifferentiation:
             return OnboardingPresentationConfig(
                 showBackButton: true,
-                showCloseButton: false,
-                showHelpButton: false,
                 showSkipButton: true,
                 ctaTitle: "I Understand",
                 ctaSubtitle: "No man is free who is not master of himself",
@@ -75,30 +65,15 @@ struct OnboardingPresentationConfig {
         case .nonNegotiables:
             return OnboardingPresentationConfig(
                 showBackButton: true,
-                showCloseButton: false,
-                showHelpButton: false,
                 showSkipButton: true,
                 ctaTitle: "Continue",
                 ctaSubtitle: "Locked In: discipline over motivation",
                 stepLabel: stepLabel
             )
             
-        case .createNonNegotiable:
-            return OnboardingPresentationConfig(
-                showBackButton: true,
-                showCloseButton: false,
-                showHelpButton: false,
-                showSkipButton: true,
-                ctaTitle: "Lock in",
-                ctaSubtitle: "",
-                stepLabel: stepLabel
-            )
-            
         case .aiRegulator:
             return OnboardingPresentationConfig(
                 showBackButton: true,
-                showCloseButton: false,
-                showHelpButton: false,
                 showSkipButton: false,
                 ctaTitle: "Accept Regulation",
                 ctaSubtitle: "Authority verified by Locked In protocol",
@@ -108,8 +83,6 @@ struct OnboardingPresentationConfig {
         case .commitmentAgreement:
             return OnboardingPresentationConfig(
                 showBackButton: true,
-                showCloseButton: false,
-                showHelpButton: false,
                 showSkipButton: false,
                 ctaTitle: "Sign & Lock In",
                 ctaSubtitle: "Your commitment begins now",

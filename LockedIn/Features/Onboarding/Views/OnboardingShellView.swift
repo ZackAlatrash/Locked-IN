@@ -5,41 +5,41 @@
 //  Persistent onboarding shell with fixed header (progress bar + icons)
 //  and fixed footer (CTA button + subtitle).
 //  Content views extend FULL SCREEN (behind header/footer).
-//  Only the content area transitions between screens.
 //
 
 import SwiftUI
 
 struct OnboardingShellView: View {
+    @ObservedObject private var coordinator: OnboardingCoordinator
     @StateObject private var shellVM: OnboardingShellViewModel
-    
-    init(onComplete: (() -> Void)? = nil) {
-        _shellVM = StateObject(wrappedValue: OnboardingShellViewModel(onComplete: onComplete))
+
+    @State private var showPaywall = false
+
+    init(coordinator: OnboardingCoordinator, onComplete: (() -> Void)? = nil) {
+        self._coordinator = ObservedObject(wrappedValue: coordinator)
+        _shellVM = StateObject(wrappedValue: OnboardingShellViewModel(coordinator: coordinator, onComplete: onComplete))
     }
-    
+
     var body: some View {
         ZStack {
-            // LAYER 1: Full-screen content (extends behind header/footer)
-            // This is the ONLY thing that transitions
             contentForCurrentStep
                 .ignoresSafeArea()
-            
-            // LAYER 2: Fixed header overlay (always on top, never transitions)
+
             VStack {
                 headerSection
                 Spacer()
             }
-            
-            // LAYER 3: Fixed footer overlay (always on top, never transitions)
+
             VStack {
                 Spacer()
                 footerSection
             }
         }
         .ignoresSafeArea()
-        .fullScreenCover(isPresented: $shellVM.showPaywall) {
+        .fullScreenCover(isPresented: $showPaywall) {
             PaywallContentView(
                 onStartTrial: {
+                    showPaywall = false
                     shellVM.completeOnboarding()
                 },
                 onDismiss: {
@@ -51,41 +51,58 @@ struct OnboardingShellView: View {
     }
 }
 
-// MARK: - Fixed Header (Progress Bar + Icons) — NEVER TRANSITIONS
+private extension OnboardingShellView {
+    var presentationConfig: OnboardingPresentationConfig {
+        OnboardingPresentationConfig.config(for: shellVM.currentStep)
+    }
+
+    var currentStepIndex: Int {
+        let total = OnboardingPresentationConfig.totalSteps
+        guard total > 0 else { return 1 }
+        let index = Int(round(shellVM.progress * Double(total)))
+        return min(max(index, 1), total)
+    }
+
+    func advance() {
+        let result = shellVM.next()
+        switch result {
+        case .advanced:
+            break
+        case .reachedEnd:
+            showPaywall = true
+        case .blocked:
+            break
+        }
+    }
+}
+
 private extension OnboardingShellView {
     var headerSection: some View {
         VStack(spacing: 0) {
-            // Top icons row — fixed-width containers to prevent layout shift
             HStack {
-                // Left icon: fixed 44x44 tap target
                 Button(action: {
-                    if shellVM.showBackButton {
+                    if presentationConfig.showBackButton {
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            shellVM.goToPreviousScreen()
+                            _ = shellVM.back()
                         }
-                    } else {
-                        shellVM.close()
                     }
                 }) {
-                    Image(systemName: shellVM.showBackButton ? "arrow.left" : "xmark")
+                    Image(systemName: presentationConfig.showBackButton ? "arrow.left" : "xmark")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(Theme.Colors.textSubtle)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
-                
+
                 Spacer()
-                
-                // Right icon: fixed 44x44 tap target
+
                 Button(action: {
-                    if shellVM.showSkipButton {
-                        shellVM.skip()
-                    } else {
-                        shellVM.showHelp()
+                    if presentationConfig.showSkipButton {
+                        _ = shellVM.skip()
                     }
                 }) {
                     Group {
-                        if shellVM.showSkipButton {
+                        if presentationConfig.showSkipButton {
                             Text("Skip")
                                 .font(Theme.Typography.bodyMedium())
                                 .fontWeight(.semibold)
@@ -102,16 +119,14 @@ private extension OnboardingShellView {
             .padding(.horizontal, Theme.Spacing.xl)
             .padding(.top, 60)
             .padding(.bottom, Theme.Spacing.xl)
-            
-            // 7-Segment Progress Bar
+
             ProgressIndicator(
-                totalSteps: shellVM.totalSteps,
-                currentStep: shellVM.currentStepIndex
+                totalSteps: OnboardingPresentationConfig.totalSteps,
+                currentStep: currentStepIndex
             )
             .padding(.horizontal, Theme.Spacing.xl)
-            
-            // Step label
-            Text(shellVM.stepLabel.uppercased())
+
+            Text(presentationConfig.stepLabel.uppercased())
                 .font(Theme.Typography.caption())
                 .tracking(Theme.Typography.letterSpacingWidest * 10)
                 .foregroundColor(Theme.Colors.textTertiary)
@@ -120,11 +135,9 @@ private extension OnboardingShellView {
                 .padding(.top, Theme.Spacing.sm)
                 .padding(.bottom, Theme.Spacing.md)
         }
-        // NO background — fully transparent, content shows through
     }
 }
 
-// MARK: - Content Area (FULL SCREEN — Transitions between screens)
 private extension OnboardingShellView {
     @ViewBuilder
     var contentForCurrentStep: some View {
@@ -137,7 +150,7 @@ private extension OnboardingShellView {
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
                     .id(OnboardingStep.identityWarning.id)
-                
+
             case .failureLoop:
                 FailureLoopContentView()
                     .transition(.asymmetric(
@@ -145,15 +158,15 @@ private extension OnboardingShellView {
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
                     .id(OnboardingStep.failureLoop.id)
-                
+
             case .userHistory:
-                UserHistoryContentView(viewModel: shellVM.userHistoryViewModel)
-                .transition(.asymmetric(
-                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                    removal: .move(edge: .leading).combined(with: .opacity)
-                ))
-                .id(OnboardingStep.userHistory.id)
-                
+                UserHistoryContentView(viewModel: coordinator.userHistoryVM)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                    ))
+                    .id(OnboardingStep.userHistory.id)
+
             case .coreDifferentiation:
                 CoreDifferentiationContentView()
                     .transition(.asymmetric(
@@ -161,7 +174,7 @@ private extension OnboardingShellView {
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
                     .id(OnboardingStep.coreDifferentiation.id)
-            
+
             case .nonNegotiables:
                 NonNegotiablesContentView()
                     .transition(.asymmetric(
@@ -169,15 +182,7 @@ private extension OnboardingShellView {
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
                     .id(OnboardingStep.nonNegotiables.id)
-            
-            case .createNonNegotiable:
-                CreateNonNegotiableContentView(viewModel: shellVM.createNonNegotiableViewModel)
-                .transition(.asymmetric(
-                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                    removal: .move(edge: .leading).combined(with: .opacity)
-                ))
-                .id(OnboardingStep.createNonNegotiable.id)
-            
+
             case .aiRegulator:
                 AIRegulatorContentView()
                     .transition(.asymmetric(
@@ -185,28 +190,25 @@ private extension OnboardingShellView {
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
                     .id(OnboardingStep.aiRegulator.id)
-            
+
             case .commitmentAgreement:
-                CommitmentAgreementContentView(viewModel: shellVM.commitmentAgreementViewModel)
-                .transition(.asymmetric(
-                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                    removal: .move(edge: .leading).combined(with: .opacity)
-                ))
-                .id(OnboardingStep.commitmentAgreement.id)
+                CommitmentAgreementContentView(viewModel: coordinator.commitmentAgreementVM)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                    ))
+                    .id(OnboardingStep.commitmentAgreement.id)
             }
         }
         .animation(.easeInOut(duration: 0.35), value: shellVM.currentStep)
     }
 }
 
-// MARK: - Fixed Footer (CTA Button + Subtitle) — NEVER TRANSITIONS
 private extension OnboardingShellView {
-    // Reserve consistent subtitle space so CTA never shifts between steps.
     private var ctaSubtitleReservedHeight: CGFloat { 32 }
 
     var footerSection: some View {
         VStack(spacing: 0) {
-            // Gradient fade from content to footer
             LinearGradient(
                 gradient: Gradient(colors: [
                     Color.clear,
@@ -217,20 +219,19 @@ private extension OnboardingShellView {
                 endPoint: .bottom
             )
             .frame(height: 60)
-            
-            // CTA + subtitle
+
             VStack(spacing: Theme.Spacing.md) {
                 PrimaryButton(
-                    title: shellVM.ctaTitle,
+                    title: presentationConfig.ctaTitle,
                     showArrow: true,
                     action: {
-                        shellVM.advanceToNextScreen()
+                        advance()
                     }
                 )
-                .disabled(shellVM.isTransitioning || !shellVM.canAdvanceCurrentStep)
-                .opacity((shellVM.isTransitioning || !shellVM.canAdvanceCurrentStep) ? 0.5 : 1.0)
-                
-                Text(shellVM.ctaSubtitle.uppercased())
+                .disabled(coordinator.isTransitioning || !coordinator.canAdvanceCurrentStep)
+                .opacity((coordinator.isTransitioning || !coordinator.canAdvanceCurrentStep) ? 0.5 : 1.0)
+
+                Text(presentationConfig.ctaSubtitle.uppercased())
                     .font(Theme.Typography.captionSmall())
                     .tracking(Theme.Typography.letterSpacingWidest * 11)
                     .foregroundColor(Theme.Colors.textMuted)
@@ -246,10 +247,9 @@ private extension OnboardingShellView {
     }
 }
 
-// MARK: - Preview
 struct OnboardingShellView_Previews: PreviewProvider {
     static var previews: some View {
-        OnboardingShellView()
-            .preferredColorScheme(.dark)
+        LockedInAppRoot()
+        .preferredColorScheme(.dark)
     }
 }

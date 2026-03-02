@@ -14,7 +14,6 @@ enum OnboardingStep: CaseIterable, Identifiable, Equatable {
     case userHistory
     case coreDifferentiation
     case nonNegotiables
-    case createNonNegotiable
     case aiRegulator
     case commitmentAgreement
     

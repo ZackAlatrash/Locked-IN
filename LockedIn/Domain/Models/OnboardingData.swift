@@ -8,6 +8,13 @@
 
 import Foundation
 
+enum NonNegotiableFrequency: CaseIterable, Equatable {
+    case daily
+    case weekdays
+    case weekends
+    case custom
+}
+
 /// Container for all onboarding data collected across screens
 struct OnboardingData {
     // MARK: - Screen 3: User History
@@ -15,15 +22,12 @@ struct OnboardingData {
     
     // MARK: - Screen 6: Create Non-Negotiable
     var nonNegotiableAction: String = ""
-    var nonNegotiableFrequency: String = "Every Day"
+    var nonNegotiableFrequency: NonNegotiableFrequency = .daily
     var nonNegotiableMinimum: String = ""
     
     // MARK: - Screen 8: Commitment Agreement
     var hasAcceptedTerms: Bool = false
     var fullName: String = ""
-    
-    // MARK: - Validation State
-    var showValidationError: Bool = false
 }
 
 // MARK: - Validation Results

@@ -28,9 +28,9 @@ protocol AIServiceProtocol {
     /// Generates personalized coaching message based on user history
     /// - Parameters:
     ///   - history: User's past behavior data
-    ///   - currentStep: Current onboarding step
+    ///   - stage: Current workflow stage identifier
     /// - Returns: Personalized coaching text
-    func generateCoachingMessage(for history: UserHistory, at step: OnboardingStep) async throws -> String
+    func generateCoachingMessage(for history: UserHistory, at stage: String) async throws -> String
 }
 
 // MARK: - Result Types
@@ -44,13 +44,13 @@ struct NonNegotiableParseResult {
 
 enum SystemDecision {
     case validationFailed(reason: String)
-    case stepGated(step: OnboardingStep)
+    case stepGated(identifier: String)
     case recommendationGenerated
 }
 
 struct DecisionContext {
-    let userData: OnboardingData
-    let currentStep: OnboardingStep
+    let attributes: [String: String]
+    let stage: String
     let additionalInfo: [String: String]
 }
 
@@ -78,7 +78,7 @@ final class PlaceholderAIService: AIServiceProtocol {
         return "This decision was made based on your onboarding progress."
     }
     
-    func generateCoachingMessage(for history: UserHistory, at step: OnboardingStep) async throws -> String {
+    func generateCoachingMessage(for history: UserHistory, at stage: String) async throws -> String {
         return "Stay committed to your goals."
     }
 }

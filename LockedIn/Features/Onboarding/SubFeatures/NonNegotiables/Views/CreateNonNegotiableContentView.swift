@@ -13,15 +13,6 @@ struct CreateNonNegotiableContentView: View {
     // MARK: - ViewModel (explicit dependency injection)
     @ObservedObject var viewModel: CreateNonNegotiableViewModel
     
-    enum Frequency: String, CaseIterable, Identifiable {
-        case daily = "Every Day"
-        case weekdays = "Weekdays"
-        case weekends = "Weekends"
-        case custom = "Custom Schedule"
-        
-        var id: String { rawValue }
-    }
-    
     var body: some View {
         ZStack {
             // Full-screen background
@@ -122,17 +113,17 @@ private extension CreateNonNegotiableContentView {
                 icon: "calendar",
                 content: {
                     Menu {
-                        ForEach(Frequency.allCases) { freq in
+                        ForEach(NonNegotiableFrequency.allCases, id: \.self) { freq in
                             Button(action: {
-                                viewModel.updateFrequency(freq.rawValue)
+                                viewModel.updateFrequency(freq)
                             }) {
-                                Text(freq.rawValue)
+                                Text(displayLabel(for: freq))
                                     .foregroundColor(Theme.Colors.textPrimary)
                             }
                         }
                     } label: {
                         HStack {
-                            Text(viewModel.frequency)
+                            Text(viewModel.frequencyDisplayText)
                                 .font(.system(size: 20, weight: .medium))
                                 .foregroundColor(Theme.Colors.textPrimary)
                             
@@ -158,6 +149,19 @@ private extension CreateNonNegotiableContentView {
                     }
                 )
 
+        }
+    }
+    
+    func displayLabel(for frequency: NonNegotiableFrequency) -> String {
+        switch frequency {
+        case .daily:
+            return "Every Day"
+        case .weekdays:
+            return "Weekdays"
+        case .weekends:
+            return "Weekends"
+        case .custom:
+            return "Custom Schedule"
         }
     }
     

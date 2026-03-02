@@ -11,6 +11,7 @@ import Foundation
 /// Flow engine for onboarding navigation
 /// Encapsulates all navigation logic with explicit state transitions
 struct OnboardingFlow {
+    var initialStep: OnboardingStep { .identityWarning }
     
     /// Determines the next step based on current step and user data
     /// - Parameters:
@@ -28,8 +29,6 @@ struct OnboardingFlow {
         case .coreDifferentiation:
             return .nonNegotiables
         case .nonNegotiables:
-            return .createNonNegotiable
-        case .createNonNegotiable:
             return .aiRegulator
         case .aiRegulator:
             return .commitmentAgreement
@@ -53,10 +52,8 @@ struct OnboardingFlow {
             return .userHistory
         case .nonNegotiables:
             return .coreDifferentiation
-        case .createNonNegotiable:
-            return .nonNegotiables
         case .aiRegulator:
-            return .createNonNegotiable
+            return .nonNegotiables
         case .commitmentAgreement:
             return .aiRegulator
         }
@@ -73,28 +70,12 @@ struct OnboardingFlow {
         case .failureLoop,
              .userHistory,
              .coreDifferentiation,
-             .nonNegotiables,
-             .createNonNegotiable:
+             .nonNegotiables:
             return .commitmentAgreement
         case .identityWarning,
              .aiRegulator,
              .commitmentAgreement:
             return nil // Skip not allowed from these steps
         }
-    }
-    
-    /// Check if skip is allowed from the current step
-    func canSkip(from step: OnboardingStep) -> Bool {
-        skip(from: step, data: OnboardingData()) != nil
-    }
-    
-    /// Check if the step is the first step
-    func isFirstStep(_ step: OnboardingStep) -> Bool {
-        step == .identityWarning
-    }
-    
-    /// Check if the step is the last step
-    func isLastStep(_ step: OnboardingStep) -> Bool {
-        step == .commitmentAgreement
     }
 }

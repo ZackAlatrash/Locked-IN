@@ -1,0 +1,256 @@
+import Foundation
+
+enum CommitmentSystemError: Error {
+    case capacityExceeded
+    case nonNegotiableNotFound
+    case cannotRemoveDuringLock
+    case systemUnstable
+}
+
+final class CommitmentSystemEngine {
+    private let nonNegotiableEngine: NonNegotiableEngine
+    private let requireCompletionForCleanDay: Bool
+
+    init(
+        nonNegotiableEngine: NonNegotiableEngine,
+        requireCompletionForCleanDay: Bool = true
+    ) {
+        self.nonNegotiableEngine = nonNegotiableEngine
+        self.requireCompletionForCleanDay = requireCompletionForCleanDay
+    }
+
+    func add(_ nn: NonNegotiable, to system: inout CommitmentSystem) throws {
+        guard canCreateNewNonNegotiable(system) else {
+            throw CommitmentSystemError.capacityExceeded
+        }
+
+        system.nonNegotiables.append(nn)
+        enforceCapacityIfNeeded(in: &system)
+    }
+
+    func remove(_ id: UUID, from system: inout CommitmentSystem) throws {
+        guard let index = system.nonNegotiables.firstIndex(where: { $0.id == id }) else {
+            throw CommitmentSystemError.nonNegotiableNotFound
+        }
+
+        let target = system.nonNegotiables[index]
+        switch target.state {
+        case .completed, .retired:
+            system.nonNegotiables.remove(at: index)
+        case .draft, .active, .recovery, .suspended:
+            throw CommitmentSystemError.cannotRemoveDuringLock
+        }
+    }
+
+    func recordCompletion(nnId: UUID, date: Date, in system: inout CommitmentSystem) throws {
+        guard let index = system.nonNegotiables.firstIndex(where: { $0.id == nnId }) else {
+            throw CommitmentSystemError.nonNegotiableNotFound
+        }
+
+        if system.nonNegotiables[index].state == .suspended {
+            throw CommitmentSystemError.systemUnstable
+        }
+
+        var nn = system.nonNegotiables[index]
+        try nonNegotiableEngine.recordCompletion(&nn, at: date)
+        system.nonNegotiables[index] = nn
+
+        enforceCapacityIfNeeded(in: &system)
+    }
+
+    func evaluateWeek(for date: Date, in system: inout CommitmentSystem) {
+        for index in system.nonNegotiables.indices {
+            let state = system.nonNegotiables[index].state
+            if state != .active && state != .recovery {
+                continue
+            }
+
+            var nn = system.nonNegotiables[index]
+            nonNegotiableEngine.evaluateWeekIfNeeded(&nn, weekEnding: date)
+            system.nonNegotiables[index] = nn
+        }
+
+        enforceCapacityIfNeeded(in: &system)
+    }
+
+    func evaluateWeekCatchUp(
+        referenceDate: Date,
+        in system: inout CommitmentSystem,
+        calendar: Calendar = DateRules.isoCalendar
+    ) {
+        guard !system.nonNegotiables.isEmpty else { return }
+
+        let startOfToday = DateRules.startOfDay(referenceDate, calendar: calendar)
+        guard let earliestStart = system.nonNegotiables
+            .map({ DateRules.startOfDay($0.lock.startDate, calendar: calendar) })
+            .min() else {
+            return
+        }
+
+        var weekStart = DateRules.weekInterval(containing: earliestStart, calendar: calendar).start
+        while let weekEndExclusive = calendar.date(byAdding: .day, value: 7, to: weekStart),
+              weekEndExclusive <= startOfToday {
+            let weekEnding = calendar.date(byAdding: .second, value: -1, to: weekEndExclusive) ?? weekEndExclusive
+            evaluateWeek(for: weekEnding, in: &system)
+            weekStart = weekEndExclusive
+        }
+    }
+
+    func evaluateRecoveryDay(
+        referenceDate: Date,
+        in system: inout CommitmentSystem,
+        calendar: Calendar = DateRules.isoCalendar
+    ) {
+        let evaluationDay = DateRules.startOfDay(referenceDate, calendar: calendar)
+
+        if let last = system.lastRecoveryEvaluationDay,
+           calendar.isDate(last, inSameDayAs: evaluationDay) {
+            return
+        }
+
+        guard isSystemInRecovery(system) else {
+            system.recoveryCleanDayStreak = 0
+            system.lastRecoveryEvaluationDay = evaluationDay
+            return
+        }
+
+        if isCleanRecoveryDay(evaluationDay, in: system, calendar: calendar) {
+            system.recoveryCleanDayStreak += 1
+        } else {
+            system.recoveryCleanDayStreak = 0
+        }
+
+        if system.recoveryCleanDayStreak >= 7 {
+            for index in system.nonNegotiables.indices where system.nonNegotiables[index].state == .recovery {
+                system.nonNegotiables[index].state = .active
+            }
+
+            resumeSuspendedIfCapacityAllows(in: &system)
+            system.recoveryCleanDayStreak = 0
+        }
+
+        system.lastRecoveryEvaluationDay = evaluationDay
+    }
+
+    func evaluateDailyCompliance(currentDate: Date, in system: inout CommitmentSystem) {
+        for index in system.nonNegotiables.indices {
+            let state = system.nonNegotiables[index].state
+            if state != .active && state != .recovery {
+                continue
+            }
+
+            var nn = system.nonNegotiables[index]
+            nonNegotiableEngine.evaluateDailyComplianceIfNeeded(&nn, at: currentDate)
+            system.nonNegotiables[index] = nn
+        }
+
+        enforceCapacityIfNeeded(in: &system)
+    }
+
+    func advanceWindows(currentDate: Date, in system: inout CommitmentSystem) {
+        for index in system.nonNegotiables.indices {
+            let state = system.nonNegotiables[index].state
+            if state != .active && state != .recovery {
+                continue
+            }
+
+            var nn = system.nonNegotiables[index]
+            nonNegotiableEngine.advanceWindowIfNeeded(&nn, currentDate: currentDate)
+            system.nonNegotiables[index] = nn
+        }
+    }
+
+    func isSystemStable(_ system: CommitmentSystem) -> Bool {
+        if system.nonNegotiables.contains(where: { $0.state == .recovery }) {
+            return false
+        }
+
+        for nn in system.nonNegotiables {
+            guard let currentWindow = nn.windows.last else { continue }
+            if currentWindow.weeklyViolationCount >= 3 {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    func canCreateNewNonNegotiable(_ system: CommitmentSystem) -> Bool {
+        let activeCount = system.activeNonNegotiables.count
+        guard activeCount < system.allowedCapacity else { return false }
+        return isSystemStable(system)
+    }
+
+    // Capacity is reduced to 2 when any NN is recovering.
+    // If active count exceeds this reduced capacity, suspend the most recently created active NN.
+    private func enforceCapacityIfNeeded(in system: inout CommitmentSystem) {
+        let allowed = system.allowedCapacity
+
+        while constrainedCount(system) > allowed {
+            guard let indexToSuspend = system.nonNegotiables
+                .enumerated()
+                .filter({ $0.element.state == .active })
+                .max(by: { lhs, rhs in
+                    lhs.element.createdAt < rhs.element.createdAt
+                })?
+                .offset else {
+                break
+            }
+
+            system.nonNegotiables[indexToSuspend].state = .suspended
+        }
+    }
+
+    private func constrainedCount(_ system: CommitmentSystem) -> Int {
+        system.nonNegotiables.filter { nn in
+            nn.state == .active || nn.state == .recovery
+        }.count
+    }
+
+    private func isSystemInRecovery(_ system: CommitmentSystem) -> Bool {
+        system.nonNegotiables.contains(where: { $0.state == .recovery })
+    }
+
+    private func isCleanRecoveryDay(
+        _ day: Date,
+        in system: CommitmentSystem,
+        calendar: Calendar
+    ) -> Bool {
+        guard let nextDay = calendar.date(byAdding: .day, value: 1, to: day) else {
+            return false
+        }
+
+        let hasViolationToday = system.nonNegotiables
+            .flatMap(\.violations)
+            .contains { $0.date >= day && $0.date < nextDay }
+        if hasViolationToday {
+            return false
+        }
+
+        if !requireCompletionForCleanDay {
+            return true
+        }
+
+        let hasCompletionToday = system.nonNegotiables
+            .filter { $0.state == .active || $0.state == .recovery }
+            .flatMap(\.completions)
+            .contains { $0.date >= day && $0.date < nextDay }
+
+        return hasCompletionToday
+    }
+
+    private func resumeSuspendedIfCapacityAllows(in system: inout CommitmentSystem) {
+        let suspendedByCreatedAt = system.nonNegotiables
+            .enumerated()
+            .filter { $0.element.state == .suspended }
+            .sorted { $0.element.createdAt < $1.element.createdAt }
+            .map(\.offset)
+
+        for index in suspendedByCreatedAt {
+            guard constrainedCount(system) < system.allowedCapacity else {
+                break
+            }
+            system.nonNegotiables[index].state = .active
+        }
+    }
+}

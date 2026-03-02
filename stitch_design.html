@@ -1,129 +1,236 @@
 <!DOCTYPE html>
-
-<html class="dark" lang="en"><head>
+<html lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Paywall Conversion Screen - Locked In</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "primary": "#ea2a33",
-            "background-light": "#f8f6f6",
-            "background-dark": "#0a0505",
-          },
-          fontFamily: {
-            "display": ["Inter", "sans-serif"]
-          },
-          borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
-        },
-      },
+<title>Commitment Contract V2</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#06b6d4", // Neon Cyan
+                        "background-light": "#f3f4f6",
+                        "background-dark": "#000000",
+                        "card-dark": "#1c1c1e", // Apple Fitness-like card bg
+                        "card-light": "#ffffff",
+                        "text-secondary-dark": "#9ca3af",
+                        "text-secondary-light": "#6b7280",
+                        "warning": "#f59e0b", // Amber for warning/impact
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        'xl': '1rem',
+                        '2xl': '1.25rem',
+                    },
+                    boxShadow: {
+                        'glow': '0 0 15px rgba(6, 182, 212, 0.3)',
+                        'glow-warning': '0 0 10px rgba(245, 158, 11, 0.3)',
+                    }
+                },
+            },
+        };
+    </script>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .no-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .no-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .glass-panel {
+                @apply bg-card-light/80 dark:bg-card-dark/80 backdrop-blur-md border border-gray-200 dark:border-white/10;
+            }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
     }
-  </script>
-<style>.glass-effect {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.1)
-    }
-.liquid-shadow {
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8)
-    }
-.bg-dashboard-preview {
-    background-image: linear-gradient(rgba(10, 5, 5, 0.6), rgba(10, 5, 5, 0.95)), url(https://lh3.googleusercontent.com/aida-public/AB6AXuC0BA5-ny6-rcoBwgLrlIxyNg4a0KPdP24btBmymudeaIykgpF9884urDqqcT8xwo7hiHKWw_Q1JVTP6ZLUkevGseUsUS7V_8fYAiTe4qwGzvCebHMEX8yjvYNj-gErnHgmpKepAkMGed9soeyyBV_4ILas63cZgCzp5XfIXp0vCNgx9kENrjbHdaqA40RbqW6dQcNC12_W6chWWwPMrqcF1p3_sqeOW6grND4lINucvyk7x6G6eQ7XE8rvqTPHi4B-z8K3bkHRXTNb);
-    background-size: cover;
-    background-position: center
-    }</style>
+  </style>
 <style>
     body {
       min-height: max(884px, 100dvh);
     }
   </style>
   </head>
-<body class="bg-background-light dark:bg-background-dark font-display text-white selection:bg-primary/30">
-<div class="relative flex h-screen w-full flex-col overflow-hidden bg-dashboard-preview" data-alt="Dark dashboard interface with analytical charts">
-<!-- Top Bar -->
-<div class="flex items-center justify-between p-6 pt-12">
-<div class="text-white/40 hover:text-white transition-colors cursor-pointer">
-<span class="material-symbols-outlined text-[28px]">close</span>
-</div>
-<div class="cursor-pointer">
-<p class="text-white/40 hover:text-white text-sm font-bold leading-normal tracking-wider uppercase transition-colors">Restore</p>
+<body class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 font-sans antialiased min-h-screen pb-24 selection:bg-primary selection:text-black">
+<div class="sticky top-0 z-50 bg-background-light dark:bg-background-dark pt-2 pb-2 px-6 flex justify-between items-center text-sm font-medium">
+<span>9:41</span>
+<div class="flex items-center space-x-2">
+<span class="material-icons text-base">signal_cellular_alt</span>
+<span class="material-icons text-base">wifi</span>
+<span class="material-icons text-base">battery_full</span>
 </div>
 </div>
-<!-- Main Content Area -->
-<div class="flex flex-1 flex-col justify-end px-6 pb-12">
-<!-- Liquid Glass Card -->
-<div class="glass-effect liquid-shadow rounded-xl p-8 flex flex-col gap-6 w-full max-w-[480px] mx-auto">
-<!-- Header Section -->
-<div class="flex flex-col gap-3">
-<div class="flex items-center gap-2 text-primary">
-<span class="material-symbols-outlined text-sm">workspace_premium</span>
-<span class="text-[10px] font-black uppercase tracking-[0.2em]">Full System Access</span>
+<header class="px-6 py-4 flex justify-between items-end mb-2">
+<div>
+<h1 class="text-3xl font-extrabold tracking-tight">New Protocol</h1>
+<p class="text-primary font-mono text-xs tracking-widest uppercase mt-1">Non-Negotiable</p>
 </div>
-<h1 class="text-white tracking-tight text-3xl font-extrabold leading-tight">
-            Discipline requires commitment.
-          </h1>
-<p class="text-white/60 text-base font-normal leading-relaxed">
-            Locked In is designed for long-term use. Start a 7-day free trial to experience the full system.
-          </p>
+<div class="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center overflow-hidden border border-gray-300 dark:border-gray-700">
+<span class="material-icons text-gray-500">person</span>
 </div>
-<!-- Features List -->
-<div class="flex flex-col gap-4 py-2 border-y border-white/5">
-<div class="flex items-center gap-3">
-<div class="flex size-6 items-center justify-center rounded-full bg-primary/20 text-primary">
-<span class="material-symbols-outlined text-[16px] font-bold">check</span>
+</header>
+<main class="px-5 space-y-4">
+<section class="rounded-2xl bg-card-light dark:bg-card-dark p-5 shadow-sm border border-gray-100 dark:border-white/5">
+<div class="flex items-center justify-between mb-2">
+<label class="text-sm font-semibold text-text-secondary-light dark:text-text-secondary-dark uppercase tracking-wide">Protocol Name</label>
+<span class="material-icons text-primary text-sm">edit</span>
 </div>
-<span class="text-sm font-medium text-white/90">Unlimited deep work protocols</span>
+<input class="w-full bg-transparent border-none text-2xl font-bold p-0 focus:ring-0 placeholder-gray-500 text-gray-900 dark:text-white" type="text" value="Deep Work: Monk Mode"/>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark mt-1">Focus blocks with zero interruptions.</p>
+</section>
+<section class="rounded-2xl bg-card-light dark:bg-card-dark p-5 shadow-sm border border-gray-100 dark:border-white/5 relative overflow-hidden">
+<div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-5 mb-5">
+<div>
+<h3 class="font-bold text-lg">Strict Mode</h3>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Penalties apply for missed sessions</p>
 </div>
-<div class="flex items-center gap-3">
-<div class="flex size-6 items-center justify-center rounded-full bg-primary/20 text-primary">
-<span class="material-symbols-outlined text-[16px] font-bold">check</span>
+<button class="relative inline-flex h-7 w-12 items-center rounded-full bg-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:ring-offset-background-dark">
+<span class="translate-x-6 inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+</button>
 </div>
-<span class="text-sm font-medium text-white/90">Advanced biometric habit security</span>
+<div class="flex items-center justify-between">
+<div>
+<h3 class="font-bold text-lg">Frequency</h3>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Sessions per week</p>
 </div>
-<div class="flex items-center gap-3">
-<div class="flex size-6 items-center justify-center rounded-full bg-primary/20 text-primary">
-<span class="material-symbols-outlined text-[16px] font-bold">check</span>
-</div>
-<span class="text-sm font-medium text-white/90">Full data visualization &amp; stoic insights</span>
-</div>
-</div>
-<!-- CTA Section -->
-<div class="flex flex-col gap-4">
-<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-lg text-lg transition-all active:scale-[0.98] shadow-lg shadow-primary/20">
-            Start 7-Day Trial
-          </button>
-<div class="flex flex-col items-center gap-1">
-<p class="text-white/40 text-[11px] font-medium tracking-wide">
-              7-day free trial, then $59.99/year. Cancel anytime.
-            </p>
-<p class="text-white/40 text-[10px] uppercase tracking-widest mt-2">
-              Subscription required
-            </p>
+<div class="flex items-center bg-gray-100 dark:bg-black rounded-lg p-1 space-x-4">
+<button class="w-8 h-8 flex items-center justify-center rounded-md bg-white dark:bg-gray-800 shadow-sm text-gray-600 dark:text-gray-300 active:scale-95 transition-transform">
+<span class="material-icons text-base">remove</span>
+</button>
+<span class="font-mono text-xl font-bold w-4 text-center">5</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-md bg-primary text-black shadow-glow shadow-sm active:scale-95 transition-transform">
+<span class="material-icons text-base">add</span>
+</button>
 </div>
 </div>
+</section>
+<div class="grid grid-cols-1 gap-4">
+<section class="rounded-2xl bg-card-light dark:bg-card-dark p-5 shadow-sm border border-gray-100 dark:border-white/5">
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-sm font-semibold text-text-secondary-light dark:text-text-secondary-dark uppercase tracking-wide">Commitment Period</h3>
+<span class="material-icons text-gray-400 text-sm">info</span>
 </div>
-<!-- Footer / Exclusionary Link -->
-<div class="mt-8 flex flex-col items-center gap-6">
-<a class="text-white/30 hover:text-white/60 text-sm font-medium transition-all underline underline-offset-4 decoration-white/10" href="#">
-          This app is not for everyone.
-        </a>
-<div class="flex items-center gap-6 text-[10px] font-bold uppercase tracking-widest text-white/20">
-<a class="hover:text-white/40 transition-colors" href="#">Privacy</a>
-<div class="size-1 bg-white/10 rounded-full"></div>
-<a class="hover:text-white/40 transition-colors" href="#">Terms</a>
+<div class="space-y-3">
+<label class="group flex items-center justify-between p-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-black/40 cursor-pointer hover:border-primary/50 transition-colors">
+<div class="flex items-center">
+<div class="h-5 w-5 rounded-full border-2 border-gray-400 group-hover:border-primary mr-3 flex items-center justify-center">
+<div class="h-2.5 w-2.5 rounded-full bg-primary opacity-0"></div>
+</div>
+<span class="font-semibold text-gray-700 dark:text-gray-300">Sprint</span>
+</div>
+<span class="font-mono text-sm text-text-secondary-light dark:text-text-secondary-dark">14 Days</span>
+<input class="hidden" name="period" type="radio"/>
+</label>
+<label class="group flex items-center justify-between p-3 rounded-xl border-2 border-primary bg-primary/5 dark:bg-primary/10 cursor-pointer shadow-glow">
+<div class="flex items-center">
+<div class="h-5 w-5 rounded-full border-2 border-primary mr-3 flex items-center justify-center">
+<div class="h-2.5 w-2.5 rounded-full bg-primary"></div>
+</div>
+<span class="font-bold text-gray-900 dark:text-white">Habit Formation</span>
+</div>
+<span class="font-mono text-sm font-bold text-primary">28 Days</span>
+<input checked="" class="hidden" name="period" type="radio"/>
+</label>
+<label class="group flex items-center justify-between p-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-black/40 cursor-pointer hover:border-primary/50 transition-colors">
+<div class="flex items-center">
+<div class="h-5 w-5 rounded-full border-2 border-gray-400 group-hover:border-primary mr-3 flex items-center justify-center">
+<div class="h-2.5 w-2.5 rounded-full bg-primary opacity-0"></div>
+</div>
+<span class="font-semibold text-gray-700 dark:text-gray-300">Lifestyle</span>
+</div>
+<span class="font-mono text-sm text-text-secondary-light dark:text-text-secondary-dark">60 Days</span>
+<input class="hidden" name="period" type="radio"/>
+</label>
+<label class="group flex items-center justify-between p-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-black/40 cursor-pointer hover:border-primary/50 transition-colors">
+<div class="flex items-center">
+<div class="h-5 w-5 rounded-full border-2 border-gray-400 group-hover:border-primary mr-3 flex items-center justify-center">
+<div class="h-2.5 w-2.5 rounded-full bg-primary opacity-0"></div>
+</div>
+<span class="font-semibold text-gray-700 dark:text-gray-300">Mastery</span>
+</div>
+<span class="font-mono text-sm text-text-secondary-light dark:text-text-secondary-dark">90 Days</span>
+<input class="hidden" name="period" type="radio"/>
+</label>
+</div>
+</section>
+</div>
+<section class="rounded-2xl bg-card-light dark:bg-card-dark p-6 shadow-sm border border-gray-100 dark:border-white/5 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-icons text-6xl text-warning">analytics</span>
+</div>
+<div class="flex justify-between items-start mb-6 relative z-10">
+<div>
+<h3 class="text-sm font-bold uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark mb-1">System Impact</h3>
+<p class="text-xs text-white/60">Load Capacity Analysis</p>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-3xl font-mono font-bold text-primary">94</span>
+<span class="text-[10px] uppercase font-bold text-primary tracking-widest">Reliability Score</span>
 </div>
 </div>
+<div class="grid grid-cols-3 gap-2 mb-4 relative z-10">
+<div class="h-12 bg-gray-100 dark:bg-black/40 rounded-lg border border-gray-200 dark:border-white/10 p-1 flex flex-col justify-end">
+<div class="h-full w-full bg-primary/20 rounded flex items-end justify-center pb-1">
+<div class="w-full mx-1 h-[80%] bg-primary rounded-sm shadow-[0_0_8px_rgba(6,182,212,0.4)]"></div>
 </div>
-<!-- Screen Decorative Elements -->
-<div class="absolute top-1/4 -right-20 w-64 h-64 bg-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
-<div class="absolute bottom-1/4 -left-20 w-64 h-64 bg-primary/5 blur-[100px] rounded-full pointer-events-none"></div>
+<span class="text-[9px] text-center text-text-secondary-light dark:text-text-secondary-dark font-mono mt-1">CORE</span>
+</div>
+<div class="h-12 bg-gray-100 dark:bg-black/40 rounded-lg border border-gray-200 dark:border-white/10 p-1 flex flex-col justify-end">
+<div class="h-full w-full bg-primary/20 rounded flex items-end justify-center pb-1">
+<div class="w-full mx-1 h-[60%] bg-primary rounded-sm shadow-[0_0_8px_rgba(6,182,212,0.4)]"></div>
+</div>
+<span class="text-[9px] text-center text-text-secondary-light dark:text-text-secondary-dark font-mono mt-1">MAINT</span>
+</div>
+<div class="h-12 bg-gray-100 dark:bg-black/40 rounded-lg border border-warning/30 p-1 flex flex-col justify-end relative overflow-hidden">
+<div class="absolute inset-0 bg-warning/5 animate-pulse"></div>
+<div class="h-full w-full bg-warning/10 rounded flex items-end justify-center pb-1 relative z-10">
+<div class="w-full mx-1 h-[45%] bg-warning rounded-sm shadow-[0_0_8px_rgba(245,158,11,0.5)] border-t border-warning/50"></div>
+</div>
+<span class="text-[9px] text-center text-warning font-mono mt-1 font-bold">NEW</span>
+</div>
+</div>
+<div class="flex items-start space-x-3 bg-gray-50 dark:bg-white/5 rounded-xl p-3 border border-gray-100 dark:border-white/5 relative z-10">
+<span class="material-icons text-warning text-sm mt-0.5">warning_amber</span>
+<p class="text-xs leading-relaxed text-gray-600 dark:text-gray-300">
+<span class="font-bold text-white">System Load Warning:</span> New protocol will increase daily system demand by <span class="text-warning font-mono font-bold">15%</span>. Safety margin reduced.
+        </p>
+</div>
+</section>
+<div class="h-8"></div>
+</main>
+<div class="fixed bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-background-light via-background-light to-transparent dark:from-background-dark dark:via-background-dark dark:to-transparent pt-10 pb-8 z-40">
+<button class="w-full bg-primary text-black font-extrabold text-lg py-4 rounded-2xl shadow-glow active:scale-[0.98] transition-transform uppercase tracking-wider flex items-center justify-center space-x-2">
+<span class="material-icons text-xl">lock</span>
+<span>Lock Protocol</span>
+</button>
+<div class="mt-6 mx-auto bg-card-light/90 dark:bg-[#1c1c1e]/90 backdrop-blur-xl rounded-full px-6 py-3 flex justify-between items-center max-w-[320px] shadow-lg border border-gray-200 dark:border-white/10">
+<div class="flex flex-col items-center gap-1 opacity-50">
+<span class="material-icons text-xl">grid_view</span>
+<span class="text-[10px] font-medium">Dashboard</span>
+</div>
+<div class="flex flex-col items-center gap-1 text-primary">
+<div class="bg-primary/20 p-1 rounded-full">
+<span class="material-icons text-xl">add_circle</span>
+</div>
+<span class="text-[10px] font-bold">Create</span>
+</div>
+<div class="flex flex-col items-center gap-1 opacity-50">
+<span class="material-icons text-xl">leaderboard</span>
+<span class="text-[10px] font-medium">Stats</span>
+</div>
+</div>
 </div>
 </body></html>

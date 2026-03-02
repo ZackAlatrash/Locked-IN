@@ -1,2 +1,36 @@
+# macOS
+.DS_Store
+
+# Local environment / secrets
+.env
+.env.*
+
+# Tooling
 blackbox_mcp_settings.json
-.blackboxrules
+
+# Xcode / Swift
+.derivedData/
+DerivedData/
+build/
+*.xcworkspace/xcuserdata/
+*.xcuserdatad/
+*.xcuserstate
+xcuserdata/
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+
+# CocoaPods / Carthage
+Pods/
+Carthage/Build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# Generated local exports
+stitch_exports/
