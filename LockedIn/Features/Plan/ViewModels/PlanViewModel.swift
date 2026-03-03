@@ -89,6 +89,27 @@ final class PlanViewModel: ObservableObject {
         planStore?.protocolTitle(for: id) ?? "Protocol"
     }
 
+    func queueItem(for protocolId: UUID) -> PlanQueueItem? {
+        queueItems.first(where: { $0.protocolId == protocolId })
+    }
+
+    func allocationDisplay(for allocationId: UUID) -> PlanAllocationDisplay? {
+        currentWeekDays
+            .flatMap(\.slots)
+            .flatMap(\.allocations)
+            .first(where: { $0.id == allocationId })
+    }
+
+    func validateProtocolPlacement(protocolId: UUID, day: Date, slot: PlanSlot) -> PlanPlacementValidation {
+        planStore?.validateProtocolPlacement(protocolId: protocolId, day: day, slot: slot)
+            ?? .blocked(message: "Plan system unavailable.")
+    }
+
+    func validateMove(allocationId: UUID, day: Date, slot: PlanSlot) -> PlanPlacementValidation {
+        planStore?.validateMove(allocationId: allocationId, day: day, slot: slot)
+            ?? .blocked(message: "Plan system unavailable.")
+    }
+
     func selectProtocol(id: UUID) {
         planStore?.selectProtocol(id)
     }
@@ -97,11 +118,13 @@ final class PlanViewModel: ObservableObject {
         planStore?.clearWarning()
     }
 
-    func placeSelectedProtocol(day: Date, slot: PlanSlot) {
+    @discardableResult
+    func placeSelectedProtocol(day: Date, slot: PlanSlot) -> PlanMutation? {
         planStore?.placeSelectedProtocol(day: day, slot: slot)
     }
 
-    func placeProtocol(protocolId: UUID, day: Date, slot: PlanSlot) {
+    @discardableResult
+    func placeProtocol(protocolId: UUID, day: Date, slot: PlanSlot) -> PlanMutation? {
         planStore?.placeProtocol(protocolId: protocolId, day: day, slot: slot)
     }
 
@@ -114,8 +137,10 @@ final class PlanViewModel: ObservableObject {
         selectedAllocation = nil
     }
 
-    func moveAllocation(allocationId: UUID, to day: Date, slot: PlanSlot) {
-        planStore?.moveAllocation(id: allocationId, newDay: day, newSlot: slot)
+    @discardableResult
+    func moveAllocation(allocationId: UUID, to day: Date, slot: PlanSlot) -> PlanMutation? {
+        let mutation = planStore?.moveAllocation(id: allocationId, newDay: day, newSlot: slot)
         selectedAllocation = nil
+        return mutation
     }
 }

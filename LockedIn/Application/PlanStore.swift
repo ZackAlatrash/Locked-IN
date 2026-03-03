@@ -53,6 +53,43 @@ final class PlanStore: ObservableObject {
         allAllocations.first(where: { $0.id == id })
     }
 
+    func validateProtocolPlacement(protocolId: UUID, day: Date, slot: PlanSlot) -> PlanPlacementValidation {
+        guard let descriptor = protocolsById[protocolId] else {
+            return .blocked(message: "Protocol is no longer available.")
+        }
+
+        return validatePlacement(
+            descriptor: descriptor,
+            protocolId: protocolId,
+            day: day,
+            slot: slot,
+            requiredMinutes: descriptor.estimatedDurationMinutes,
+            excludingAllocationId: nil,
+            requiresQueueAvailability: true
+        )
+    }
+
+    func validateMove(allocationId: UUID, day: Date, slot: PlanSlot) -> PlanPlacementValidation {
+        guard let allocation = allAllocations.first(where: { $0.id == allocationId }) else {
+            return .blocked(message: "Allocation no longer exists.")
+        }
+
+        guard let descriptor = protocolsById[allocation.protocolId] else {
+            return .blocked(message: "Protocol is no longer available.")
+        }
+
+        let duration = allocation.durationMinutes ?? descriptor.estimatedDurationMinutes
+        return validatePlacement(
+            descriptor: descriptor,
+            protocolId: allocation.protocolId,
+            day: day,
+            slot: slot,
+            requiredMinutes: duration,
+            excludingAllocationId: allocationId,
+            requiresQueueAvailability: false
+        )
+    }
+
     func selectProtocol(_ id: UUID?) {
         if selectedQueueProtocolId == id {
             selectedQueueProtocolId = nil
@@ -89,55 +126,37 @@ final class PlanStore: ObservableObject {
         }
     }
 
-    func placeSelectedProtocol(day: Date, slot: PlanSlot) {
+    @discardableResult
+    func placeSelectedProtocol(day: Date, slot: PlanSlot) -> PlanMutation? {
         guard let selectedQueueProtocolId else {
             setWarning("Select a protocol first.")
-            return
+            return nil
         }
-        placeProtocol(protocolId: selectedQueueProtocolId, day: day, slot: slot)
+        return placeProtocol(protocolId: selectedQueueProtocolId, day: day, slot: slot)
     }
 
-    func placeProtocol(protocolId: UUID, day: Date, slot: PlanSlot) {
+    @discardableResult
+    func placeProtocol(protocolId: UUID, day: Date, slot: PlanSlot) -> PlanMutation? {
         guard let descriptor = protocolsById[protocolId] else {
             setWarning("Protocol is no longer available.")
-            return
+            return nil
         }
 
-        guard let queueItem = queueItems.first(where: { $0.protocolId == protocolId }) else {
-            setWarning("No remaining sessions for this protocol this week.")
-            return
-        }
-
-        if queueItem.isDisabled {
-            setWarning("Suspended protocol cannot be planned right now.")
-            return
+        let validation = validatePlacement(
+            descriptor: descriptor,
+            protocolId: protocolId,
+            day: day,
+            slot: slot,
+            requiredMinutes: descriptor.estimatedDurationMinutes,
+            excludingAllocationId: nil,
+            requiresQueueAvailability: true
+        )
+        if case .blocked(let message) = validation {
+            setWarning(message)
+            return nil
         }
 
         let dayStart = DateRules.startOfDay(day, calendar: calendar)
-        if descriptor.mode == .daily {
-            let todayStart = DateRules.startOfDay(lastReferenceDate, calendar: calendar)
-            let tomorrowStart = DateRules.addingDays(1, to: todayStart, calendar: calendar)
-            if dayStart != todayStart && dayStart != tomorrowStart {
-                setWarning("Daily protocols can only be planned for today or tomorrow.")
-                return
-            }
-            if hasDailyPlanned(protocolId: protocolId, day: dayStart, excluding: nil) {
-                setWarning("Daily protocol already planned for this day.")
-                return
-            }
-        }
-
-        let snapshot = slotSnapshot(day: dayStart, slot: slot, excluding: nil)
-        if snapshot.freeMinutes < queueItem.requiredMinutes {
-            setWarning("Insufficient free minutes in this slot.")
-            return
-        }
-
-        if shouldApplyRecoveryStrictness(for: descriptor), plannedCount(on: dayStart, excluding: nil) >= 2 {
-            setWarning("Recovery capacity reached for this day.")
-            return
-        }
-
         let allocation = PlanAllocation(
             id: UUID(),
             protocolId: protocolId,
@@ -152,44 +171,42 @@ final class PlanStore: ObservableObject {
 
         allAllocations.append(allocation)
         saveAndRefresh()
+        return .placed(
+            allocationId: allocation.id,
+            protocolTitle: descriptor.title,
+            day: dayStart,
+            slot: slot
+        )
     }
 
-    func moveAllocation(id: UUID, newDay: Date, newSlot: PlanSlot) {
-        guard let index = allAllocations.firstIndex(where: { $0.id == id }) else { return }
+    @discardableResult
+    func moveAllocation(id: UUID, newDay: Date, newSlot: PlanSlot) -> PlanMutation? {
+        guard let index = allAllocations.firstIndex(where: { $0.id == id }) else { return nil }
         let allocation = allAllocations[index]
 
         guard let descriptor = protocolsById[allocation.protocolId] else {
             setWarning("Protocol is no longer available.")
-            return
+            return nil
         }
 
         let newDayStart = DateRules.startOfDay(newDay, calendar: calendar)
-
-        if descriptor.mode == .daily {
-            let todayStart = DateRules.startOfDay(lastReferenceDate, calendar: calendar)
-            let tomorrowStart = DateRules.addingDays(1, to: todayStart, calendar: calendar)
-            if newDayStart != todayStart && newDayStart != tomorrowStart {
-                setWarning("Daily protocols can only be planned for today or tomorrow.")
-                return
-            }
-            if hasDailyPlanned(protocolId: allocation.protocolId, day: newDayStart, excluding: id) {
-                setWarning("Daily protocol already planned for this day.")
-                return
-            }
-        }
-
         let duration = allocation.durationMinutes ?? descriptor.estimatedDurationMinutes
-        let snapshot = slotSnapshot(day: newDayStart, slot: newSlot, excluding: id)
-        if snapshot.freeMinutes < duration {
-            setWarning("Insufficient free minutes in this slot.")
-            return
+        let validation = validatePlacement(
+            descriptor: descriptor,
+            protocolId: allocation.protocolId,
+            day: newDayStart,
+            slot: newSlot,
+            requiredMinutes: duration,
+            excludingAllocationId: id,
+            requiresQueueAvailability: false
+        )
+        if case .blocked(let message) = validation {
+            setWarning(message)
+            return nil
         }
 
-        if shouldApplyRecoveryStrictness(for: descriptor), plannedCount(on: newDayStart, excluding: id) >= 2 {
-            setWarning("Recovery capacity reached for this day.")
-            return
-        }
-
+        let previousDay = allocation.day
+        let previousSlot = allocation.slot
         allAllocations[index] = PlanAllocation(
             id: allocation.id,
             protocolId: allocation.protocolId,
@@ -203,6 +220,14 @@ final class PlanStore: ObservableObject {
         )
 
         saveAndRefresh()
+        return .moved(
+            allocationId: allocation.id,
+            protocolTitle: descriptor.title,
+            fromDay: previousDay,
+            fromSlot: previousSlot,
+            toDay: newDayStart,
+            toSlot: newSlot
+        )
     }
 
     func removeAllocation(id: UUID) {
@@ -222,7 +247,7 @@ private extension PlanStore {
         let tone: PlanTone
         let icon: String
         let completionsThisWeek: Int
-        let completedToday: Bool
+        let completionsTodayCount: Int
     }
 
     struct PlanSlotSnapshot {
@@ -231,6 +256,8 @@ private extension PlanStore {
         let freeCapacityBeforePlanning: Int
         let freeMinutes: Int
     }
+
+    var dailyPlacementsPerDayTarget: Int { 1 }
 
     func buildProtocolDescriptors(from system: CommitmentSystem, referenceDate: Date) {
         let managed = system.nonNegotiables.filter {
@@ -244,9 +271,9 @@ private extension PlanStore {
         for (index, nn) in managed.enumerated() {
             let tone = PlanTone.allCases[index % PlanTone.allCases.count]
             let completionsThisWeek = nn.completions.filter { $0.weekId == weekId }.count
-            let completedToday = nn.completions.contains {
+            let completionsTodayCount = nn.completions.filter {
                 DateRules.startOfDay($0.date, calendar: calendar) == today
-            }
+            }.count
 
             result[nn.id] = PlanProtocolDescriptor(
                 id: nn.id,
@@ -258,7 +285,7 @@ private extension PlanStore {
                 tone: tone,
                 icon: icon(for: nn.definition.title),
                 completionsThisWeek: completionsThisWeek,
-                completedToday: completedToday
+                completionsTodayCount: completionsTodayCount
             )
         }
 
@@ -266,16 +293,59 @@ private extension PlanStore {
     }
 
     func normalizeAllocations() {
+        let oldAllocations = allAllocations
+
+        let normalized = oldAllocations
+            .filter { allocation in
+                protocolsById[allocation.protocolId] != nil
+            }
+            .sorted { lhs, rhs in
+                if lhs.createdAt == rhs.createdAt {
+                    return lhs.id.uuidString < rhs.id.uuidString
+                }
+                return lhs.createdAt < rhs.createdAt
+            }
+
+        var seen: Set<String> = []
+        var unique: [PlanAllocation] = []
+        var didMutate = normalized.count != oldAllocations.count
+
+        for allocation in normalized {
+            let dayStart = DateRules.startOfDay(allocation.day, calendar: calendar)
+            let allocationWeekId = DateRules.weekID(for: dayStart, calendar: calendar)
+            let key = "\(allocationWeekId.description)|\(allocation.protocolId.uuidString)|\(dayStart.timeIntervalSince1970)"
+
+            guard seen.insert(key).inserted else {
+                didMutate = true
+                continue
+            }
+
+            if allocation.day != dayStart || allocation.weekId != allocationWeekId {
+                didMutate = true
+                unique.append(
+                    PlanAllocation(
+                        id: allocation.id,
+                        protocolId: allocation.protocolId,
+                        weekId: allocationWeekId,
+                        day: dayStart,
+                        slot: allocation.slot,
+                        startTime: allocation.startTime,
+                        durationMinutes: allocation.durationMinutes,
+                        createdAt: allocation.createdAt,
+                        updatedAt: allocation.updatedAt
+                    )
+                )
+            } else {
+                unique.append(allocation)
+            }
+        }
+
+        allAllocations = unique
         weekAllocations = allAllocations.filter { allocation in
             allocation.weekId == weekId && protocolsById[allocation.protocolId] != nil
         }
 
-        let oldCount = allAllocations.count
-        allAllocations = allAllocations.filter { allocation in
-            protocolsById[allocation.protocolId] != nil
-        }
-
-        if oldCount != allAllocations.count {
+        if didMutate {
             try? repository.save(allAllocations)
         }
     }
@@ -292,7 +362,7 @@ private extension PlanStore {
             let remaining: Int
             switch descriptor.mode {
             case .daily:
-                remaining = (descriptor.completedToday || plannedToday > 0) ? 0 : 1
+                remaining = max(0, dailyPlacementsPerDayTarget - descriptor.completionsTodayCount - plannedToday)
             case .session:
                 remaining = max(0, descriptor.frequencyPerWeek - descriptor.completionsThisWeek - plannedThisWeek)
             }
@@ -541,13 +611,56 @@ private extension PlanStore {
         }.count
     }
 
-    func hasDailyPlanned(protocolId: UUID, day: Date, excluding allocationId: UUID?) -> Bool {
+    func dailyPlannedCount(protocolId: UUID, day: Date, excluding allocationId: UUID?) -> Int {
         let dayStart = DateRules.startOfDay(day, calendar: calendar)
-        return weekAllocations.contains {
+        return weekAllocations.filter {
             $0.protocolId == protocolId &&
             DateRules.startOfDay($0.day, calendar: calendar) == dayStart &&
             $0.id != allocationId
+        }.count
+    }
+
+    func validatePlacement(
+        descriptor: PlanProtocolDescriptor,
+        protocolId: UUID,
+        day: Date,
+        slot: PlanSlot,
+        requiredMinutes: Int,
+        excludingAllocationId: UUID?,
+        requiresQueueAvailability: Bool
+    ) -> PlanPlacementValidation {
+        if requiresQueueAvailability {
+            guard let queueItem = queueItems.first(where: { $0.protocolId == protocolId }) else {
+                return .blocked(message: "No remaining sessions for this protocol this week.")
+            }
+            if queueItem.isDisabled {
+                return .blocked(message: "Suspended protocol cannot be planned right now.")
+            }
         }
+
+        let dayStart = DateRules.startOfDay(day, calendar: calendar)
+        if dailyPlannedCount(protocolId: protocolId, day: dayStart, excluding: excludingAllocationId) >= 1 {
+            return .blocked(message: "Protocol already planned for this day.")
+        }
+
+        if descriptor.mode == .daily {
+            let todayStart = DateRules.startOfDay(lastReferenceDate, calendar: calendar)
+            let tomorrowStart = DateRules.addingDays(1, to: todayStart, calendar: calendar)
+            if dayStart != todayStart && dayStart != tomorrowStart {
+                return .blocked(message: "Daily protocols can only be planned for today or tomorrow.")
+            }
+        }
+
+        let snapshot = slotSnapshot(day: dayStart, slot: slot, excluding: excludingAllocationId)
+        if snapshot.freeMinutes < requiredMinutes {
+            return .blocked(message: "Insufficient free minutes in this slot.")
+        }
+
+        if shouldApplyRecoveryStrictness(for: descriptor), plannedCount(on: dayStart, excluding: excludingAllocationId) >= 2 {
+            return .blocked(message: "Recovery capacity reached for this day.")
+        }
+
+        return .allowed
     }
 
     func shouldApplyRecoveryStrictness(for descriptor: PlanProtocolDescriptor) -> Bool {

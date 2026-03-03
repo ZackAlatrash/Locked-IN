@@ -155,6 +155,42 @@ struct PlanTodaySummary {
     )
 }
 
+enum PlanPlacementValidation: Equatable {
+    case allowed
+    case blocked(message: String)
+
+    var isAllowed: Bool {
+        if case .allowed = self { return true }
+        return false
+    }
+
+    var message: String? {
+        switch self {
+        case .allowed:
+            return nil
+        case .blocked(let message):
+            return message
+        }
+    }
+}
+
+enum PlanMutation {
+    case placed(
+        allocationId: UUID,
+        protocolTitle: String,
+        day: Date,
+        slot: PlanSlot
+    )
+    case moved(
+        allocationId: UUID,
+        protocolTitle: String,
+        fromDay: Date,
+        fromSlot: PlanSlot,
+        toDay: Date,
+        toSlot: PlanSlot
+    )
+}
+
 protocol PlanCalendarProviding {
     func events(for week: DateInterval, calendar: Calendar) -> [PlanCalendarEvent]
 }
