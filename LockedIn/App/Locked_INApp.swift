@@ -23,6 +23,7 @@ struct LockedInAppRoot: View {
     @State private var hasCompletedOnboarding = false
     @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
     @StateObject private var commitmentSystemStore: CommitmentSystemStore
+    @StateObject private var planStore: PlanStore
     @StateObject private var onboardingCoordinator = OnboardingCoordinator(
         flow: OnboardingFlow(),
         engine: OnboardingEngine()
@@ -39,6 +40,9 @@ struct LockedInAppRoot: View {
                 systemEngine: systemEngine,
                 nonNegotiableEngine: nonNegotiableEngine
             )
+        )
+        _planStore = StateObject(
+            wrappedValue: PlanStore(repository: JSONFilePlanAllocationRepository())
         )
     }
 
@@ -57,6 +61,7 @@ struct LockedInAppRoot: View {
         }
         .preferredColorScheme(appAppearanceMode.colorScheme)
         .environmentObject(commitmentSystemStore)
+        .environmentObject(planStore)
         .onAppear {
             let clearKey = "didClearCommitmentSystemAfterCockpitRefresh20260223"
             if !UserDefaults.standard.bool(forKey: clearKey) {

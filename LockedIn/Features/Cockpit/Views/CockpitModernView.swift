@@ -83,360 +83,395 @@ struct CockpitModernView: View {
         self.onProtocolTap = onProtocolTap
     }
 
-    private var primary: Color { accentColor }
-    private var background: Color { style == .light ? Color(hex: "F2F2F7") : Color.black }
-    private var card: Color { style == .light ? Color.white : Color(hex: "1C1C1E") }
-    private var textMain: Color { style == .light ? Color(hex: "101827") : Color.white }
-    private var textSecondary: Color { style == .light ? Color(hex: "6B7280") : Color.white.opacity(0.55) }
-    private var subtleStroke: Color { style == .light ? Color.black.opacity(0.05) : Color.white.opacity(0.05) }
-    private var topContentPadding: CGFloat { showEmbeddedHeader ? 58 : 10 }
+    private var primary: Color { style == .dark ? Color(hex: "00F2FF") : Color(hex: "3B82F6") }
+    private var bgTop: Color { Color(hex: "1A243D") }
+    private var bgBottom: Color { Color(hex: "020617") }
+    private var glassCard: Color {
+        style == .dark ? Color(hex: "0F172A").opacity(0.42) : Color.white.opacity(0.72)
+    }
+    private var glassStroke: Color {
+        style == .dark ? Color.white.opacity(0.09) : Color(hex: "B9C7D7").opacity(0.78)
+    }
+    private var textMain: Color { style == .dark ? .white : Color(hex: "0B1220") }
+    private var textSecondary: Color { style == .dark ? Color.white.opacity(0.45) : Color(hex: "5B6778") }
+    private var subtleCard: Color { style == .dark ? Color.white.opacity(0.04) : Color.black.opacity(0.035) }
+    private var ringTrack: Color { style == .dark ? Color.white.opacity(0.08) : Color(hex: "94A3B8").opacity(0.3) }
+    private var ringSize: CGFloat { 222 }
+    private var ringStroke: CGFloat { 14 }
+    private var ringValueTextColor: Color { style == .dark ? primary : Color(hex: "111827") }
+    private var ringMetaTextColor: Color { style == .dark ? primary : Color(hex: "374151") }
+    private var topPadding: CGFloat { showEmbeddedHeader ? 52 : 8 }
+    private var dueCount: Int { capacityProtocols.filter(\.isCtaEnabled).count }
+    private var activeCount: Int {
+        let chunks = activeCapacityCountText.replacingOccurrences(of: " ", with: "").split(separator: "/")
+        return Int(chunks.first ?? "0") ?? 0
+    }
+    private var totalCount: Int {
+        let chunks = activeCapacityCountText.replacingOccurrences(of: " ", with: "").split(separator: "/")
+        return max(1, Int(chunks.last ?? "1") ?? 1)
+    }
+    private var directiveTitle: String {
+        let protocols = max(dueCount, pendingCount)
+        if protocols <= 0 {
+            return "SYSTEM STABLE. MAINTAIN PROTOCOL DISCIPLINE"
+        }
+        let label = protocols == 1 ? "PROTOCOL" : "PROTOCOLS"
+        return "EXECUTE \(protocols) \(label) TO STABILIZE SYSTEM"
+    }
+    private var systemStateText: String {
+        capacityStatusText.uppercased() == "STABLE" ? "SYSTEM STATE: STABLE" : "SYSTEM STATE: UNSTABLE"
+    }
+    private var systemStateColor: Color {
+        capacityStatusText.uppercased() == "STABLE" ? primary : Color(hex: "FBBF24")
+    }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            background.ignoresSafeArea()
+        ZStack {
+            screenBackground
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 14) {
+                VStack(spacing: 0) {
                     if showEmbeddedHeader {
-                        header
+                        embeddedHeader
                     }
-                    reliabilityCard
-                    metricCards
-                    capacityCard
-                    Spacer().frame(height: 120)
+
+                    systemStateBadge
+                        .padding(.top, 8)
+
+                    ringModule
+                        .padding(.top, 32)
+                        .padding(.bottom, 10)
+
+                    weeklyStrip
+                        .padding(.top, 18)
+
+                    activeProtocolsSection
+                        .padding(.top, 22)
+
+                    Spacer(minLength: 120)
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, topContentPadding)
+                .padding(.top, topPadding)
             }
         }
     }
 }
 
 private extension CockpitModernView {
-    var header: some View {
-        HStack(alignment: .bottom) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Cockpit")
-                    .font(.system(size: 32, weight: .heavy))
-                    .foregroundColor(textMain)
-                Text("WEDNESDAY, SEP 24")
-                    .font(.system(size: 10, weight: .medium))
-                    .kerning(1.2)
+    @ViewBuilder
+    var screenBackground: some View {
+        if style == .light {
+            ZStack {
+                Color(hex: "F8F9FB")
+
+                RadialGradient(
+                    colors: [
+                        Color(red: 1.0, green: 245.0 / 255.0, blue: 210.0 / 255.0).opacity(0.6),
+                        .clear
+                    ],
+                    center: UnitPoint(x: 0.5, y: -0.1),
+                    startRadius: 0,
+                    endRadius: 380
+                )
+
+                RadialGradient(
+                    colors: [
+                        Color(red: 220.0 / 255.0, green: 225.0 / 255.0, blue: 1.0).opacity(0.5),
+                        .clear
+                    ],
+                    center: .topLeading,
+                    startRadius: 0,
+                    endRadius: 450
+                )
+
+                RadialGradient(
+                    colors: [
+                        Color(red: 230.0 / 255.0, green: 220.0 / 255.0, blue: 1.0).opacity(0.5),
+                        .clear
+                    ],
+                    center: .topTrailing,
+                    startRadius: 0,
+                    endRadius: 450
+                )
+            }
+            .ignoresSafeArea()
+        } else {
+            LinearGradient(
+                colors: [bgTop, bgBottom],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+        }
+    }
+
+    var embeddedHeader: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("NEURAL INTERFACE")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .tracking(1.8)
                     .foregroundColor(textSecondary)
+                Text("TACTICAL COCKPIT")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(textMain)
             }
             Spacer()
-            ZStack {
-                Circle()
-                    .fill(style == .light ? Color.black.opacity(0.06) : Color.white.opacity(0.09))
-                    .frame(width: 56, height: 56)
-                Image(systemName: "person.circle.fill")
-                    .font(.system(size: 24, weight: .regular))
-                    .foregroundColor(primary)
-            }
         }
     }
 
-    var reliabilityCard: some View {
-        roundedCard {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("Reliability")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(textMain)
-                    Spacer()
-                    Image(systemName: "bolt.fill")
-                        .foregroundColor(primary)
-                }
-
-                HStack(spacing: 20) {
-                    scoreRing
-
-                    VStack(alignment: .leading, spacing: 18) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("CURRENT MODE")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(textSecondary)
-                            Text(modeText.capitalized)
-                                .font(.system(size: 24, weight: .bold))
-                                .foregroundColor(primary)
-                            if let recoveryProgressText {
-                                Text(recoveryProgressText)
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(textSecondary)
-                            }
-                        }
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(todayCompleted ? "TODAY" : "PENDING")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(textSecondary)
-                            HStack(spacing: 6) {
-                                Text(todayCompleted ? "Completed" : "\(pendingCount) Protocols")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(textMain)
-                                if !todayCompleted && pendingCount > 0 {
-                                    Text("!")
-                                        .font(.system(size: 20, weight: .bold))
-                                        .foregroundColor(Color(hex: "F43F5E"))
-                                }
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
+    var systemStateBadge: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(systemStateColor)
+                .frame(width: 7, height: 7)
+                .shadow(color: systemStateColor.opacity(0.5), radius: 6, x: 0, y: 0)
+            Text(systemStateText)
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .tracking(1.2)
+                .foregroundColor(systemStateColor)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(
+            Capsule(style: .continuous)
+                .fill(systemStateColor.opacity(style == .dark ? 0.14 : 0.12))
+        )
+        .overlay(
+            Capsule(style: .continuous)
+                .stroke(systemStateColor.opacity(0.34), lineWidth: 1)
+        )
     }
 
-    var scoreRing: some View {
+    var ringModule: some View {
         ZStack {
             Circle()
-                .stroke(style == .light ? Color.black.opacity(0.12) : Color.white.opacity(0.15), lineWidth: 12)
-                .frame(width: 138, height: 138)
+                .stroke(ringTrack, lineWidth: ringStroke)
+                .frame(width: ringSize, height: ringSize)
 
             Circle()
                 .trim(from: 0, to: CGFloat(max(0, min(reliabilityScore, 100))) / 100)
-                .stroke(primary, style: StrokeStyle(lineWidth: 12, lineCap: .round))
+                .stroke(primary, style: StrokeStyle(lineWidth: ringStroke, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .frame(width: 138, height: 138)
+                .frame(width: ringSize, height: ringSize)
+                .shadow(color: primary.opacity(style == .dark ? 0.6 : 0.35), radius: 12, x: 0, y: 0)
 
-            VStack(spacing: 2) {
-                Text("\(reliabilityScore)")
-                    .font(.system(size: 40, weight: .heavy))
-                    .foregroundColor(textMain)
-                Text("SCORE")
-                    .font(.system(size: 11, weight: .bold))
+            VStack(spacing: 8) {
+                Text("RELIABILITY SCORE")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .tracking(2.0)
                     .foregroundColor(textSecondary)
+                Text("\(reliabilityScore)%")
+                    .font(.system(size: 58, weight: .black))
+                    .foregroundColor(ringValueTextColor)
+                    .shadow(color: primary.opacity(style == .dark ? 0.4 : 0.15), radius: 8, x: 0, y: 0)
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.up.right")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("+2.4%")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                }
+                .foregroundColor(ringMetaTextColor)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(primary.opacity(style == .dark ? 0.14 : 0.12)))
+                .overlay(
+                    Capsule()
+                        .stroke(primary.opacity(0.32), lineWidth: 1)
+                )
             }
+
+            streakBadge
+                .offset(x: 98, y: -68)
+                .onTapGesture(perform: onStreakTap)
         }
     }
 
-    var metricCards: some View {
-        HStack(spacing: 12) {
-            roundedCard {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Weekly Activity")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(textMain)
-                            Text("Today")
-                                .font(.system(size: 15, weight: .regular))
-                                .foregroundColor(textSecondary)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .foregroundColor(textSecondary)
-                    }
-                    Text("\(todayCompletionCount) DONE")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(weeklyAccentColor)
-                    Text("\(weeklyCompletionCount)/\(max(weeklyTargetCount, 1)) this week")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(textSecondary)
-                    Spacer()
-                    HStack(alignment: .bottom, spacing: 6) {
-                        ForEach(Array(weeklyCompletionByDay.enumerated()), id: \.offset) { index, count in
-                            let maxCount = max(weeklyCompletionByDay.max() ?? 1, 1)
-                            let heightFactor = CGFloat(count) / CGFloat(maxCount)
+    var streakBadge: some View {
+        VStack(spacing: 2) {
+            Text("STREAK")
+                .font(.system(size: 8, weight: .medium, design: .monospaced))
+                .foregroundColor(textSecondary)
+            Text("\(streakDays)")
+                .font(.system(size: 23, weight: .bold))
+                .foregroundColor(textMain)
+            Text("DAYS")
+                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                .foregroundColor(streakAccentColor)
+        }
+        .frame(width: 68, height: 84)
+        .background(glassCard)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(glassStroke, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
 
-                            VStack(spacing: 6) {
-                                bar(
-                                    max(heightFactor, 0.12),
-                                    active: index == currentWeekdayIndex,
-                                    accent: weeklyAccentColor
-                                )
-                                Text(dayLabel(for: index))
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(textSecondary)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .center)
-                        }
-                    }
-                    .frame(height: 84)
-                }
-            }
-            .contentShape(Rectangle())
-            .onTapGesture(perform: onWeeklyActivityTap)
-
-            roundedCard {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Streak")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(textMain)
-                            Text("Current")
-                                .font(.system(size: 15, weight: .regular))
-                                .foregroundColor(textSecondary)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .foregroundColor(textSecondary)
-                    }
-                    Spacer(minLength: 4)
-                    HStack(alignment: .lastTextBaseline, spacing: 6) {
-                        Text("\(streakDays)")
-                            .font(.system(size: 32, weight: .heavy))
-                            .foregroundColor(streakAccentColor)
-                        Text("DAYS")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(textSecondary)
-                    }
-                    Spacer(minLength: 4)
-                    HStack(spacing: 10) {
+    var weeklyStrip: some View {
+        HStack(spacing: 8) {
+            ForEach(0..<7, id: \.self) { index in
+                let hasCompleted = index < weeklyCompletionByDay.count && weeklyCompletionByDay[index] > 0
+                let isToday = index == currentWeekdayIndex
+                VStack(spacing: 6) {
+                    ZStack {
                         Circle()
-                            .fill(streakAccentColor.opacity(0.2))
-                            .frame(width: 42, height: 42)
+                            .fill(hasCompleted ? subtleCard : glassCard)
                             .overlay(
-                                Image(systemName: todayCompleted ? "checkmark" : "clock.fill")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(streakAccentColor)
+                                Circle()
+                                    .stroke(
+                                        isToday ? weeklyAccentColor : (style == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08)),
+                                        lineWidth: isToday ? 2 : 1
+                                    )
                             )
-                        Text(todayCompleted ? "Today completed (\(todayCompletionCount))" : "No completion today")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(textMain)
-                        Spacer()
+                            .frame(width: 36, height: 36)
+
+                        if isToday {
+                            Text("\(currentDayOfMonth)")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(weeklyAccentColor)
+                        } else if hasCompleted {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(weeklyAccentColor)
+                        }
                     }
-                    .padding(10)
-                    .background(style == .light ? Color.black.opacity(0.05) : Color.white.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    Text(dayLabel(for: index))
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(isToday ? weeklyAccentColor : textSecondary)
                 }
+                .frame(maxWidth: .infinity)
             }
-            .contentShape(Rectangle())
-            .onTapGesture(perform: onStreakTap)
         }
-        .frame(height: 238)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onWeeklyActivityTap)
     }
 
-    var capacityCard: some View {
-        roundedCard {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack {
-                    Text("Protocol Capacity")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(textMain)
-                    Spacer()
-                    Button {
-                        onCapacityTap()
-                    } label: {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 20, weight: .semibold))
+    var activeProtocolsSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("ACTIVE PROTOCOLS")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .tracking(2.1)
+                .foregroundColor(primary)
+
+            Button(action: onCapacityTap) {
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Capacity \(activeCapacityCountText.replacingOccurrences(of: " ", with: ""))")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(textMain)
+                        Text(directiveTitle)
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .tracking(1.1)
                             .foregroundColor(textSecondary)
+                            .lineLimit(2)
                     }
-                    .buttonStyle(.plain)
-                }
 
-                HStack {
-                    Text("Load")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(primary)
-                    Spacer()
-                    Text("\(Int(protocolLoad * 100))%")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(textSecondary)
-                }
+                    Spacer(minLength: 10)
 
-                HStack {
-                    Text(activeCapacityCountText)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(textMain)
-                    Spacer()
-                    Text(capacityStatusText)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(textSecondary)
-                }
-
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(style == .light ? Color.black.opacity(0.10) : Color.white.opacity(0.16))
-                        Capsule()
-                            .fill(primary)
-                            .frame(width: geo.size.width * max(0, min(protocolLoad, 1)))
+                    HStack(spacing: 6) {
+                        ForEach(0..<totalCount, id: \.self) { index in
+                            Capsule(style: .continuous)
+                                .fill(index < activeCount ? primary : (style == .dark ? Color.white.opacity(0.09) : Color.black.opacity(0.08)))
+                                .frame(width: 22, height: 8)
+                                .overlay(
+                                    Capsule(style: .continuous)
+                                        .stroke(
+                                            index < activeCount
+                                                ? primary.opacity(0.3)
+                                                : (style == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08)),
+                                            lineWidth: 1
+                                        )
+                                )
+                                .shadow(color: index < activeCount ? primary.opacity(0.3) : .clear, radius: 5, x: 0, y: 0)
+                        }
                     }
                 }
-                .frame(height: 14)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 14)
+                .background(glassCard)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(glassStroke, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .buttonStyle(.plain)
 
-                Text("ACTIVE PROTOCOLS")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(textSecondary)
-
-                if capacityProtocols.isEmpty {
-                    Text("No active protocols")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(textSecondary)
-                } else {
-                    ForEach(capacityProtocols.prefix(4)) { task in
-                        protocolRow(task)
-                    }
+            VStack(spacing: 10) {
+                ForEach(capacityProtocols.prefix(3)) { task in
+                    protocolRow(task)
                 }
             }
         }
     }
 
     func protocolRow(_ task: TodayTask) -> some View {
-        HStack {
-            Circle()
-                .fill(primary.opacity(0.18))
-                .frame(width: 34, height: 34)
-                .overlay(
-                    Image(systemName: task.isCompleteToday ? "checkmark" : "bolt.fill")
-                        .foregroundColor(primary)
-                        .font(.system(size: 12, weight: .bold))
-                )
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: 12) {
+            Button {
+                if task.isCtaEnabled {
+                    onProtocolComplete(task.nnId)
+                }
+            } label: {
+                ZStack {
+                    Circle()
+                        .stroke(style == .dark ? Color.white.opacity(0.2) : Color.black.opacity(0.18), lineWidth: 2)
+                        .background(
+                            Circle()
+                                .fill(task.isCtaEnabled ? Color.clear : primary.opacity(0.2))
+                        )
+                    if !task.isCtaEnabled {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .black))
+                            .foregroundColor(primary)
+                    }
+                }
+                .frame(width: 22, height: 22)
+            }
+            .buttonStyle(.plain)
+
+            VStack(alignment: .leading, spacing: 3) {
                 Text(task.title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(textMain)
-                Text(task.statusText)
-                    .font(.system(size: 12, weight: .semibold))
+                Text(task.subtitle.uppercased())
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .tracking(1.2)
                     .foregroundColor(textSecondary)
             }
+
             Spacer()
-            Button(task.ctaTitle) {
-                onProtocolComplete(task.nnId)
-            }
-            .font(.system(size: 12, weight: .bold))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(Capsule().fill(primary.opacity(0.2)))
-            .overlay(Capsule().stroke(primary.opacity(0.4), lineWidth: 1))
-            .foregroundColor(task.isCtaEnabled ? primary : textSecondary)
-            .buttonStyle(.plain)
-            .disabled(!task.isCtaEnabled)
+
+            Image(systemName: protocolIcon(for: task))
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(primary.opacity(0.72))
         }
-        .padding(10)
-        .background(style == .light ? Color.black.opacity(0.05) : Color.white.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
+        .background(glassCard)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(glassStroke, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .contentShape(Rectangle())
         .onTapGesture {
             onProtocolTap(task.nnId)
         }
     }
 
-    func roundedCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .padding(18)
-            .frame(maxWidth: .infinity)
-            .background(card)
-            .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 30, style: .continuous)
-                    .stroke(subtleStroke, lineWidth: 1)
-            )
-            .shadow(
-                color: style == .light ? Color.black.opacity(0.10) : Color.black.opacity(0.24),
-                radius: style == .light ? 10 : 16,
-                x: 0,
-                y: style == .light ? 4 : 8
-            )
-    }
-
-    func bar(_ heightFactor: CGFloat, active: Bool, accent: Color) -> some View {
-        RoundedRectangle(cornerRadius: 3, style: .continuous)
-            .fill(active ? accent : (style == .light ? Color.black.opacity(0.16) : Color.white.opacity(0.16)))
-            .frame(width: 10, height: max(8, 64 * heightFactor))
+    func protocolIcon(for task: TodayTask) -> String {
+        let text = (task.title + " " + task.subtitle).lowercased()
+        if text.contains("hydrat") || text.contains("water") {
+            return "drop.fill"
+        }
+        if text.contains("distract") || text.contains("air-plane") || text.contains("airplane") {
+            return "nosign"
+        }
+        if text.contains("deep") || text.contains("focus") {
+            return "bolt.fill"
+        }
+        return "scope"
     }
 
     func dayLabel(for index: Int) -> String {
@@ -450,4 +485,7 @@ private extension CockpitModernView {
         return (weekday + 5) % 7
     }
 
+    var currentDayOfMonth: Int {
+        DateRules.isoCalendar.component(.day, from: Date())
+    }
 }

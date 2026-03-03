@@ -16,12 +16,13 @@ struct CockpitLogsScreen: View {
 
     var body: some View {
         ZStack {
-            pageBackground.ignoresSafeArea()
+            pageBackground
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
                     header
                     integrityMatrixCard
+                    performanceCards
                     sessionHistory
                 }
                 .padding(.horizontal, 16)
@@ -41,7 +42,7 @@ struct CockpitLogsScreen: View {
                             .font(.system(size: 18, weight: .medium))
 
                         Circle()
-                            .fill(accentGreen)
+                            .fill(activeAccent)
                             .frame(width: 7, height: 7)
                             .offset(x: 5, y: -3)
                     }
@@ -74,66 +75,169 @@ private extension CockpitLogsScreen {
             .tracking(1.3)
             .foregroundColor(textMuted)
             .padding(.horizontal, 2)
-        .padding(.top, 8)
+            .padding(.top, 8)
     }
 
     var integrityMatrixCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("35-DAY INTEGRITY MATRIX")
-                    .font(.custom("Inter", size: 11).weight(.bold))
-                    .tracking(1.2)
+            HStack(alignment: .center) {
+                Text("28-DAY INTEGRITY MATRIX")
+                    .font(.custom("Inter", size: 10).weight(.bold))
+                    .tracking(1.4)
                     .foregroundColor(textMuted)
 
                 Spacer()
 
-                Text("\(adherence)% ADHERENCE")
-                    .font(.custom("Inter", size: 11).weight(.bold))
-                    .foregroundColor(accentGreen)
+                HStack(spacing: 6) {
+                    if isDarkMode {
+                        Circle()
+                            .fill(cyanAccent)
+                            .frame(width: 6, height: 6)
+                            .shadow(color: cyanAccent.opacity(0.6), radius: 6, x: 0, y: 0)
+                    }
+                    Text("\(adherence)% ADHERENCE")
+                        .font(.custom("Inter", size: 10).weight(.black))
+                        .foregroundColor(adherenceTextColor)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(adherencePillBackground)
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(adherencePillStroke, lineWidth: 1)
+                )
+            }
+
+            HStack {
+                ForEach(weekdayHeaders, id: \.self) { weekday in
+                    Text(weekday)
+                        .font(.custom("Inter", size: 9).weight(.bold))
+                        .tracking(0.8)
+                        .foregroundColor(textSubtle)
+                        .frame(maxWidth: .infinity)
+                }
             }
 
             LazyVGrid(columns: matrixColumns, spacing: 6) {
                 ForEach(matrixDays) { point in
                     RoundedRectangle(cornerRadius: 4, style: .continuous)
                         .fill(matrixFill(for: point))
+                        .shadow(color: matrixGlow(for: point), radius: 8, x: 0, y: 0)
                         .overlay(
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .stroke(point.violationCount > 0 ? accentRed.opacity(0.7) : .clear, lineWidth: 1)
+                                .stroke(matrixStroke(for: point), lineWidth: 1)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .stroke(accentGreen.opacity(point.isToday ? 0.9 : 0), lineWidth: point.isToday ? 2 : 0)
-                                .padding(point.isToday ? -2 : 0)
+                                .stroke(todayOutlineColor.opacity(point.isToday ? 1 : 0), lineWidth: point.isToday ? 2 : 0)
+                                .padding(point.isToday ? -3 : 0)
                         )
+                        .overlay(alignment: .topLeading) {
+                            Text(dayNumberText(for: point.day))
+                                .font(.custom("Inter", size: 8).weight(.bold))
+                                .foregroundColor(dayNumberColor(for: point))
+                                .padding(.leading, 4)
+                                .padding(.top, 3)
+                        }
                         .aspectRatio(1, contentMode: .fit)
-                }
-            }
-
-            HStack {
-                ForEach(1...5, id: \.self) { week in
-                    Text(String(format: "WEEK %02d", week))
-                        .font(.custom("Inter", size: 10).weight(.bold))
-                        .foregroundColor(textSubtle)
-                    if week < 5 { Spacer(minLength: 0) }
                 }
             }
         }
         .padding(16)
-        .background(cardBackground)
+        .background(glassCard(cornerRadius: 26))
+    }
+
+    var performanceCards: some View {
+        HStack(spacing: 12) {
+            metricCard(
+                title: "Deep Focus",
+                value: String(format: "%.1f", deepFocusHours),
+                unit: "hrs",
+                icon: "bolt.fill",
+                iconColor: isDarkMode ? magentaAccent : Color(hex: "60A5FA"),
+                bars: deepFocusBars
+            )
+
+            metricCard(
+                title: "Neural Sync",
+                value: "\(neuralSyncPercent)",
+                unit: "%",
+                icon: "sparkles",
+                iconColor: isDarkMode ? cyanAccent : Color(hex: "6366F1"),
+                bars: neuralSyncBars
+            )
+        }
+    }
+
+    func metricCard(
+        title: String,
+        value: String,
+        unit: String,
+        icon: String,
+        iconColor: Color,
+        bars: [Double]
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top) {
+                Text(title)
+                    .font(.custom("Inter", size: 12).weight(.semibold))
+                    .foregroundColor(textMain)
+                Spacer(minLength: 8)
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(iconColor)
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value)
+                    .font(.custom("Inter", size: isDarkMode ? 34 : 30).weight(.black))
+                    .foregroundColor(textMain)
+                Text(unit)
+                    .font(.custom("Inter", size: 11).weight(.semibold))
+                    .foregroundColor(textMuted)
+            }
+
+            HStack(alignment: .bottom, spacing: 4) {
+                ForEach(Array(bars.enumerated()), id: \.offset) { index, item in
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(metricBarColor(index: index, count: bars.count, accent: iconColor))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: max(8, item * 28))
+                }
+            }
+            .frame(height: 34)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(glassCard(cornerRadius: 20))
+    }
+
+    func metricBarColor(index: Int, count: Int, accent: Color) -> Color {
+        let isPeak = index == max(0, count - 2)
+        if isPeak {
+            return accent.opacity(isDarkMode ? 0.95 : 0.82)
+        }
+        return isDarkMode ? Color.white.opacity(0.08) : accent.opacity(0.25)
     }
 
     var sessionHistory: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Session History")
-                .font(.custom("Inter", size: 21).weight(.bold))
+                .font(.custom("Inter", size: isDarkMode ? 14 : 22).weight(.bold))
+                .tracking(isDarkMode ? 1.1 : 0)
+                .textCase(isDarkMode ? .uppercase : nil)
                 .foregroundColor(textMain)
                 .padding(.horizontal, 2)
 
             if recentEntries.isEmpty {
                 emptyHistoryState
             } else {
-                ForEach(Array(recentEntries.prefix(8).enumerated()), id: \.offset) { _, entry in
-                    sessionCard(entry)
+                ForEach(Array(recentEntries.prefix(3).enumerated()), id: \.element.id) { index, entry in
+                    sessionCard(entry, index: index)
                 }
             }
         }
@@ -150,116 +254,320 @@ private extension CockpitLogsScreen {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(cardBackground)
+        .background(glassCard(cornerRadius: 24))
     }
 
-    func sessionCard(_ entry: LogEntry) -> some View {
+    func sessionCard(_ entry: LogEntry, index: Int) -> some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(spacing: 8) {
-                Circle()
-                    .fill(entry.tint.opacity(0.15))
-                    .frame(width: 36, height: 36)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(entry.iconTint.opacity(isDarkMode ? 0.18 : 0.2))
+                    .frame(width: 32, height: 32)
                     .overlay(
                         Image(systemName: entry.icon)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(entry.tint)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(entry.iconTint)
                     )
 
-                if entry.type == .completion {
+                if index < max(0, min(recentEntries.count, 3) - 1) {
                     RoundedRectangle(cornerRadius: 2, style: .continuous)
-                        .fill(dividerColor)
-                        .frame(width: 2, height: 44)
+                        .fill(isDarkMode ? Color.white.opacity(0.09) : Color.black.opacity(0.08))
+                        .frame(width: 1, height: 38)
                 }
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .top) {
+                HStack(alignment: .top, spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(entry.title)
-                            .font(.custom("Inter", size: 18).weight(.bold))
+                            .font(.custom("Inter", size: 17).weight(.bold))
                             .foregroundColor(textMain)
 
                         Text(entry.timeLabel)
-                            .font(.custom("Inter", size: 12).weight(.medium))
+                            .font(.custom("Inter", size: 11).weight(.medium))
                             .foregroundColor(textMuted)
                     }
 
-                    Spacer(minLength: 8)
+                    Spacer(minLength: 6)
 
                     Text(entry.badge)
-                        .font(.custom("Inter", size: 10).weight(.bold))
-                        .tracking(0.6)
-                        .foregroundColor(entry.tint)
+                        .font(.custom("Inter", size: 9).weight(.black))
+                        .tracking(0.5)
+                        .foregroundColor(entry.badgeColor)
                         .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(entry.tint.opacity(0.12))
+                        .padding(.vertical, 4)
+                        .background(entry.badgeBackground)
                         .overlay(
                             RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .stroke(entry.tint.opacity(0.24), lineWidth: 1)
+                                .stroke(entry.badgeStroke, lineWidth: 1)
                         )
                 }
 
                 if entry.type == .completion {
-                    HStack(spacing: 8) {
-                        metricPill(label: "Flow", value: "\(entry.flow)%")
-                        metricPill(label: "Distr.", value: "\(entry.distractions)")
-                        metricPill(label: "Output", value: entry.output)
+                    if index == 0 {
+                        HStack(spacing: 8) {
+                            metricPill(label: "Flow", value: "\(entry.flow)%", accent: entry.badgeColor)
+                            metricPill(label: "Inter.", value: "\(entry.distractions)", accent: textMain)
+                            metricPill(label: "Delta", value: entry.output, accent: isDarkMode ? magentaAccent : Color(hex: "2563EB"))
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Progress")
+                                .font(.custom("Inter", size: 10).weight(.bold))
+                                .foregroundColor(textMuted)
+                            ZStack(alignment: .leading) {
+                                Capsule(style: .continuous)
+                                    .fill(isDarkMode ? Color.white.opacity(0.07) : Color.black.opacity(0.06))
+                                    .frame(height: 8)
+
+                                Capsule(style: .continuous)
+                                    .fill(entry.badgeColor)
+                                    .frame(width: CGFloat(entry.goalPercent) / 100 * 180, height: 8)
+                                    .shadow(color: entry.badgeColor.opacity(isDarkMode ? 0.4 : 0.22), radius: 6, x: 0, y: 0)
+                            }
+                            .frame(height: 8)
+                        }
                     }
-                } else {
+                } else if !entry.violationReason.isEmpty {
                     Text(entry.violationReason)
                         .font(.custom("Inter", size: 12).weight(.semibold))
                         .foregroundColor(textSecondary)
                 }
             }
         }
-        .padding(14)
-        .background(cardBackground.opacity(entry.type == .violation ? 0.8 : 1))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
+        .background(glassCard(cornerRadius: 22, muted: entry.type == .violation))
     }
 
-    func metricPill(label: String, value: String) -> some View {
+    func metricPill(label: String, value: String, accent: Color) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label.uppercased())
-                .font(.custom("Inter", size: 10).weight(.bold))
+                .font(.custom("Inter", size: 8).weight(.bold))
                 .foregroundColor(textMuted)
             Text(value)
-                .font(.custom("Inter", size: 13).weight(.bold))
-                .foregroundColor(textMain)
+                .font(.custom("Inter", size: 12).weight(.bold))
+                .foregroundColor(accent)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 7)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(metricPillBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
-
 }
 
 private extension CockpitLogsScreen {
     var isDarkMode: Bool { colorScheme == .dark }
-    var accentGreen: Color { isDarkMode ? Color(hex: "#A3FF12") : Color(hex: "#7BA70A") }
-    var accentRed: Color { isDarkMode ? Color(hex: "#FF2D55") : Color(hex: "#D81B45") }
-    var navItemColor: Color { isDarkMode ? Theme.Colors.textSecondary : Color(hex: "111827") }
-    var pageBackground: Color { isDarkMode ? Color.black : Color(hex: "F2F2F7") }
-    var textMain: Color { isDarkMode ? Color.white : Color(hex: "101827") }
-    var textSecondary: Color { isDarkMode ? Color.white.opacity(0.62) : Color(hex: "6B7280") }
-    var textMuted: Color { isDarkMode ? Color.white.opacity(0.48) : Color(hex: "94A3B8") }
-    var textSubtle: Color { isDarkMode ? Color.white.opacity(0.35) : Color(hex: "9CA3AF") }
-    var dividerColor: Color { isDarkMode ? Color.white.opacity(0.12) : Color.black.opacity(0.12) }
-    var metricPillBackground: Color { isDarkMode ? Color.white.opacity(0.05) : Color.black.opacity(0.04) }
 
-    var cardBackground: some View {
-        RoundedRectangle(cornerRadius: 24, style: .continuous)
-            .fill(isDarkMode ? Color(hex: "#1C1C1E") : Color.white)
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(isDarkMode ? Color.white.opacity(0.05) : Color.black.opacity(0.05), lineWidth: 1)
+    var activeAccent: Color { isDarkMode ? cyanAccent : Color(hex: "2563EB") }
+    var cyanAccent: Color { Color(hex: "00F2FF") }
+    var magentaAccent: Color { Color(hex: "FF00E5") }
+
+    var navItemColor: Color { isDarkMode ? Theme.Colors.textSecondary : Color(hex: "111827") }
+
+    @ViewBuilder
+    var pageBackground: some View {
+        if isDarkMode {
+            LinearGradient(
+                colors: [Color(hex: "1A243D"), Color(hex: "020617")],
+                startPoint: .top,
+                endPoint: .bottom
             )
+            .ignoresSafeArea()
+        } else {
+            ZStack {
+                Color(hex: "F8F9FB")
+
+                RadialGradient(
+                    colors: [
+                        Color(red: 1.0, green: 245.0 / 255.0, blue: 210.0 / 255.0).opacity(0.6),
+                        .clear
+                    ],
+                    center: UnitPoint(x: 0.5, y: -0.1),
+                    startRadius: 0,
+                    endRadius: 380
+                )
+
+                RadialGradient(
+                    colors: [
+                        Color(red: 220.0 / 255.0, green: 225.0 / 255.0, blue: 1.0).opacity(0.5),
+                        .clear
+                    ],
+                    center: .topLeading,
+                    startRadius: 0,
+                    endRadius: 450
+                )
+
+                RadialGradient(
+                    colors: [
+                        Color(red: 230.0 / 255.0, green: 220.0 / 255.0, blue: 1.0).opacity(0.5),
+                        .clear
+                    ],
+                    center: .topTrailing,
+                    startRadius: 0,
+                    endRadius: 450
+                )
+            }
+            .ignoresSafeArea()
+        }
+    }
+
+    func glassCard(cornerRadius: CGFloat, muted: Bool = false) -> some View {
+        let fill: Color = {
+            if isDarkMode {
+                return Color(hex: "0F172A").opacity(muted ? 0.3 : 0.42)
+            }
+            return Color.white.opacity(muted ? 0.58 : 0.72)
+        }()
+
+        let stroke: Color = isDarkMode ? Color.white.opacity(0.1) : Color(hex: "B9C7D7").opacity(0.72)
+
+        return RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(fill)
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(stroke, lineWidth: 1)
+            )
+    }
+
+    var textMain: Color { isDarkMode ? .white : Color(hex: "0B1220") }
+    var textSecondary: Color { isDarkMode ? Color.white.opacity(0.62) : Color(hex: "5B6778") }
+    var textMuted: Color { isDarkMode ? Color.white.opacity(0.48) : Color(hex: "6B7280") }
+    var textSubtle: Color { isDarkMode ? Color.white.opacity(0.36) : Color(hex: "9CA3AF") }
+    var weekdayHeaders: [String] { ["M", "T", "W", "T", "F", "S", "S"] }
+
+    var adherencePillBackground: Color {
+        if isDarkMode { return cyanAccent.opacity(0.12) }
+        return Color(hex: "D9F99D")
+    }
+
+    var adherencePillStroke: Color {
+        if isDarkMode { return cyanAccent.opacity(0.35) }
+        return Color(hex: "B7E269")
+    }
+
+    var adherenceTextColor: Color {
+        if isDarkMode { return cyanAccent }
+        return Color(hex: "1F2937")
+    }
+
+    var metricPillBackground: Color {
+        isDarkMode ? Color.white.opacity(0.05) : Color.black.opacity(0.04)
+    }
+
+    var matrixIdleFill: Color {
+        isDarkMode ? Color.white.opacity(0.06) : Color(hex: "60A5FA").opacity(0.18)
+    }
+
+    var matrixHighFill: Color {
+        isDarkMode ? Color(hex: "22D3EE").opacity(0.82) : Color(hex: "38BDF8")
+    }
+
+    var matrixMediumFill: Color {
+        isDarkMode ? Color(hex: "06B6D4").opacity(0.68) : Color(hex: "7DD3FC")
+    }
+
+    var matrixViolationFill: Color {
+        isDarkMode ? Color(hex: "EF4444").opacity(0.36) : Color(hex: "FCA5A5")
+    }
+
+    var todayOutlineColor: Color {
+        isDarkMode ? cyanAccent : Color(hex: "60A5FA")
+    }
+
+    func matrixFill(for point: MatrixDay) -> Color {
+        if point.violationCount > 0 {
+            return matrixViolationFill
+        }
+
+        if point.completionCount >= 2 {
+            return matrixMediumFill
+        }
+
+        if point.completionCount > 0 {
+            return matrixHighFill
+        }
+
+        return matrixIdleFill
+    }
+
+    func matrixStroke(for point: MatrixDay) -> Color {
+        if point.violationCount > 0 {
+            return Color(hex: "EF4444").opacity(isDarkMode ? 0.9 : 0.7)
+        }
+        if point.completionCount >= 2 {
+            return isDarkMode ? Color(hex: "67E8F9") : Color(hex: "0EA5E9").opacity(0.9)
+        }
+        if point.completionCount > 0 {
+            return isDarkMode ? Color(hex: "22D3EE").opacity(0.98) : Color(hex: "0284C7").opacity(0.9)
+        }
+        return isDarkMode ? Color.white.opacity(0.08) : Color(hex: "60A5FA").opacity(0.16)
+    }
+
+    func matrixGlow(for point: MatrixDay) -> Color {
+        guard isDarkMode else { return .clear }
+        if point.violationCount > 0 { return .clear }
+        if point.completionCount >= 2 {
+            return Color(hex: "67E8F9").opacity(0.8)
+        }
+        if point.completionCount > 0 {
+            return Color(hex: "22D3EE").opacity(0.65)
+        }
+        return .clear
+    }
+
+    func dayNumberText(for date: Date) -> String {
+        String(DateRules.isoCalendar.component(.day, from: date))
+    }
+
+    func dayNumberColor(for point: MatrixDay) -> Color {
+        if point.isToday {
+            return isDarkMode ? Color.white : Color(hex: "0F172A")
+        }
+        if point.violationCount > 0 {
+            return isDarkMode ? Color.red.opacity(0.88) : Color(hex: "B91C1C")
+        }
+        return isDarkMode ? Color.white.opacity(0.72) : Color(hex: "334155")
     }
 
     var adherence: Int {
         guard !matrixDays.isEmpty else { return 0 }
         let completedDays = matrixDays.filter { $0.completionCount > 0 }.count
         return Int((Double(completedDays) / Double(matrixDays.count) * 100).rounded())
+    }
+
+    var deepFocusHours: Double {
+        let weeklyCompletions = store.completionLog.filter {
+            DateRules.weekID(for: $0.date) == DateRules.weekID(for: Date())
+        }.count
+        let estimate = max(2.6, 2.0 + (Double(weeklyCompletions) * 0.45))
+        return min(9.8, estimate)
+    }
+
+    var neuralSyncPercent: Int {
+        min(99, max(74, adherence + 4))
+    }
+
+    var deepFocusBars: [Double] {
+        let base = Double(max(1, store.currentStreakDays % 7))
+        return [
+            0.28,
+            0.42,
+            0.24 + (base * 0.02),
+            0.88,
+            0.62
+        ]
+    }
+
+    var neuralSyncBars: [Double] {
+        let factor = Double(max(1, adherence % 10)) / 100
+        return [
+            0.48,
+            0.92,
+            0.35 + factor,
+            0.28 + factor
+        ]
     }
 
     var matrixDays: [MatrixDay] {
@@ -272,40 +580,32 @@ private extension CockpitLogsScreen {
             DateRules.startOfDay($0.date, calendar: calendar)
         }
 
-        return (0..<35).compactMap { offset in
-            guard let day = calendar.date(byAdding: .day, value: offset - 34, to: today) else { return nil }
+        return (0..<28).compactMap { offset in
+            guard let day = calendar.date(byAdding: .day, value: offset - 27, to: today) else { return nil }
             let completions = completionByDay[day]?.count ?? 0
             let violations = violationByDay[day]?.count ?? 0
             return MatrixDay(day: day, completionCount: completions, violationCount: violations, isToday: day == today)
         }
     }
 
-    func matrixFill(for point: MatrixDay) -> Color {
-        if point.violationCount > 0 {
-            return accentRed.opacity(0.28)
-        }
-
-        if point.completionCount > 0 {
-            let boost = min(Double(point.completionCount) * 0.18, 0.55)
-            return accentGreen.opacity(0.35 + boost)
-        }
-
-        return isDarkMode ? Color.white.opacity(0.09) : Color.black.opacity(0.10)
-    }
-
     var recentEntries: [LogEntry] {
         let completionEntries = store.completionLog.map { completion in
-            LogEntry(
+            let goal = 68 + (abs(Int(completion.date.timeIntervalSince1970 / 60)) % 31)
+            return LogEntry(
                 type: .completion,
                 date: completion.date,
                 title: title(for: completion),
-                badge: "COMPLETED",
-                tint: accentGreen,
-                icon: "terminal.fill",
+                badge: isDarkMode ? "SYNCED" : "COMPLETED",
+                badgeColor: isDarkMode ? cyanAccent : Color(hex: "15803D"),
+                badgeBackground: isDarkMode ? cyanAccent.opacity(0.1) : Color(hex: "DCFCE7"),
+                badgeStroke: isDarkMode ? cyanAccent.opacity(0.35) : Color(hex: "86EFAC"),
+                icon: completionIcon(for: completion),
+                iconTint: isDarkMode ? cyanAccent : Color(hex: "1D4ED8"),
                 timeLabel: timeLabel(for: completion.date),
                 flow: deterministicFlow(for: completion.date),
                 distractions: deterministicDistractions(for: completion.date),
                 output: deterministicOutput(for: completion.date),
+                goalPercent: goal,
                 violationReason: ""
             )
         }
@@ -316,18 +616,33 @@ private extension CockpitLogsScreen {
                 date: violation.date,
                 title: title(for: violation),
                 badge: "ABORTED",
-                tint: accentRed,
-                icon: "exclamationmark.triangle.fill",
+                badgeColor: isDarkMode ? Color(hex: "F87171") : Color(hex: "DC2626"),
+                badgeBackground: isDarkMode ? Color.red.opacity(0.12) : Color.red.opacity(0.08),
+                badgeStroke: isDarkMode ? Color.red.opacity(0.26) : Color.red.opacity(0.2),
+                icon: "exclamationmark",
+                iconTint: isDarkMode ? Color(hex: "F87171") : Color(hex: "DC2626"),
                 timeLabel: timeLabel(for: violation.date),
                 flow: 0,
                 distractions: 0,
                 output: "",
+                goalPercent: 0,
                 violationReason: violationReason(violation.kind)
             )
         }
 
         return (completionEntries + violationEntries)
             .sorted { $0.date > $1.date }
+    }
+
+    func completionIcon(for completion: CompletionRecord) -> String {
+        let title = title(for: completion).lowercased()
+        if title.contains("refactor") || title.contains("code") {
+            return "chevron.left.slash.chevron.right"
+        }
+        if title.contains("focus") || title.contains("work") {
+            return "terminal"
+        }
+        return "waveform.path.ecg"
     }
 
     func title(for completion: CompletionRecord) -> String {
@@ -382,7 +697,7 @@ private struct MatrixDay: Identifiable {
     var id: Date { day }
 }
 
-private struct LogEntry {
+private struct LogEntry: Identifiable {
     enum EntryType {
         case completion
         case violation
@@ -392,13 +707,21 @@ private struct LogEntry {
     let date: Date
     let title: String
     let badge: String
-    let tint: Color
+    let badgeColor: Color
+    let badgeBackground: Color
+    let badgeStroke: Color
     let icon: String
+    let iconTint: Color
     let timeLabel: String
     let flow: Int
     let distractions: Int
     let output: String
+    let goalPercent: Int
     let violationReason: String
+
+    var id: String {
+        "\(date.timeIntervalSince1970)-\(title)-\(badge)"
+    }
 }
 
 private enum CockpitLogsDateFormatters {
