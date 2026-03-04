@@ -20,6 +20,10 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>LockedIn uses your calendar events to show busy time in your weekly plan.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>LockedIn uses your calendar events to show busy time in your weekly plan.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Inter-VariableFont_opsz,wght.ttf</string>

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 private enum PlanBoardMode {
     case focusToday
@@ -11,6 +12,8 @@ struct PlanScreen: View {
     @EnvironmentObject private var commitmentStore: CommitmentSystemStore
     @EnvironmentObject private var planStore: PlanStore
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
 
     @StateObject private var viewModel = PlanViewModel()
     @State private var showProfile = false
@@ -92,10 +95,50 @@ struct PlanScreen: View {
             .presentationDetents([.height(340)])
             .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $viewModel.showingRegulatorSheet) {
+            PlanRegulatorSheet(
+                suggestions: viewModel.regulatorSuggestions,
+                draftCount: viewModel.draftAllocations.count,
+                hasDraft: viewModel.hasDraft,
+                onApply: {
+                    viewModel.applyDraft()
+                },
+                onDiscard: {
+                    viewModel.discardDraft()
+                }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(item: $viewModel.protocolSchedulingEditor) { editor in
+            ProtocolSchedulingEditorSheet(
+                editor: editor,
+                errorMessage: viewModel.protocolEditErrorMessage,
+                onSave: { title, preferredSlot, durationMinutes, iconSystemName in
+                    viewModel.saveProtocolEditor(
+                        id: editor.id,
+                        title: title,
+                        preferredSlot: preferredSlot,
+                        durationMinutes: durationMinutes,
+                        iconSystemName: iconSystemName
+                    )
+                },
+                onCancel: {
+                    viewModel.dismissProtocolEditor()
+                }
+            )
+            .presentationDetents([.height(420)])
+            .presentationDragIndicator(.visible)
+        }
         .onAppear {
             boardMode = .focusToday
             hasInteractedWithBoardScroll = false
             viewModel.bind(planStore: planStore, commitmentStore: commitmentStore)
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                viewModel.handleDidBecomeActive()
+            }
         }
         .overlay(alignment: .top) {
             if let warning = viewModel.warningMessage {
@@ -131,6 +174,7 @@ private extension PlanScreen {
     var planBoardSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             planBoardHeader
+            calendarConnectionBanner
             if boardMode == .focusToday && hasInteractedWithBoardScroll == false {
                 boardScrollHint
                     .transition(.opacity.combined(with: .move(edge: .top)))
@@ -154,30 +198,140 @@ private extension PlanScreen {
 
             Spacer()
 
-            Button {
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
-                    boardMode = boardMode == .focusToday ? .expandedWeek : .focusToday
+            HStack(spacing: 8) {
+                Button {
+                    viewModel.runRegulator()
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("REGULATE")
+                            .font(.system(size: 9, weight: .black, design: .monospaced))
+                    }
+                    .foregroundColor(isDarkMode ? Color(hex: "#020617") : Color.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(isDarkMode ? toneColor(for: .cyan).opacity(0.92) : Color(hex: "#0EA5E9"))
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(isDarkMode ? toneColor(for: .cyan).opacity(0.25) : Color(hex: "#0369A1").opacity(0.35), lineWidth: 1)
+                    )
                 }
-            } label: {
-                HStack(spacing: 6) {
+                .buttonStyle(.plain)
+
+                Button {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                        boardMode = boardMode == .focusToday ? .expandedWeek : .focusToday
+                    }
+                } label: {
                     Image(systemName: boardMode == .expandedWeek ? "rectangle.split.3x1.fill" : "rectangle.split.3x1")
                         .font(.system(size: 12, weight: .bold))
-                    Text(boardMode == .expandedWeek ? "FOCUS TODAY" : "EXPAND WEEK")
-                        .font(.system(size: 9, weight: .black, design: .monospaced))
+                    .foregroundColor(textMain)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        Circle()
+                            .fill(isDarkMode ? Color.white.opacity(0.08) : Color.white.opacity(0.85))
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(isDarkMode ? Color.white.opacity(0.12) : Color.black.opacity(0.08), lineWidth: 1)
+                    )
                 }
-                .foregroundColor(textMain)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(isDarkMode ? Color.white.opacity(0.08) : Color.white.opacity(0.85))
-                )
-                .overlay(
-                    Capsule()
-                        .stroke(isDarkMode ? Color.white.opacity(0.12) : Color.black.opacity(0.08), lineWidth: 1)
-                )
+                .buttonStyle(.plain)
+                .accessibilityLabel(boardMode == .expandedWeek ? "Focus today" : "Expand week")
             }
-            .buttonStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
+    var calendarConnectionBanner: some View {
+        calendarConnectionBannerContent
+    }
+
+    var calendarConnectionBannerContent: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(viewModel.isCalendarConnected ? toneColor(for: .cyan) : Color(hex: "F59E0B"))
+                .frame(width: 6, height: 6)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(viewModel.calendarStatusMessage)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(textMuted)
+            }
+
+            Spacer(minLength: 8)
+
+            if viewModel.isCalendarConnected == false {
+                Button {
+                    handleCalendarButtonTap()
+                } label: {
+                    Text(calendarActionLabel)
+                        .font(.system(size: 9, weight: .black, design: .monospaced))
+                        .foregroundColor(calendarActionForeground)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(calendarActionBackground))
+                        .overlay(
+                            Capsule()
+                                .stroke(calendarActionStroke, lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(Capsule().fill(calendarBannerBackground))
+        .overlay(
+            Capsule()
+                .stroke(calendarBannerStroke, lineWidth: 1)
+        )
+    }
+
+    var calendarActionForeground: Color {
+        isDarkMode ? toneColor(for: .cyan) : Color(hex: "#0369A1")
+    }
+
+    var calendarActionBackground: Color {
+        isDarkMode ? Color.white.opacity(0.08) : Color.white.opacity(0.92)
+    }
+
+    var calendarActionStroke: Color {
+        isDarkMode ? Color.white.opacity(0.14) : Color.black.opacity(0.08)
+    }
+
+    var calendarBannerBackground: Color {
+        isDarkMode ? Color.white.opacity(0.05) : Color.white.opacity(0.8)
+    }
+
+    var calendarBannerStroke: Color {
+        isDarkMode ? Color.white.opacity(0.12) : Color.black.opacity(0.07)
+    }
+
+    var calendarActionLabel: String {
+        switch viewModel.calendarAccessStatus {
+        case .notDetermined:
+            return "CONNECT"
+        case .denied, .restricted, .writeOnly:
+            return "SETTINGS"
+        case .authorized:
+            return "CONNECTED"
+        }
+    }
+
+    func handleCalendarButtonTap() {
+        switch viewModel.calendarAccessStatus {
+        case .authorized, .notDetermined:
+            Task {
+                await viewModel.requestCalendarAccess()
+            }
+        case .denied, .restricted, .writeOnly:
+            guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+            openURL(url)
         }
     }
 
@@ -204,7 +358,7 @@ private extension PlanScreen {
                 .background(Capsule().fill(isDarkMode ? Color.white.opacity(0.05) : Color.black.opacity(0.04)))
             }
 
-            Text("Drag a protocol onto an open slot, or tap a protocol then tap a slot.")
+            Text("Drag onto a slot, tap to arm placement, or use ••• to edit time preference and duration.")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundColor(textSubtle)
 
@@ -235,53 +389,74 @@ private extension PlanScreen {
         let payload = PlanDropPayload.queuePayload(for: item.protocolId)
         let isDragging = activeDragPayload == payload
 
-        let card = Button {
-            viewModel.selectProtocol(id: item.protocolId)
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: queueIcon(for: item.tone))
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(tone)
-                    .frame(width: 18)
+        let card = HStack(spacing: 10) {
+            Image(systemName: resolvedProtocolIcon(item.icon))
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(tone)
+                .frame(width: 18)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.title)
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(item.isDisabled ? textMuted : textMain)
-                        .lineLimit(1)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.title)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(item.isDisabled ? textMuted : textMain)
+                    .lineLimit(1)
 
-                    HStack(spacing: 6) {
-                        Text(item.isDisabled ? "SUSPENDED" : "\(item.remainingCount) REMAINING")
-                            .font(.system(size: 9, weight: .black, design: .monospaced))
-                            .foregroundColor(item.isDisabled ? textMuted : tone)
-                        Text(item.durationLabel)
-                            .font(.system(size: 9, weight: .bold, design: .monospaced))
-                            .foregroundColor(textMuted)
-                    }
+                HStack(spacing: 6) {
+                    Text(item.isDisabled ? "SUSPENDED" : "\(item.remainingCount) REMAINING")
+                        .font(.system(size: 9, weight: .black, design: .monospaced))
+                        .foregroundColor(item.isDisabled ? textMuted : tone)
+                    Text(item.durationLabel)
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundColor(textMuted)
                 }
-                Spacer(minLength: 0)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 12)
-            .frame(width: 228, alignment: .leading)
-            .background(glassCard(cornerRadius: 16))
-            .scaleEffect(isDragging ? 1.02 : 1)
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(
-                        isSelected ? tone.opacity(0.78) : (item.isDisabled ? Color.gray.opacity(0.2) : Color.clear),
-                        lineWidth: isSelected ? 1.4 : 1
-                    )
-            )
-            .shadow(
-                color: isDragging ? tone.opacity(isDarkMode ? 0.42 : 0.2) : .clear,
-                radius: isDragging ? 12 : 0,
-                x: 0,
-                y: 0
-            )
-            .opacity(item.isDisabled ? 0.65 : 1)
+
+            Spacer(minLength: 0)
+
+            Menu {
+                Button {
+                    viewModel.openProtocolEditor(protocolId: item.protocolId)
+                } label: {
+                    Label("Edit Protocol", systemImage: "slider.horizontal.3")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(textMuted)
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .frame(width: 228, alignment: .leading)
+        .background(glassCard(cornerRadius: 16))
+        .scaleEffect(isDragging ? 1.02 : 1)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(
+                    isSelected ? tone.opacity(0.78) : (item.isDisabled ? Color.gray.opacity(0.2) : Color.clear),
+                    lineWidth: isSelected ? 1.4 : 1
+                )
+        )
+        .shadow(
+            color: isDragging ? tone.opacity(isDarkMode ? 0.42 : 0.2) : .clear,
+            radius: isDragging ? 12 : 0,
+            x: 0,
+            y: 0
+        )
+        .opacity(item.isDisabled ? 0.65 : 1)
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .onTapGesture {
+            viewModel.selectProtocol(id: item.protocolId)
+        }
+        .contextMenu {
+            Button {
+                viewModel.openProtocolEditor(protocolId: item.protocolId)
+            } label: {
+                Label("Edit Protocol", systemImage: "slider.horizontal.3")
+            }
+        }
 
         if item.isDisabled {
             card
@@ -359,10 +534,15 @@ private extension PlanScreen {
         VStack(spacing: 8) {
             Color.clear.frame(height: 34)
             ForEach(PlanSlot.allCases) { slot in
-                Text(slot.title)
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    .foregroundColor(textSubtle)
-                    .frame(width: 20, height: slotHeight(isCompact: false))
+                VStack(spacing: 3) {
+                    Text(slot.title)
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundColor(textSubtle)
+                    Text(slot.durationHoursLabel)
+                        .font(.system(size: 8, weight: .black, design: .monospaced))
+                        .foregroundColor(textSubtle.opacity(0.72))
+                }
+                .frame(width: 30, height: slotHeight(isCompact: false))
             }
         }
     }
@@ -415,12 +595,13 @@ private extension PlanScreen {
 
     func slotCard(day: PlanDayModel, slot: PlanSlotModel, isCompact: Bool) -> some View {
         let dropFeedback = dropFeedback(for: day, slot: slot)
+        let draftItems = viewModel.draftAllocations(for: day.date, slot: slot.slot)
 
         return Group {
             if isCompact {
-                compactSlotCard(day: day, slot: slot, feedback: dropFeedback)
+                compactSlotCard(day: day, slot: slot, feedback: dropFeedback, draftItems: draftItems)
             } else {
-                expandedSlotCard(day: day, slot: slot, feedback: dropFeedback)
+                expandedSlotCard(day: day, slot: slot, feedback: dropFeedback, draftItems: draftItems)
             }
         }
         .frame(height: slotHeight(isCompact: isCompact))
@@ -475,7 +656,12 @@ private extension PlanScreen {
         )
     }
 
-    func compactSlotCard(day: PlanDayModel, slot: PlanSlotModel, feedback: PlanSlotDropFeedback) -> some View {
+    func compactSlotCard(
+        day: PlanDayModel,
+        slot: PlanSlotModel,
+        feedback: PlanSlotDropFeedback,
+        draftItems: [PlanAllocationDraft]
+    ) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(isDarkMode ? Color.white.opacity(0.02) : Color.black.opacity(0.02))
@@ -522,6 +708,9 @@ private extension PlanScreen {
                             }
                         }
                 }
+            } else if draftItems.first != nil {
+                draftPreviewBadge(title: "DRAFT", tone: toneColor(for: .cyan), icon: "sparkles")
+                    .padding(6)
             } else if slot.freeMinutes > 0 {
                 Button {
                     if let mutation = viewModel.placeSelectedProtocol(day: day.date, slot: slot.slot) {
@@ -543,12 +732,22 @@ private extension PlanScreen {
         )
     }
 
-    func expandedSlotCard(day: PlanDayModel, slot: PlanSlotModel, feedback: PlanSlotDropFeedback) -> some View {
+    func expandedSlotCard(
+        day: PlanDayModel,
+        slot: PlanSlotModel,
+        feedback: PlanSlotDropFeedback,
+        draftItems: [PlanAllocationDraft]
+    ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(slot.slot.title)
-                    .font(.system(size: 9, weight: .black, design: .monospaced))
-                    .foregroundColor(textSubtle)
+                HStack(spacing: 5) {
+                    Text(slot.slot.title)
+                        .font(.system(size: 9, weight: .black, design: .monospaced))
+                        .foregroundColor(textSubtle)
+                    Text(slot.slot.durationHoursLabel)
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .foregroundColor(textSubtle.opacity(0.7))
+                }
                 Spacer()
                 Text(slot.availableLabel)
                     .font(.system(size: 8, weight: .bold, design: .monospaced))
@@ -564,6 +763,15 @@ private extension PlanScreen {
                     .background(Capsule().fill(isDarkMode ? Color.white.opacity(0.05) : Color.black.opacity(0.04)))
             }
 
+            let eventEntries = busyEventEntries(day: day, slot: slot)
+            if eventEntries.isEmpty == false {
+                VStack(spacing: 8) {
+                    ForEach(eventEntries) { entry in
+                        busyEventChip(entry)
+                    }
+                }
+            }
+
             ForEach(slot.allocations) { allocation in
                 allocationChip(allocation)
                     .draggable(PlanDropPayload.allocationPayload(for: allocation.id)) {
@@ -577,6 +785,10 @@ private extension PlanScreen {
                                 }
                             }
                     }
+            }
+
+            ForEach(Array(draftItems.enumerated()), id: \.offset) { _, draft in
+                draftAllocationChip(draft)
             }
 
             if slot.freeMinutes > 0 {
@@ -639,7 +851,7 @@ private extension PlanScreen {
             viewModel.editAllocation(allocationId: allocation.id)
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: allocation.icon)
+                Image(systemName: resolvedProtocolIcon(allocation.icon))
                     .font(.system(size: 10, weight: .bold))
                 VStack(alignment: .leading, spacing: 3) {
                     Text(allocation.title.uppercased())
@@ -661,6 +873,102 @@ private extension PlanScreen {
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+
+    func draftPreviewBadge(title: String, tone: Color, icon: String) -> some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(tone.opacity(isDarkMode ? 0.10 : 0.07))
+            .overlay(
+                HStack(spacing: 5) {
+                    Image(systemName: icon)
+                        .font(.system(size: 9, weight: .bold))
+                    Text(title)
+                        .font(.system(size: 8, weight: .black, design: .monospaced))
+                }
+                .foregroundColor(tone.opacity(0.9))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(tone.opacity(0.75), style: StrokeStyle(lineWidth: 1, dash: [5, 3]))
+            )
+    }
+
+    func draftAllocationChip(_ draft: PlanAllocationDraft) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 10, weight: .bold))
+            VStack(alignment: .leading, spacing: 3) {
+                Text((viewModel.protocolTitle(for: draft.protocolId)).uppercased())
+                    .font(.system(size: 9, weight: .black))
+                    .lineLimit(1)
+                Text("\(draft.durationMinutes)m DRAFT")
+                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+            }
+            Spacer(minLength: 0)
+        }
+        .foregroundColor(toneColor(for: .cyan))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 7)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(toneColor(for: .cyan).opacity(isDarkMode ? 0.11 : 0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(toneColor(for: .cyan).opacity(0.8), style: StrokeStyle(lineWidth: 1, dash: [5, 3]))
+        )
+    }
+
+    func busyEventChip(_ entry: BusyEventEntry) -> some View {
+        HStack(spacing: 7) {
+            Image(systemName: entry.isContinuation ? "arrow.turn.down.right" : "calendar")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundColor(Color.white.opacity(0.88))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.title.uppercased())
+                    .font(.system(size: 8, weight: .black, design: .monospaced))
+                    .lineLimit(1)
+                Text(eventTimeRangeLabel(entry.event))
+                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+                    .lineLimit(1)
+                    .foregroundColor(Color.white.opacity(0.7))
+            }
+            Spacer(minLength: 0)
+        }
+        .foregroundColor(Color.white.opacity(0.94))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color(hex: "1F2937"), Color(hex: "030712")],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        )
+        .overlay(alignment: .top) {
+            if entry.continuesFromPrevious {
+                Capsule(style: .continuous)
+                    .fill(Color(hex: "111827"))
+                    .frame(width: 3, height: 7)
+                    .offset(y: -5)
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if entry.continuesToNext {
+                Capsule(style: .continuous)
+                    .fill(Color(hex: "111827"))
+                    .frame(width: 3, height: 7)
+                    .offset(y: 5)
+            }
+        }
     }
 
     var distributionStatus: some View {
@@ -726,7 +1034,7 @@ private extension PlanScreen {
 
     func queueDragPreview(item: PlanQueueItem) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: queueIcon(for: item.tone))
+            Image(systemName: resolvedProtocolIcon(item.icon))
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(toneColor(for: item.tone))
             VStack(alignment: .leading, spacing: 2) {
@@ -744,7 +1052,7 @@ private extension PlanScreen {
 
     func allocationDragPreview(allocation: PlanAllocationDisplay) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: allocation.icon)
+            Image(systemName: resolvedProtocolIcon(allocation.icon))
                 .font(.system(size: 11, weight: .bold))
                 .foregroundColor(toneColor(for: allocation.tone))
             VStack(alignment: .leading, spacing: 2) {
@@ -955,18 +1263,12 @@ private extension PlanScreen {
         isCompact ? 150 : 188
     }
 
-    func queueIcon(for tone: PlanTone) -> String {
-        switch tone {
-        case .cyan: return "bolt.fill"
-        case .indigo: return "brain.head.profile"
-        case .purple: return "aqi.medium"
-        case .amber: return "flame.fill"
-        case .blue: return "drop.fill"
-        }
-    }
-
     func allocationFill(for tone: PlanTone) -> Color {
         toneColor(for: tone).opacity(isDarkMode ? 0.22 : 0.18)
+    }
+
+    func resolvedProtocolIcon(_ raw: String) -> String {
+        ProtocolIconCatalog.resolvedSymbolName(raw, fallback: "bolt.fill")
     }
 
     func minutesString(_ minutes: Int) -> String {
@@ -976,6 +1278,59 @@ private extension PlanScreen {
         if h > 0 { return "\(h)h" }
         return "\(m)m"
     }
+
+    func eventTimeRangeLabel(_ event: PlanCalendarEvent) -> String {
+        if event.isAllDay {
+            return "ALL DAY"
+        }
+
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        let start = formatter.string(from: event.startDateTime)
+        let end = formatter.string(from: event.endDateTime)
+        return "\(start) - \(end)"
+    }
+
+    func busyEventEntries(day: PlanDayModel, slot: PlanSlotModel) -> [BusyEventEntry] {
+        guard let slotInterval = slot.slot.interval(on: day.date, calendar: DateRules.isoCalendar) else { return [] }
+
+        return slot.busyEvents.compactMap { event in
+            let eventInterval = DateInterval(start: event.startDateTime, end: event.endDateTime)
+            let overlaps = eventInterval.intersects(slotInterval)
+                || (eventInterval.start == slotInterval.end && eventInterval.end > slotInterval.end)
+                || (eventInterval.end == slotInterval.start && eventInterval.start < slotInterval.start)
+            guard overlaps else { return nil }
+
+            let firstSlot = firstVisibleSlot(for: event, on: day.date)
+            let rawTitle = event.title?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let title = (rawTitle?.isEmpty == false ? rawTitle : nil) ?? "Busy"
+            return BusyEventEntry(
+                id: "\(event.id.uuidString)-\(slot.slot.rawValue)",
+                event: event,
+                title: title,
+                isContinuation: firstSlot != slot.slot,
+                continuesFromPrevious: eventInterval.start < slotInterval.start,
+                continuesToNext: eventInterval.end > slotInterval.end
+            )
+        }
+        .sorted { lhs, rhs in
+            lhs.event.startDateTime < rhs.event.startDateTime
+        }
+    }
+
+    func firstVisibleSlot(for event: PlanCalendarEvent, on day: Date) -> PlanSlot? {
+        let interval = DateInterval(start: event.startDateTime, end: event.endDateTime)
+        for slot in PlanSlot.allCases {
+            guard let slotInterval = slot.interval(on: day, calendar: DateRules.isoCalendar) else { continue }
+            if interval.intersects(slotInterval) {
+                return slot
+            }
+        }
+        return nil
+    }
+
 }
 
 private extension PlanDayModel {
@@ -1111,6 +1466,15 @@ private struct PlanDragPreview {
     let tone: PlanTone
 }
 
+private struct BusyEventEntry: Identifiable {
+    let id: String
+    let event: PlanCalendarEvent
+    let title: String
+    let isContinuation: Bool
+    let continuesFromPrevious: Bool
+    let continuesToNext: Bool
+}
+
 private struct PlanToast {
     let message: String
     let undoLabel: String
@@ -1119,6 +1483,95 @@ private struct PlanToast {
 private enum PlanUndoAction {
     case remove(allocationId: UUID)
     case move(allocationId: UUID, day: Date, slot: PlanSlot)
+}
+
+private struct PlanRegulatorSheet: View {
+    let suggestions: [PlanSuggestionUIModel]
+    let draftCount: Int
+    let hasDraft: Bool
+    let onApply: () -> Void
+    let onDiscard: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Text("Preview Draft")
+                        .font(.system(size: 18, weight: .bold))
+                    Spacer()
+                    Text("\(draftCount) placements ready")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.secondary)
+                }
+
+                if suggestions.isEmpty {
+                    Text("No recommendations available for this week.")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 6)
+                } else {
+                    List {
+                        ForEach(suggestions) { suggestion in
+                            VStack(alignment: .leading, spacing: 5) {
+                                HStack {
+                                    Text(suggestion.protocolTitle)
+                                        .font(.system(size: 13, weight: .bold))
+                                    Spacer()
+                                    Text(suggestion.kindLabel)
+                                        .font(.system(size: 9, weight: .black, design: .monospaced))
+                                        .foregroundColor(kindColor(suggestion.kind))
+                                }
+                                Text("\(suggestion.dayLabel) \(suggestion.slotLabel) • \(suggestion.confidenceLabel)")
+                                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                                    .foregroundColor(.secondary)
+                                Text(suggestion.reason)
+                                    .font(.system(size: 11, weight: .regular))
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.vertical, 3)
+                        }
+                    }
+                    .listStyle(.plain)
+                }
+
+                HStack(spacing: 10) {
+                    Button("Discard") {
+                        onDiscard()
+                        dismiss()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("Apply Draft") {
+                        onApply()
+                        dismiss()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(hasDraft == false)
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .padding(16)
+            .navigationTitle("Regulator")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    func kindColor(_ kind: PlanSuggestionKind) -> Color {
+        switch kind {
+        case .recommendOnly: return .blue
+        case .draftCandidate: return .teal
+        case .warning: return .orange
+        }
+    }
 }
 
 private struct PlanAllocationEditorSheet: View {
@@ -1190,6 +1643,209 @@ private struct PlanAllocationEditorSheet: View {
                 }
             }
         }
+    }
+}
+
+private struct ProtocolSchedulingEditorSheet: View {
+    let editor: ProtocolSchedulingEditorState
+    let errorMessage: String?
+    let onSave: (String, PreferredExecutionSlot, Int, String) -> Bool
+    let onCancel: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var title: String
+    @State private var selectedIconSystemName: String
+    @State private var preferredSlot: PreferredExecutionSlot
+    @State private var selectedDurationPreset: Int?
+    @State private var customDurationText: String
+    @State private var isUsingCustomDuration: Bool
+    @State private var localErrorMessage: String?
+    @State private var showingIconPicker = false
+
+    private static let durationPresets: [Int] = [15, 30, 45, 60, 90]
+
+    init(
+        editor: ProtocolSchedulingEditorState,
+        errorMessage: String?,
+        onSave: @escaping (String, PreferredExecutionSlot, Int, String) -> Bool,
+        onCancel: @escaping () -> Void
+    ) {
+        self.editor = editor
+        self.errorMessage = errorMessage
+        self.onSave = onSave
+        self.onCancel = onCancel
+        _title = State(initialValue: editor.title)
+        _selectedIconSystemName = State(
+            initialValue: ProtocolIconCatalog.resolvedSymbolName(
+                editor.iconSystemName,
+                fallback: NonNegotiableDefinition.defaultIconSystemName(for: .session, title: editor.title)
+            )
+        )
+        _preferredSlot = State(initialValue: editor.preferredExecutionSlot)
+
+        if Self.durationPresets.contains(editor.estimatedDurationMinutes) {
+            _selectedDurationPreset = State(initialValue: editor.estimatedDurationMinutes)
+            _customDurationText = State(initialValue: "")
+            _isUsingCustomDuration = State(initialValue: false)
+        } else {
+            _selectedDurationPreset = State(initialValue: nil)
+            _customDurationText = State(initialValue: "\(editor.estimatedDurationMinutes)")
+            _isUsingCustomDuration = State(initialValue: true)
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Protocol") {
+                    TextField("Title", text: $title)
+                        .textInputAutocapitalization(.words)
+                        .autocorrectionDisabled()
+                }
+
+                Section("Icon") {
+                    Button {
+                        showingIconPicker = true
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: selectedIconSystemName)
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.cyan)
+                                .frame(width: 30, height: 30)
+                                .background(
+                                    Circle()
+                                        .fill(Color.cyan.opacity(0.15))
+                                )
+                            Text("Change Protocol Icon")
+                                .font(.system(size: 14, weight: .semibold))
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Section("Preferred Time") {
+                    HStack(spacing: 8) {
+                        ForEach(PreferredExecutionSlot.allCases, id: \.self) { slot in
+                            Button(slot.title) {
+                                preferredSlot = slot
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(preferredSlot == slot ? .cyan : .gray.opacity(0.3))
+                        }
+                    }
+                }
+
+                Section("Duration") {
+                    HStack(spacing: 8) {
+                        ForEach(Self.durationPresets, id: \.self) { preset in
+                            Button("\(preset)m") {
+                                selectedDurationPreset = preset
+                                isUsingCustomDuration = false
+                                customDurationText = ""
+                                localErrorMessage = nil
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint((selectedDurationPreset == preset && isUsingCustomDuration == false) ? .cyan : .gray.opacity(0.3))
+                        }
+                    }
+
+                    Toggle("Custom minutes", isOn: $isUsingCustomDuration)
+                        .onChange(of: isUsingCustomDuration) { enabled in
+                            if enabled {
+                                if customDurationText.isEmpty {
+                                    customDurationText = "\(selectedDurationPreset ?? editor.estimatedDurationMinutes)"
+                                }
+                                selectedDurationPreset = nil
+                            } else if let parsed = Int(customDurationText), Self.durationPresets.contains(parsed) {
+                                selectedDurationPreset = parsed
+                            } else {
+                                selectedDurationPreset = 60
+                            }
+                            localErrorMessage = nil
+                        }
+
+                    if isUsingCustomDuration {
+                        TextField("Minutes (5-360)", text: $customDurationText)
+                            .keyboardType(.numberPad)
+                    }
+                }
+
+                if let localErrorMessage {
+                    Section {
+                        Text(localErrorMessage)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.red)
+                    }
+                } else if let errorMessage {
+                    Section {
+                        Text(errorMessage)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.red)
+                    }
+                }
+            }
+            .navigationTitle("Edit Protocol")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") {
+                        onCancel()
+                        dismiss()
+                    }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Save") {
+                        guard let durationMinutes = resolvedDurationMinutes() else {
+                            localErrorMessage = "Duration must be between 5 and 360 minutes."
+                            return
+                        }
+
+                        let didSave = onSave(
+                            title.trimmingCharacters(in: .whitespacesAndNewlines),
+                            preferredSlot,
+                            durationMinutes,
+                            selectedIconSystemName
+                        )
+                        if didSave {
+                            dismiss()
+                        } else {
+                            localErrorMessage = errorMessage ?? "Unable to update protocol right now."
+                        }
+                    }
+                    .fontWeight(.bold)
+                }
+            }
+            .sheet(isPresented: $showingIconPicker) {
+                ProtocolIconPickerSheet(
+                    protocolTitle: title,
+                    initialSelection: selectedIconSystemName,
+                    accentColor: .cyan
+                ) { selected in
+                    selectedIconSystemName = selected
+                }
+            }
+        }
+    }
+
+    private func resolvedDurationMinutes() -> Int? {
+        let value: Int
+        if isUsingCustomDuration {
+            guard let parsed = Int(customDurationText.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+                return nil
+            }
+            value = parsed
+        } else {
+            value = selectedDurationPreset ?? editor.estimatedDurationMinutes
+        }
+
+        guard NonNegotiableDefinition.isValidEstimatedDuration(value) else { return nil }
+        return value
     }
 }
 

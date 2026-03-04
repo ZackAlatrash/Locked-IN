@@ -20,7 +20,7 @@ struct Locked_INApp: App {
 struct LockedInAppRoot: View {
     @Environment(\.scenePhase) private var scenePhase
 
-    @State private var hasCompletedOnboarding = false
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
     @StateObject private var commitmentSystemStore: CommitmentSystemStore
     @StateObject private var planStore: PlanStore
@@ -63,10 +63,18 @@ struct LockedInAppRoot: View {
         .environmentObject(commitmentSystemStore)
         .environmentObject(planStore)
         .onAppear {
-            let clearKey = "didClearCommitmentSystemAfterCockpitRefresh20260223"
-            if !UserDefaults.standard.bool(forKey: clearKey) {
+            let freshStartResetKey = "didRunFreshStartReset20260303"
+            if UserDefaults.standard.bool(forKey: freshStartResetKey) == false {
+                hasCompletedOnboarding = false
                 commitmentSystemStore.clearAllNonNegotiables()
-                UserDefaults.standard.set(true, forKey: clearKey)
+                planStore.clearAllAllocations()
+                UserDefaults.standard.set(true, forKey: freshStartResetKey)
+            }
+            let protocolResetKey = "didRunProtocolReset20260303"
+            if UserDefaults.standard.bool(forKey: protocolResetKey) == false {
+                commitmentSystemStore.clearAllNonNegotiables()
+                planStore.clearAllAllocations()
+                UserDefaults.standard.set(true, forKey: protocolResetKey)
             }
             commitmentSystemStore.runDailyIntegrityTick(referenceDate: Date())
         }

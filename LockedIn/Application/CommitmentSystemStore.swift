@@ -75,6 +75,50 @@ final class CommitmentSystemStore: ObservableObject {
         persistSystem()
     }
 
+    func updateNonNegotiableScheduling(
+        id: UUID,
+        preferredSlot: PreferredExecutionSlot,
+        durationMinutes: Int,
+        iconSystemName: String,
+        title: String?
+    ) throws {
+        guard let index = system.nonNegotiables.firstIndex(where: { $0.id == id }) else {
+            throw CommitmentSystemError.nonNegotiableNotFound
+        }
+
+        var updated = system
+        let current = updated.nonNegotiables[index]
+        let trimmedTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let nextTitle = (trimmedTitle?.isEmpty == false ? trimmedTitle : current.definition.title) ?? current.definition.title
+
+        let updatedDefinition = NonNegotiableDefinition(
+            title: nextTitle,
+            frequencyPerWeek: current.definition.frequencyPerWeek,
+            mode: current.definition.mode,
+            goalId: current.definition.goalId,
+            preferredExecutionSlot: preferredSlot,
+            estimatedDurationMinutes: durationMinutes,
+            iconSystemName: iconSystemName
+        )
+        try nonNegotiableEngine.validateDefinition(updatedDefinition, totalLockDays: current.lock.totalLockDays)
+
+        updated.nonNegotiables[index] = NonNegotiable(
+            id: current.id,
+            goalId: current.goalId,
+            definition: updatedDefinition,
+            state: current.state,
+            lock: current.lock,
+            createdAt: current.createdAt,
+            windows: current.windows,
+            completions: current.completions,
+            violations: current.violations,
+            lastDailyComplianceCheckedDay: current.lastDailyComplianceCheckedDay
+        )
+
+        system = updated
+        persistSystem()
+    }
+
     func evaluateWeek(at date: Date) {
         let previous = system
         var updated = system

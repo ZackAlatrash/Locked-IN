@@ -1,6 +1,30 @@
 import Foundation
 import Combine
 
+struct PlanWeekSnapshot {
+    let weekId: WeekID
+    let weekStartDate: Date
+    let weekInterval: DateInterval
+    let currentWeekAllocations: [PlanAllocation]
+    let calendarEvents: [PlanCalendarEvent]
+}
+
+enum PlanValidationContext {
+    case manual
+    case regulator
+}
+
+enum PlanDraftApplyError: Error, LocalizedError {
+    case message(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .message(let message):
+            return message
+        }
+    }
+}
+
 @MainActor
 final class PlanStore: ObservableObject {
     @Published private(set) var currentWeekDays: [PlanDayModel] = []
@@ -53,7 +77,22 @@ final class PlanStore: ObservableObject {
         allAllocations.first(where: { $0.id == id })
     }
 
-    func validateProtocolPlacement(protocolId: UUID, day: Date, slot: PlanSlot) -> PlanPlacementValidation {
+    func currentWeekSnapshot() -> PlanWeekSnapshot {
+        PlanWeekSnapshot(
+            weekId: weekId,
+            weekStartDate: DateRules.startOfDay(weekInterval.start, calendar: calendar),
+            weekInterval: weekInterval,
+            currentWeekAllocations: weekAllocations,
+            calendarEvents: calendarEvents
+        )
+    }
+
+    func validateProtocolPlacement(
+        protocolId: UUID,
+        day: Date,
+        slot: PlanSlot,
+        context: PlanValidationContext = .manual
+    ) -> PlanPlacementValidation {
         guard let descriptor = protocolsById[protocolId] else {
             return .blocked(message: "Protocol is no longer available.")
         }
@@ -65,7 +104,9 @@ final class PlanStore: ObservableObject {
             slot: slot,
             requiredMinutes: descriptor.estimatedDurationMinutes,
             excludingAllocationId: nil,
-            requiresQueueAvailability: true
+            requiresQueueAvailability: true,
+            context: context,
+            candidateAllocations: weekAllocations
         )
     }
 
@@ -86,7 +127,9 @@ final class PlanStore: ObservableObject {
             slot: slot,
             requiredMinutes: duration,
             excludingAllocationId: allocationId,
-            requiresQueueAvailability: false
+            requiresQueueAvailability: false,
+            context: .manual,
+            candidateAllocations: weekAllocations
         )
     }
 
@@ -149,7 +192,9 @@ final class PlanStore: ObservableObject {
             slot: slot,
             requiredMinutes: descriptor.estimatedDurationMinutes,
             excludingAllocationId: nil,
-            requiresQueueAvailability: true
+            requiresQueueAvailability: true,
+            context: .manual,
+            candidateAllocations: weekAllocations
         )
         if case .blocked(let message) = validation {
             setWarning(message)
@@ -198,7 +243,9 @@ final class PlanStore: ObservableObject {
             slot: newSlot,
             requiredMinutes: duration,
             excludingAllocationId: id,
-            requiresQueueAvailability: false
+            requiresQueueAvailability: false,
+            context: .manual,
+            candidateAllocations: weekAllocations
         )
         if case .blocked(let message) = validation {
             setWarning(message)
@@ -233,6 +280,155 @@ final class PlanStore: ObservableObject {
     func removeAllocation(id: UUID) {
         allAllocations.removeAll(where: { $0.id == id })
         saveAndRefresh()
+    }
+
+    func clearAllAllocations() {
+        allAllocations = []
+        do {
+            try repository.save([])
+        } catch {
+            setWarning("Could not clear saved plan data.")
+        }
+        refreshWithLastContext()
+    }
+
+    func validateDraft(_ draft: [PlanAllocationDraft]) -> [PlanSuggestion] {
+        guard draft.isEmpty == false else { return [] }
+
+        var warnings: [PlanSuggestion] = []
+        var simulated = weekAllocations
+
+        for item in draft {
+            guard let descriptor = protocolsById[item.protocolId] else {
+                warnings.append(
+                    PlanSuggestion(
+                        id: UUID(),
+                        protocolId: item.protocolId,
+                        dayIndex: dayIndex(for: item.day) ?? 0,
+                        slot: item.slot,
+                        startTimeMinutesFromMidnight: nil,
+                        durationMinutes: item.durationMinutes,
+                        confidence: 0.1,
+                        reason: "Protocol is no longer available.",
+                        kind: .warning
+                    )
+                )
+                continue
+            }
+
+            let validation = validatePlacement(
+                descriptor: descriptor,
+                protocolId: item.protocolId,
+                day: item.day,
+                slot: planSlot(for: item.slot),
+                requiredMinutes: item.durationMinutes,
+                excludingAllocationId: nil,
+                requiresQueueAvailability: false,
+                context: .regulator,
+                candidateAllocations: simulated
+            )
+
+            if case .blocked(let reason) = validation {
+                warnings.append(
+                    PlanSuggestion(
+                        id: UUID(),
+                        protocolId: item.protocolId,
+                        dayIndex: dayIndex(for: item.day) ?? 0,
+                        slot: item.slot,
+                        startTimeMinutesFromMidnight: nil,
+                        durationMinutes: item.durationMinutes,
+                        confidence: 0.15,
+                        reason: reason,
+                        kind: .warning
+                    )
+                )
+                continue
+            }
+
+            simulated.append(
+                PlanAllocation(
+                    id: UUID(),
+                    protocolId: item.protocolId,
+                    weekId: item.weekId,
+                    day: DateRules.startOfDay(item.day, calendar: calendar),
+                    slot: planSlot(for: item.slot),
+                    startTime: nil,
+                    durationMinutes: item.durationMinutes,
+                    createdAt: Date(),
+                    updatedAt: Date()
+                )
+            )
+        }
+
+        return warnings
+    }
+
+    func applyDraft(_ draft: [PlanAllocationDraft]) -> Result<Int, PlanDraftApplyError> {
+        guard draft.isEmpty == false else {
+            return .failure(.message("No draft allocations to apply."))
+        }
+
+        let warnings = validateDraft(draft)
+        if let firstWarning = warnings.first {
+            setWarning(firstWarning.reason)
+            return .failure(.message(firstWarning.reason))
+        }
+
+        var simulated = weekAllocations
+        var newAllocations: [PlanAllocation] = []
+        let now = Date()
+
+        for item in draft {
+            guard let descriptor = protocolsById[item.protocolId] else {
+                let message = "Protocol is no longer available."
+                setWarning(message)
+                return .failure(.message(message))
+            }
+
+            let validation = validatePlacement(
+                descriptor: descriptor,
+                protocolId: item.protocolId,
+                day: item.day,
+                slot: planSlot(for: item.slot),
+                requiredMinutes: item.durationMinutes,
+                excludingAllocationId: nil,
+                requiresQueueAvailability: false,
+                context: .regulator,
+                candidateAllocations: simulated
+            )
+
+            if case .blocked(let reason) = validation {
+                setWarning(reason)
+                return .failure(.message(reason))
+            }
+
+            let allocation = PlanAllocation(
+                id: UUID(),
+                protocolId: item.protocolId,
+                weekId: item.weekId,
+                day: DateRules.startOfDay(item.day, calendar: calendar),
+                slot: planSlot(for: item.slot),
+                startTime: nil,
+                durationMinutes: item.durationMinutes,
+                createdAt: now,
+                updatedAt: now
+            )
+            simulated.append(allocation)
+            newAllocations.append(allocation)
+        }
+
+        let updatedAllAllocations = allAllocations + newAllocations
+        do {
+            try repository.save(updatedAllAllocations)
+        } catch {
+            let message = "Could not persist draft plan."
+            setWarning(message)
+            return .failure(.message(message))
+        }
+
+        allAllocations = updatedAllAllocations
+        refreshWithLastContext()
+        return .success(newAllocations.count)
     }
 }
 
@@ -281,9 +477,9 @@ private extension PlanStore {
                 mode: nn.definition.mode,
                 frequencyPerWeek: nn.definition.frequencyPerWeek,
                 state: nn.state,
-                estimatedDurationMinutes: estimatedDuration(for: nn.definition.mode, title: nn.definition.title),
+                estimatedDurationMinutes: nn.definition.estimatedDurationMinutes,
                 tone: tone,
-                icon: icon(for: nn.definition.title),
+                icon: nn.definition.iconSystemName,
                 completionsThisWeek: completionsThisWeek,
                 completionsTodayCount: completionsTodayCount
             )
@@ -373,6 +569,7 @@ private extension PlanStore {
                 id: descriptor.id,
                 protocolId: descriptor.id,
                 title: descriptor.title,
+                icon: descriptor.icon,
                 remainingCount: remaining,
                 durationLabel: "\(descriptor.estimatedDurationMinutes)m",
                 requiredMinutes: descriptor.estimatedDurationMinutes,
@@ -550,22 +747,47 @@ private extension PlanStore {
 
     func busyEvents(for day: Date, slot: PlanSlot) -> [PlanCalendarEvent] {
         guard let slotInterval = slot.interval(on: day, calendar: calendar) else { return [] }
+        let dayStart = DateRules.startOfDay(day, calendar: calendar)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { return [] }
+        let dayInterval = DateInterval(start: dayStart, end: dayEnd)
 
         return calendarEvents.filter { event in
-            guard event.isAllDay == false else { return false }
             let eventInterval = DateInterval(start: event.startDateTime, end: event.endDateTime)
-            return eventInterval.intersects(slotInterval)
+            if event.isAllDay {
+                return slot == .am && eventInterval.intersects(dayInterval)
+            }
+            if eventInterval.intersects(slotInterval) {
+                return true
+            }
+            return touchesSlotBoundary(eventInterval: eventInterval, slotInterval: slotInterval)
         }
     }
 
     func busyMinutes(for day: Date, slot: PlanSlot) -> Int {
         guard let slotInterval = slot.interval(on: day, calendar: calendar) else { return 0 }
+        let dayStart = DateRules.startOfDay(day, calendar: calendar)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { return 0 }
+        let dayInterval = DateInterval(start: dayStart, end: dayEnd)
 
-        return calendarEvents.reduce(0) { partial, event in
-            guard event.isAllDay == false else { return partial }
+        var totalBusyMinutes = 0
+
+        for event in calendarEvents {
             let eventInterval = DateInterval(start: event.startDateTime, end: event.endDateTime)
-            return partial + overlapMinutes(slotInterval, eventInterval)
+            if event.isAllDay {
+                if eventInterval.intersects(dayInterval) {
+                    return slot.durationMinutes
+                }
+                continue
+            }
+            let overlap = overlapMinutes(slotInterval, eventInterval)
+            if overlap > 0 {
+                totalBusyMinutes += overlap
+            } else if touchesSlotBoundary(eventInterval: eventInterval, slotInterval: slotInterval) {
+                totalBusyMinutes += 1
+            }
         }
+
+        return min(slot.durationMinutes, max(0, totalBusyMinutes))
     }
 
     func overlapMinutes(_ lhs: DateInterval, _ rhs: DateInterval) -> Int {
@@ -575,8 +797,17 @@ private extension PlanStore {
         return Int((end.timeIntervalSince(start) / 60).rounded())
     }
 
+    func touchesSlotBoundary(eventInterval: DateInterval, slotInterval: DateInterval) -> Bool {
+        (eventInterval.start == slotInterval.end && eventInterval.end > slotInterval.end) ||
+        (eventInterval.end == slotInterval.start && eventInterval.start < slotInterval.start)
+    }
+
     func allocationsFor(day: Date, slot: PlanSlot) -> [PlanAllocation] {
-        weekAllocations
+        allocationsFor(day: day, slot: slot, in: weekAllocations)
+    }
+
+    func allocationsFor(day: Date, slot: PlanSlot, in allocations: [PlanAllocation]) -> [PlanAllocation] {
+        allocations
             .filter {
                 DateRules.startOfDay($0.day, calendar: calendar) == day && $0.slot == slot
             }
@@ -584,9 +815,13 @@ private extension PlanStore {
     }
 
     func slotSnapshot(day: Date, slot: PlanSlot, excluding allocationId: UUID?) -> PlanSlotSnapshot {
+        slotSnapshot(day: day, slot: slot, excluding: allocationId, in: weekAllocations)
+    }
+
+    func slotSnapshot(day: Date, slot: PlanSlot, excluding allocationId: UUID?, in allocations: [PlanAllocation]) -> PlanSlotSnapshot {
         let busy = busyMinutes(for: day, slot: slot)
 
-        let planned = allocationsFor(day: day, slot: slot)
+        let planned = allocationsFor(day: day, slot: slot, in: allocations)
             .filter { $0.id != allocationId }
             .reduce(0) { partial, allocation in
                 let duration = allocation.durationMinutes ?? protocolsById[allocation.protocolId]?.estimatedDurationMinutes ?? 90
@@ -605,15 +840,23 @@ private extension PlanStore {
     }
 
     func plannedCount(on day: Date, excluding allocationId: UUID?) -> Int {
+        plannedCount(on: day, excluding: allocationId, in: weekAllocations)
+    }
+
+    func plannedCount(on day: Date, excluding allocationId: UUID?, in allocations: [PlanAllocation]) -> Int {
         let dayStart = DateRules.startOfDay(day, calendar: calendar)
-        return weekAllocations.filter {
+        return allocations.filter {
             DateRules.startOfDay($0.day, calendar: calendar) == dayStart && $0.id != allocationId
         }.count
     }
 
     func dailyPlannedCount(protocolId: UUID, day: Date, excluding allocationId: UUID?) -> Int {
+        dailyPlannedCount(protocolId: protocolId, day: day, excluding: allocationId, in: weekAllocations)
+    }
+
+    func dailyPlannedCount(protocolId: UUID, day: Date, excluding allocationId: UUID?, in allocations: [PlanAllocation]) -> Int {
         let dayStart = DateRules.startOfDay(day, calendar: calendar)
-        return weekAllocations.filter {
+        return allocations.filter {
             $0.protocolId == protocolId &&
             DateRules.startOfDay($0.day, calendar: calendar) == dayStart &&
             $0.id != allocationId
@@ -627,8 +870,14 @@ private extension PlanStore {
         slot: PlanSlot,
         requiredMinutes: Int,
         excludingAllocationId: UUID?,
-        requiresQueueAvailability: Bool
+        requiresQueueAvailability: Bool,
+        context: PlanValidationContext,
+        candidateAllocations: [PlanAllocation]
     ) -> PlanPlacementValidation {
+        if descriptor.state == .suspended {
+            return .blocked(message: "Suspended protocol cannot be planned right now.")
+        }
+
         if requiresQueueAvailability {
             guard let queueItem = queueItems.first(where: { $0.protocolId == protocolId }) else {
                 return .blocked(message: "No remaining sessions for this protocol this week.")
@@ -638,25 +887,47 @@ private extension PlanStore {
             }
         }
 
+        let weeklyTarget: Int
+        switch descriptor.mode {
+        case .daily:
+            weeklyTarget = 7
+        case .session:
+            weeklyTarget = descriptor.frequencyPerWeek
+        }
+        let plannedThisWeek = candidateAllocations.filter {
+            $0.protocolId == protocolId && $0.id != excludingAllocationId
+        }.count
+        if descriptor.completionsThisWeek + plannedThisWeek >= weeklyTarget {
+            return .blocked(message: "No remaining sessions for this protocol this week.")
+        }
+
         let dayStart = DateRules.startOfDay(day, calendar: calendar)
-        if dailyPlannedCount(protocolId: protocolId, day: dayStart, excluding: excludingAllocationId) >= 1 {
+        if dailyPlannedCount(
+            protocolId: protocolId,
+            day: dayStart,
+            excluding: excludingAllocationId,
+            in: candidateAllocations
+        ) >= 1 {
             return .blocked(message: "Protocol already planned for this day.")
         }
 
         if descriptor.mode == .daily {
-            let todayStart = DateRules.startOfDay(lastReferenceDate, calendar: calendar)
-            let tomorrowStart = DateRules.addingDays(1, to: todayStart, calendar: calendar)
-            if dayStart != todayStart && dayStart != tomorrowStart {
-                return .blocked(message: "Daily protocols can only be planned for today or tomorrow.")
+            if context == .manual {
+                let todayStart = DateRules.startOfDay(lastReferenceDate, calendar: calendar)
+                let tomorrowStart = DateRules.addingDays(1, to: todayStart, calendar: calendar)
+                if dayStart != todayStart && dayStart != tomorrowStart {
+                    return .blocked(message: "Daily protocols can only be planned for today or tomorrow.")
+                }
             }
         }
 
-        let snapshot = slotSnapshot(day: dayStart, slot: slot, excluding: excludingAllocationId)
+        let snapshot = slotSnapshot(day: dayStart, slot: slot, excluding: excludingAllocationId, in: candidateAllocations)
         if snapshot.freeMinutes < requiredMinutes {
             return .blocked(message: "Insufficient free minutes in this slot.")
         }
 
-        if shouldApplyRecoveryStrictness(for: descriptor), plannedCount(on: dayStart, excluding: excludingAllocationId) >= 2 {
+        if shouldApplyRecoveryStrictness(for: descriptor),
+           plannedCount(on: dayStart, excluding: excludingAllocationId, in: candidateAllocations) >= 2 {
             return .blocked(message: "Recovery capacity reached for this day.")
         }
 
@@ -686,21 +957,28 @@ private extension PlanStore {
         return "\(minutes)m AVAILABLE"
     }
 
-    func estimatedDuration(for mode: NonNegotiableMode, title: String) -> Int {
-        let lower = title.lowercased()
-        if lower.contains("hydrat") || lower.contains("water") { return 15 }
-        if lower.contains("iso") || lower.contains("stretch") { return 20 }
-        if mode == .daily { return 20 }
-        return 90
+    func dayIndex(for day: Date) -> Int? {
+        let start = DateRules.startOfDay(day, calendar: calendar)
+        let weekStart = DateRules.startOfDay(weekInterval.start, calendar: calendar)
+        let delta = calendar.dateComponents([.day], from: weekStart, to: start).day ?? 0
+        guard (0...6).contains(delta) else { return nil }
+        return delta
     }
 
-    func icon(for title: String) -> String {
-        let lower = title.lowercased()
-        if lower.contains("hydrat") || lower.contains("water") { return "drop.fill" }
-        if lower.contains("drill") || lower.contains("neural") { return "brain.head.profile" }
-        if lower.contains("deep") || lower.contains("focus") { return "bolt.fill" }
-        if lower.contains("iso") || lower.contains("strength") { return "figure.strengthtraining.traditional" }
-        return "waveform.path.ecg"
+    func planSlot(for regulationSlot: RegulationSlot) -> PlanSlot {
+        switch regulationSlot {
+        case .am: return .am
+        case .pm: return .pm
+        case .eve: return .eve
+        }
+    }
+
+    func regulationSlot(for planSlot: PlanSlot) -> RegulationSlot {
+        switch planSlot {
+        case .am: return .am
+        case .pm: return .pm
+        case .eve: return .eve
+        }
     }
 
     func setWarning(_ message: String) {

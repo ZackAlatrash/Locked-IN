@@ -138,9 +138,7 @@ struct CockpitNonNegotiableCard: View {
     }
 
     private var iconName: String {
-        if model.title.lowercased().contains("gym") { return "dumbbell.fill" }
-        if model.title.lowercased().contains("sleep") { return "moon.fill" }
-        return "checklist"
+        ProtocolIconCatalog.resolvedSymbolName(model.iconSystemName, fallback: "checklist")
     }
 
     private var iconColor: Color {

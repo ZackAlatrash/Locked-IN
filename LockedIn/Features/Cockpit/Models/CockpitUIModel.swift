@@ -80,6 +80,7 @@ struct CockpitNonNegotiableCardModel: Identifiable {
 
     let id: UUID
     let title: String
+    let iconSystemName: String
     let subtitle: String
     let weeklyProgressText: String
     let stateHint: String?
@@ -112,6 +113,7 @@ struct TodayTask: Identifiable, Equatable {
     let id: UUID
     let nnId: UUID
     let title: String
+    let iconSystemName: String
     let subtitle: String
     let statusText: String
     let recoveryHint: String?

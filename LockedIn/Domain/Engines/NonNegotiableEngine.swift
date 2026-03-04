@@ -16,6 +16,8 @@ enum NonNegotiableDefinitionValidationReason {
     case frequencyOutOfRange
     case invalidDailyFrequency
     case invalidLockDuration
+    case durationOutOfRange
+    case iconEmpty
 }
 
 enum NonNegotiableEngineError: Error {
@@ -33,7 +35,7 @@ struct NonNegotiableEngine {
     }
 
     func create(definition: NonNegotiableDefinition, startDate: Date, totalLockDays: Int = 14) throws -> NonNegotiable {
-        try validate(definition: definition, totalLockDays: totalLockDays)
+        try validateDefinition(definition, totalLockDays: totalLockDays)
 
         let normalizedStart = DateRules.startOfDay(startDate, calendar: calendar)
         let lock = LockConfiguration(startDate: normalizedStart, totalLockDays: totalLockDays)
@@ -171,12 +173,22 @@ struct NonNegotiableEngine {
         DateRules.addingDays(nn.lock.totalLockDays, to: nn.lock.startDate, calendar: calendar)
     }
 
+    func validateDefinition(_ definition: NonNegotiableDefinition, totalLockDays: Int) throws {
+        try validate(definition: definition, totalLockDays: totalLockDays)
+    }
+
     private func validate(definition: NonNegotiableDefinition, totalLockDays: Int) throws {
         if definition.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             throw NonNegotiableEngineError.invalidDefinition(reason: .titleEmpty)
         }
         if totalLockDays != 14 && totalLockDays != 28 {
             throw NonNegotiableEngineError.invalidDefinition(reason: .invalidLockDuration)
+        }
+        if NonNegotiableDefinition.isValidEstimatedDuration(definition.estimatedDurationMinutes) == false {
+            throw NonNegotiableEngineError.invalidDefinition(reason: .durationOutOfRange)
+        }
+        if NonNegotiableDefinition.isValidIconSystemName(definition.iconSystemName) == false {
+            throw NonNegotiableEngineError.invalidDefinition(reason: .iconEmpty)
         }
 
         let normalizedFrequency = NonNegotiableDefinition.normalizedFrequency(

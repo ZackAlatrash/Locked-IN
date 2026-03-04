@@ -1,4 +1,5 @@
 import Foundation
+import EventKit
 
 enum PlanSlot: String, CaseIterable, Codable, Identifiable {
     case am
@@ -32,6 +33,10 @@ enum PlanSlot: String, CaseIterable, Codable, Identifiable {
     }
 
     var durationMinutes: Int { 360 }
+
+    var durationHoursLabel: String {
+        "\(durationMinutes / 60)H"
+    }
 
     func interval(on day: Date, calendar: Calendar) -> DateInterval? {
         guard let start = calendar.date(bySettingHour: startHour, minute: 0, second: 0, of: day) else {
@@ -99,6 +104,7 @@ struct PlanQueueItem: Identifiable {
     let id: UUID
     let protocolId: UUID
     let title: String
+    let icon: String
     let remainingCount: Int
     let durationLabel: String
     let requiredMinutes: Int
@@ -192,10 +198,115 @@ enum PlanMutation {
 }
 
 protocol PlanCalendarProviding {
+    func authorizationStatus() -> PlanCalendarAuthorizationStatus
+    func requestAccess() async -> PlanCalendarAuthorizationStatus
     func events(for week: DateInterval, calendar: Calendar) -> [PlanCalendarEvent]
 }
 
+enum PlanCalendarAuthorizationStatus: Equatable {
+    case notDetermined
+    case denied
+    case restricted
+    case writeOnly
+    case authorized
+
+    var isAuthorized: Bool {
+        self == .authorized
+    }
+}
+
+final class AppleCalendarProvider: PlanCalendarProviding {
+    private let eventStore: EKEventStore
+
+    init(eventStore: EKEventStore = EKEventStore()) {
+        self.eventStore = eventStore
+    }
+
+    func authorizationStatus() -> PlanCalendarAuthorizationStatus {
+        let status = EKEventStore.authorizationStatus(for: .event)
+        return mapAuthorizationStatus(status)
+    }
+
+    func requestAccess() async -> PlanCalendarAuthorizationStatus {
+        let current = authorizationStatus()
+        if current == .authorized || current == .denied || current == .restricted || current == .writeOnly {
+            return current
+        }
+
+        do {
+            if #available(iOS 17.0, *) {
+                _ = try await eventStore.requestFullAccessToEvents()
+            } else {
+                _ = try await withCheckedThrowingContinuation { continuation in
+                    eventStore.requestAccess(to: .event) { granted, error in
+                        if let error {
+                            continuation.resume(throwing: error)
+                        } else {
+                            continuation.resume(returning: granted)
+                        }
+                    }
+                } as Bool
+            }
+        } catch {
+            // Ignore request error and return current observed authorization state.
+        }
+
+        return authorizationStatus()
+    }
+
+    func events(for week: DateInterval, calendar: Calendar) -> [PlanCalendarEvent] {
+        guard authorizationStatus().isAuthorized else { return [] }
+
+        let predicate = eventStore.predicateForEvents(
+            withStart: week.start,
+            end: week.end,
+            calendars: nil
+        )
+
+        return eventStore.events(matching: predicate)
+            .filter { $0.endDate > $0.startDate }
+            .map { event in
+                PlanCalendarEvent(
+                    id: UUID(),
+                    title: event.title,
+                    startDateTime: event.startDate,
+                    endDateTime: event.endDate,
+                    isAllDay: event.isAllDay,
+                    sourceCalendarName: event.calendar.title
+                )
+            }
+            .sorted { $0.startDateTime < $1.startDateTime }
+    }
+
+    private func mapAuthorizationStatus(_ status: EKAuthorizationStatus) -> PlanCalendarAuthorizationStatus {
+        switch status {
+        case .notDetermined:
+            return .notDetermined
+        case .restricted:
+            return .restricted
+        case .denied:
+            return .denied
+        case .authorized:
+            return .authorized
+        case .fullAccess:
+            return .authorized
+        case .writeOnly:
+            return .writeOnly
+        @unknown default:
+            return .denied
+        }
+    }
+}
+
 struct MockPlanCalendarProvider: PlanCalendarProviding {
+    func authorizationStatus() -> PlanCalendarAuthorizationStatus {
+        .authorized
+    }
+
+    func requestAccess() async -> PlanCalendarAuthorizationStatus {
+        .authorized
+    }
+
     func events(for week: DateInterval, calendar: Calendar) -> [PlanCalendarEvent] {
         let base = DateRules.startOfDay(week.start, calendar: calendar)
         let templates: [(Int, Int, Int, String)] = [

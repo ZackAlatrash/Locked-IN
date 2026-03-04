@@ -635,12 +635,8 @@ private extension CockpitLogsScreen {
     }
 
     func completionIcon(for completion: CompletionRecord) -> String {
-        let title = title(for: completion).lowercased()
-        if title.contains("refactor") || title.contains("code") {
-            return "chevron.left.slash.chevron.right"
-        }
-        if title.contains("focus") || title.contains("work") {
-            return "terminal"
+        if let owner = store.system.nonNegotiables.first(where: { $0.completions.contains(completion) }) {
+            return ProtocolIconCatalog.resolvedSymbolName(owner.definition.iconSystemName, fallback: "waveform.path.ecg")
         }
         return "waveform.path.ecg"
     }

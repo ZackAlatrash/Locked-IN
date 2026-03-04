@@ -442,7 +442,7 @@ private extension CockpitModernView {
 
             Spacer()
 
-            Image(systemName: protocolIcon(for: task))
+            Image(systemName: ProtocolIconCatalog.resolvedSymbolName(task.iconSystemName, fallback: "scope"))
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(primary.opacity(0.72))
         }
@@ -458,20 +458,6 @@ private extension CockpitModernView {
         .onTapGesture {
             onProtocolTap(task.nnId)
         }
-    }
-
-    func protocolIcon(for task: TodayTask) -> String {
-        let text = (task.title + " " + task.subtitle).lowercased()
-        if text.contains("hydrat") || text.contains("water") {
-            return "drop.fill"
-        }
-        if text.contains("distract") || text.contains("air-plane") || text.contains("airplane") {
-            return "nosign"
-        }
-        if text.contains("deep") || text.contains("focus") {
-            return "bolt.fill"
-        }
-        return "scope"
     }
 
     func dayLabel(for index: Int) -> String {

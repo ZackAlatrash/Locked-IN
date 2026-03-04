@@ -106,6 +106,7 @@ private extension CockpitViewModel {
                 return CockpitNonNegotiableCardModel(
                     id: nn.id,
                     title: nn.definition.title,
+                    iconSystemName: nn.definition.iconSystemName,
                     subtitle: subtitle,
                     weeklyProgressText: weeklyProgress,
                     stateHint: stateHint,
@@ -256,6 +257,7 @@ private extension CockpitViewModel {
                         id: nn.id,
                         nnId: nn.id,
                         title: nn.definition.title,
+                        iconSystemName: nn.definition.iconSystemName,
                         subtitle: subtitle,
                         statusText: statusText,
                         recoveryHint: recoveryHint,
@@ -297,6 +299,7 @@ private extension CockpitViewModel {
                         id: nn.id,
                         nnId: nn.id,
                         title: nn.definition.title,
+                        iconSystemName: nn.definition.iconSystemName,
                         subtitle: subtitle,
                         statusText: statusText,
                         recoveryHint: recoveryHint,

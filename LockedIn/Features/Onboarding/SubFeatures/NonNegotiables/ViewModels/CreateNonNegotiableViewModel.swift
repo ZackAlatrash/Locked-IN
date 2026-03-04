@@ -33,12 +33,22 @@ final class CreateNonNegotiableViewModel: ObservableObject {
         didSet {
             if mode == .daily {
                 frequencyPerWeek = 7
+                if isUsingCustomDuration == false {
+                    selectedDurationMinutes = 15
+                }
+            } else if isUsingCustomDuration == false && selectedDurationMinutes == 15 {
+                selectedDurationMinutes = 60
             }
         }
     }
     @Published var frequencyPerWeek: Int = 4
     @Published var totalLockDays: Int = 28
     @Published var selectedGoalId: UUID
+    @Published var selectedIconSystemName: String = NonNegotiableDefinition.defaultIconSystemName(for: .session)
+    @Published var preferredExecutionSlot: PreferredExecutionSlot = .none
+    @Published var selectedDurationMinutes: Int = 60
+    @Published var customDurationText: String = ""
+    @Published var isUsingCustomDuration: Bool = false
 
     @Published var isSubmitting: Bool = false
     @Published var showValidationError: Bool = false
@@ -50,6 +60,7 @@ final class CreateNonNegotiableViewModel: ObservableObject {
         GoalOption(id: UUID(uuidString: "54BAE0A8-7992-4AA0-9D90-45F75CB1D3EF") ?? UUID(), title: "Performance"),
         GoalOption(id: UUID(uuidString: "DBA8FC85-BAD0-4DE0-907A-FA733A2F8D79") ?? UUID(), title: "Discipline")
     ]
+    static let durationPresets: [Int] = [15, 30, 45, 60, 90]
 
     // Backward-compatible properties used by legacy onboarding content.
     @Published var minimumMinutesText: String = ""
@@ -83,12 +94,26 @@ final class CreateNonNegotiableViewModel: ObservableObject {
 
     // Backward-compatible API used by existing onboarding shell content.
     var minimum: String {
-        get { minimumMinutesText }
-        set { minimumMinutesText = newValue }
+        get {
+            if isUsingCustomDuration {
+                return customDurationText
+            }
+            return "\(selectedDurationMinutes)"
+        }
+        set { setCustomDurationText(newValue) }
+    }
+
+    var effectiveDurationMinutes: Int {
+        resolvedDurationMinutes() ?? selectedDurationMinutes
     }
 
     func updateAction(_ value: String) {
         title = value
+        clearErrors()
+    }
+
+    func selectIconSystemName(_ iconSystemName: String) {
+        selectedIconSystemName = iconSystemName
         clearErrors()
     }
 
@@ -111,7 +136,30 @@ final class CreateNonNegotiableViewModel: ObservableObject {
     }
 
     func updateMinimum(_ value: String) {
+        setCustomDurationText(value)
+        clearErrors()
+    }
+
+    func selectDurationPreset(_ minutes: Int) {
+        selectedDurationMinutes = minutes
+        minimumMinutesText = "\(minutes)"
+        isUsingCustomDuration = false
+        clearErrors()
+    }
+
+    func enableCustomDuration() {
+        isUsingCustomDuration = true
+        if customDurationText.isEmpty {
+            customDurationText = "\(selectedDurationMinutes)"
+            minimumMinutesText = customDurationText
+        }
+        clearErrors()
+    }
+
+    func setCustomDurationText(_ value: String) {
         minimumMinutesText = value
+        customDurationText = value
+        isUsingCustomDuration = true
         clearErrors()
     }
 
@@ -125,6 +173,7 @@ final class CreateNonNegotiableViewModel: ObservableObject {
 
     func submit(using store: CommitmentSystemStore, onSuccess: () -> Void) {
         guard validateForm() else { return }
+        guard let effectiveDuration = resolvedDurationMinutes() else { return }
 
         isSubmitting = true
         defer { isSubmitting = false }
@@ -135,7 +184,10 @@ final class CreateNonNegotiableViewModel: ObservableObject {
                 title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                 frequencyPerWeek: effectiveFrequency,
                 mode: mode,
-                goalId: selectedGoalId
+                goalId: selectedGoalId,
+                preferredExecutionSlot: preferredExecutionSlot,
+                estimatedDurationMinutes: effectiveDuration,
+                iconSystemName: selectedIconSystemName
             )
 
             try store.createNonNegotiable(definition: definition, totalLockDays: totalLockDays)
@@ -150,7 +202,7 @@ final class CreateNonNegotiableViewModel: ObservableObject {
     }
 
     func exportData() -> (action: String, frequency: NonNegotiableFrequency, minimum: String) {
-        (title, frequency, minimumMinutesText)
+        (title, frequency, minimum)
     }
 
     private func validateMessages() -> [String] {
@@ -168,7 +220,20 @@ final class CreateNonNegotiableViewModel: ObservableObject {
             messages.append("Lock duration must be 14 or 28 days.")
         }
 
+        guard let duration = resolvedDurationMinutes(),
+              NonNegotiableDefinition.isValidEstimatedDuration(duration) else {
+            messages.append("Duration must be between 5 and 360 minutes.")
+            return messages
+        }
+
         return messages
+    }
+
+    private func resolvedDurationMinutes() -> Int? {
+        if isUsingCustomDuration {
+            return Int(customDurationText.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        return selectedDurationMinutes
     }
 
     private func map(error: Error) -> SubmissionError {
@@ -199,6 +264,10 @@ final class CreateNonNegotiableViewModel: ObservableObject {
             return "Daily mode requires 7 completions per week."
         case .invalidLockDuration:
             return "Lock duration must be 14 or 28 days."
+        case .durationOutOfRange:
+            return "Duration must be between 5 and 360 minutes."
+        case .iconEmpty:
+            return "Please select an icon."
         }
     }
 
