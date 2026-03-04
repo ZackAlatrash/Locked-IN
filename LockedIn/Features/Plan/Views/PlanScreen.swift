@@ -14,19 +14,33 @@ struct PlanScreen: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage("phase1MotionSessionID") private var motionSessionID = ""
+    @AppStorage("didAnimatePlanColumnsSessionID") private var didAnimatePlanColumnsSessionID = ""
+    @AppStorage("didDismissPlanBoardHintSessionID") private var didDismissPlanBoardHintSessionID = ""
 
     @StateObject private var viewModel = PlanViewModel()
     @State private var showProfile = false
     @State private var boardMode: PlanBoardMode = .focusToday
     @State private var activeDragPayload: String?
     @State private var targetedSlotId: String?
-    @State private var hasInteractedWithBoardScroll = false
     @State private var toast: PlanToast?
     @State private var pendingUndo: PlanUndoAction?
+    @State private var revealedDayIds: Set<Date> = []
+    @State private var didRunColumnEntrance = false
+    @State private var recentlyLockedAllocationKeys: Set<String> = []
+    @State private var lockInPulseActive = false
 
     private var isDarkMode: Bool { colorScheme == .dark }
     private var navItemColor: Color { isDarkMode ? Theme.Colors.textSecondary : Color(hex: "111827") }
     private var accentColor: Color { isDarkMode ? Color(hex: "#00F2FF") : Color(hex: "#0EA5E9") }
+    private var effectiveMotionSessionID: String { motionSessionID.isEmpty ? "launch-pending" : motionSessionID }
+    private var didAnimateColumnsThisSession: Bool {
+        didAnimatePlanColumnsSessionID == effectiveMotionSessionID
+    }
+    private var shouldShowBoardHint: Bool {
+        boardMode == .focusToday && didDismissPlanBoardHintSessionID != effectiveMotionSessionID
+    }
 
     var body: some View {
         ZStack {
@@ -50,6 +64,7 @@ struct PlanScreen: View {
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
+                    Haptics.selection()
                     selectedTab = .logs
                 } label: {
                     ZStack(alignment: .topTrailing) {
@@ -66,6 +81,7 @@ struct PlanScreen: View {
                 .accessibilityLabel("Open logs")
 
                 Button {
+                    Haptics.selection()
                     showProfile = true
                 } label: {
                     Image(systemName: "person.crop.circle")
@@ -101,9 +117,16 @@ struct PlanScreen: View {
                 draftCount: viewModel.draftAllocations.count,
                 hasDraft: viewModel.hasDraft,
                 onApply: {
-                    viewModel.applyDraft()
+                    let draftToApply = viewModel.draftAllocations
+                    if viewModel.applyDraft() {
+                        Haptics.success()
+                        triggerRegulatorLockInAnimation(for: draftToApply)
+                    } else {
+                        Haptics.warning()
+                    }
                 },
                 onDiscard: {
+                    Haptics.selection()
                     viewModel.discardDraft()
                 }
             )
@@ -124,6 +147,7 @@ struct PlanScreen: View {
                     )
                 },
                 onCancel: {
+                    Haptics.selection()
                     viewModel.dismissProtocolEditor()
                 }
             )
@@ -132,7 +156,6 @@ struct PlanScreen: View {
         }
         .onAppear {
             boardMode = .focusToday
-            hasInteractedWithBoardScroll = false
             viewModel.bind(planStore: planStore, commitmentStore: commitmentStore)
         }
         .onChange(of: scenePhase) { phase in
@@ -156,7 +179,6 @@ struct PlanScreen: View {
                             .stroke(isDarkMode ? Color.red.opacity(0.5) : Color.orange.opacity(0.42), lineWidth: 1)
                     )
                     .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
         .overlay(alignment: .bottom) {
@@ -164,7 +186,6 @@ struct PlanScreen: View {
                 planToastView(toast)
                     .padding(.horizontal, 14)
                     .padding(.bottom, 22)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
     }
@@ -175,9 +196,8 @@ private extension PlanScreen {
         VStack(alignment: .leading, spacing: 12) {
             planBoardHeader
             calendarConnectionBanner
-            if boardMode == .focusToday && hasInteractedWithBoardScroll == false {
+            if shouldShowBoardHint {
                 boardScrollHint
-                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
             weekPillars
         }
@@ -200,6 +220,7 @@ private extension PlanScreen {
 
             HStack(spacing: 8) {
                 Button {
+                    Haptics.selection()
                     viewModel.runRegulator()
                 } label: {
                     HStack(spacing: 6) {
@@ -223,7 +244,8 @@ private extension PlanScreen {
                 .buttonStyle(.plain)
 
                 Button {
-                    withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                    Haptics.selection()
+                    withAnimation(reduceMotion ? .none : Theme.Animation.context) {
                         boardMode = boardMode == .focusToday ? .expandedWeek : .focusToday
                     }
                 } label: {
@@ -267,6 +289,7 @@ private extension PlanScreen {
 
             if viewModel.isCalendarConnected == false {
                 Button {
+                    Haptics.selection()
                     handleCalendarButtonTap()
                 } label: {
                     Text(calendarActionLabel)
@@ -328,15 +351,22 @@ private extension PlanScreen {
         case .authorized, .notDetermined:
             Task {
                 await viewModel.requestCalendarAccess()
+                if viewModel.isCalendarConnected {
+                    Haptics.success()
+                } else {
+                    Haptics.warning()
+                }
             }
         case .denied, .restricted, .writeOnly:
+            Haptics.warning()
             guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
             openURL(url)
         }
     }
 
     var queueSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let totalAvailable = viewModel.queueItems.reduce(0) { $0 + $1.remainingCount }
+        return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("QUEUE : PROTOCOLS")
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
@@ -349,7 +379,7 @@ private extension PlanScreen {
                     Circle()
                         .fill(Color(hex: "FACC15"))
                         .frame(width: 7, height: 7)
-                    Text("\(viewModel.queueItems.reduce(0) { $0 + $1.remainingCount }) AVAILABLE")
+                    Text("\(totalAvailable) AVAILABLE")
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                         .foregroundColor(textMain.opacity(0.78))
                 }
@@ -415,6 +445,7 @@ private extension PlanScreen {
 
             Menu {
                 Button {
+                    Haptics.selection()
                     viewModel.openProtocolEditor(protocolId: item.protocolId)
                 } label: {
                     Label("Edit Protocol", systemImage: "slider.horizontal.3")
@@ -448,10 +479,12 @@ private extension PlanScreen {
         .opacity(item.isDisabled ? 0.65 : 1)
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .onTapGesture {
+            Haptics.selection()
             viewModel.selectProtocol(id: item.protocolId)
         }
         .contextMenu {
             Button {
+                Haptics.selection()
                 viewModel.openProtocolEditor(protocolId: item.protocolId)
             } label: {
                 Label("Edit Protocol", systemImage: "slider.horizontal.3")
@@ -509,25 +542,48 @@ private extension PlanScreen {
     }
 
     var weekPillars: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .top, spacing: boardMode == .expandedWeek ? 12 : 8) {
-                timeAxisColumn
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: boardMode == .expandedWeek ? 12 : 8) {
+                    timeAxisColumn
 
-                ForEach(viewModel.currentWeekDays) { day in
-                    dayColumn(day)
-                        .animation(.spring(response: 0.32, dampingFraction: 0.86), value: boardMode)
+                    ForEach(Array(viewModel.currentWeekDays.enumerated()), id: \.element.id) { index, day in
+                        let visible = revealedDayIds.contains(day.id)
+                        dayColumn(day)
+                            .id(day.id)
+                            .opacity(visible ? 1 : 0)
+                            .scaleEffect(visible ? 1 : 0.92)
+                            .offset(x: visible ? 0 : 34)
+                            .animation(
+                                reduceMotion
+                                    ? .none
+                                    : Theme.Animation.content.delay(Double(max(viewModel.currentWeekDays.count - index - 1, 0)) * 0.06),
+                                value: visible
+                            )
+                            .animation(reduceMotion ? .none : Theme.Animation.context, value: boardMode)
+                    }
                 }
+                .padding(.vertical, 4)
             }
-            .padding(.vertical, 4)
+            .onAppear {
+                centerActiveDay(using: proxy)
+                runColumnEntranceIfNeeded()
+            }
+            .onChange(of: viewModel.currentWeekDays.map(\.id)) { _ in
+                centerActiveDay(using: proxy)
+                runColumnEntranceIfNeeded()
+            }
+            .onChange(of: boardMode) { _ in
+                centerActiveDay(using: proxy)
+            }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 8).onChanged { value in
+                    guard shouldShowBoardHint else { return }
+                    guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                    didDismissPlanBoardHintSessionID = effectiveMotionSessionID
+                }
+            )
         }
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 6).onChanged { _ in
-                guard hasInteractedWithBoardScroll == false else { return }
-                withAnimation(.easeOut(duration: 0.2)) {
-                    hasInteractedWithBoardScroll = true
-                }
-            }
-        )
     }
 
     var timeAxisColumn: some View {
@@ -640,6 +696,7 @@ private extension PlanScreen {
                         }
                         .foregroundColor(dropFeedback.isAllowed ? toneColor(for: preview.tone) : Color(hex: "EF4444"))
                     }
+                    .opacity(dropFeedback.isTargeted ? 0.92 : 1)
                     .padding(isCompact ? 5 : 8)
             }
         }
@@ -673,6 +730,7 @@ private extension PlanScreen {
                 )
 
             if let first = slot.allocations.first {
+                let isRecentlyLocked = isRecentlyLockedAllocation(protocolId: first.protocolId, day: day.date, slot: slot.slot)
                 Button {
                     viewModel.editAllocation(allocationId: first.id)
                 } label: {
@@ -683,6 +741,21 @@ private extension PlanScreen {
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(allocationTextColor)
                         )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(
+                                    toneColor(for: first.tone).opacity(isRecentlyLocked ? (lockInPulseActive ? 0.95 : 0.55) : 0),
+                                    lineWidth: isRecentlyLocked ? (lockInPulseActive ? 1.8 : 1.1) : 0
+                                )
+                        )
+                        .shadow(
+                            color: toneColor(for: first.tone).opacity(isRecentlyLocked ? (lockInPulseActive ? 0.45 : 0.22) : 0),
+                            radius: isRecentlyLocked ? (lockInPulseActive ? 14 : 8) : 0,
+                            x: 0,
+                            y: 0
+                        )
+                        .scaleEffect(isRecentlyLocked ? (lockInPulseActive ? 1.045 : 1.0) : 1)
+                        .animation(reduceMotion ? .none : Theme.Animation.snappy, value: lockInPulseActive)
                         .overlay(alignment: .topTrailing) {
                             if slot.allocations.count > 1 {
                                 Text("\(slot.allocations.count)")
@@ -691,6 +764,19 @@ private extension PlanScreen {
                                     .padding(.horizontal, 4)
                                     .padding(.vertical, 2)
                                     .background(Capsule().fill(Color.black.opacity(0.2)))
+                                    .padding(5)
+                            }
+                        }
+                        .overlay(alignment: .bottomTrailing) {
+                            if isRecentlyLocked {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 8, weight: .black))
+                                    .foregroundColor(allocationTextColor)
+                                    .padding(4)
+                                    .background(
+                                        Circle()
+                                            .fill(toneColor(for: first.tone).opacity(isDarkMode ? 0.32 : 0.24))
+                                    )
                                     .padding(5)
                             }
                         }
@@ -714,7 +800,10 @@ private extension PlanScreen {
             } else if slot.freeMinutes > 0 {
                 Button {
                     if let mutation = viewModel.placeSelectedProtocol(day: day.date, slot: slot.slot) {
+                        Haptics.success()
                         showToast(for: mutation)
+                    } else {
+                        Haptics.warning()
                     }
                 } label: {
                     Image(systemName: "plus")
@@ -773,7 +862,7 @@ private extension PlanScreen {
             }
 
             ForEach(slot.allocations) { allocation in
-                allocationChip(allocation)
+                allocationChip(allocation, day: day.date, slot: slot.slot)
                     .draggable(PlanDropPayload.allocationPayload(for: allocation.id)) {
                         allocationDragPreview(allocation: allocation)
                             .onAppear {
@@ -794,7 +883,10 @@ private extension PlanScreen {
             if slot.freeMinutes > 0 {
                 Button {
                     if let mutation = viewModel.placeSelectedProtocol(day: day.date, slot: slot.slot) {
+                        Haptics.success()
                         showToast(for: mutation)
+                    } else {
+                        Haptics.warning()
                     }
                 } label: {
                     HStack(spacing: 6) {
@@ -846,8 +938,9 @@ private extension PlanScreen {
         )
     }
 
-    func allocationChip(_ allocation: PlanAllocationDisplay) -> some View {
-        Button {
+    func allocationChip(_ allocation: PlanAllocationDisplay, day: Date, slot: PlanSlot) -> some View {
+        let isRecentlyLocked = isRecentlyLockedAllocation(protocolId: allocation.protocolId, day: day, slot: slot)
+        return Button {
             viewModel.editAllocation(allocationId: allocation.id)
         } label: {
             HStack(spacing: 8) {
@@ -868,9 +961,38 @@ private extension PlanScreen {
             .background(allocationBackground(tone: allocation.tone))
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(toneColor(for: allocation.tone).opacity(isDarkMode ? 0.6 : 0.45), lineWidth: 1)
+                    .stroke(
+                        toneColor(for: allocation.tone).opacity(isRecentlyLocked ? (lockInPulseActive ? 0.96 : 0.68) : (isDarkMode ? 0.6 : 0.45)),
+                        lineWidth: isRecentlyLocked ? (lockInPulseActive ? 1.9 : 1.3) : 1
+                    )
             )
+            .overlay(alignment: .trailing) {
+                if isRecentlyLocked {
+                    HStack(spacing: 4) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 8, weight: .black))
+                        Text("LOCKED")
+                            .font(.system(size: 7, weight: .black, design: .monospaced))
+                    }
+                    .foregroundColor(allocationTextColor.opacity(0.95))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(toneColor(for: allocation.tone).opacity(isDarkMode ? 0.28 : 0.22))
+                    )
+                    .padding(.trailing, 5)
+                }
+            }
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .shadow(
+                color: toneColor(for: allocation.tone).opacity(isRecentlyLocked ? (lockInPulseActive ? 0.48 : 0.22) : 0),
+                radius: isRecentlyLocked ? (lockInPulseActive ? 16 : 8) : 0,
+                x: 0,
+                y: 0
+            )
+            .scaleEffect(isRecentlyLocked ? (lockInPulseActive ? 1.03 : 1.0) : 1)
+            .animation(reduceMotion ? .none : Theme.Animation.snappy, value: lockInPulseActive)
         }
         .buttonStyle(.plain)
     }
@@ -1164,20 +1286,25 @@ private extension PlanScreen {
 
         if let protocolId = PlanDropPayload.protocolId(from: payload) {
             guard let mutation = viewModel.placeProtocol(protocolId: protocolId, day: day, slot: slot) else {
+                Haptics.warning()
                 return false
             }
+            Haptics.success()
             showToast(for: mutation)
             return true
         }
 
         if let allocationId = PlanDropPayload.allocationId(from: payload) {
             guard let mutation = viewModel.moveAllocation(allocationId: allocationId, to: day, slot: slot) else {
+                Haptics.warning()
                 return false
             }
+            Haptics.success()
             showToast(for: mutation)
             return true
         }
 
+        Haptics.warning()
         return false
     }
 
@@ -1204,10 +1331,8 @@ private extension PlanScreen {
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 4_800_000_000)
             if toast != nil {
-                withAnimation(.easeOut(duration: 0.2)) {
-                    toast = nil
-                    pendingUndo = nil
-                }
+                toast = nil
+                pendingUndo = nil
             }
         }
     }
@@ -1222,10 +1347,8 @@ private extension PlanScreen {
             _ = viewModel.moveAllocation(allocationId: allocationId, to: day, slot: slot)
         }
 
-        withAnimation(.easeOut(duration: 0.2)) {
-            toast = nil
-            self.pendingUndo = nil
-        }
+        toast = nil
+        self.pendingUndo = nil
     }
 
     func planToastView(_ toast: PlanToast) -> some View {
@@ -1242,6 +1365,7 @@ private extension PlanScreen {
             Spacer(minLength: 0)
 
             Button(toast.undoLabel) {
+                Haptics.selection()
                 applyUndo()
             }
             .font(.system(size: 10, weight: .black, design: .monospaced))
@@ -1250,6 +1374,98 @@ private extension PlanScreen {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(glassCard(cornerRadius: 14))
+    }
+
+    func centerActiveDay(using proxy: ScrollViewProxy) {
+        guard let activeDayId = (viewModel.currentWeekDays.first(where: { $0.isToday }) ?? viewModel.currentWeekDays.first)?.id else {
+            return
+        }
+        DispatchQueue.main.async {
+            var transaction = Transaction()
+            transaction.animation = nil
+            withTransaction(transaction) {
+                proxy.scrollTo(activeDayId, anchor: .center)
+            }
+        }
+    }
+
+    func runColumnEntranceIfNeeded() {
+        let dayIds = viewModel.currentWeekDays.map(\.id)
+        guard dayIds.isEmpty == false else { return }
+
+        if didRunColumnEntrance {
+            let allVisible = Set(dayIds)
+            if revealedDayIds != allVisible {
+                revealedDayIds = allVisible
+            }
+            return
+        }
+
+        didRunColumnEntrance = true
+        if reduceMotion || didAnimateColumnsThisSession {
+            revealedDayIds = Set(dayIds)
+            didAnimatePlanColumnsSessionID = effectiveMotionSessionID
+            return
+        }
+
+        revealedDayIds.removeAll()
+        for (index, dayId) in dayIds.enumerated() {
+            let reverseIndex = dayIds.count - index - 1
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(reverseIndex) * 0.06) {
+                revealedDayIds.insert(dayId)
+            }
+        }
+        let settleDelay = Double(max(dayIds.count - 1, 0)) * 0.06 + 0.10
+        DispatchQueue.main.asyncAfter(deadline: .now() + settleDelay) {
+            didAnimatePlanColumnsSessionID = effectiveMotionSessionID
+        }
+    }
+
+    func triggerRegulatorLockInAnimation(for draftAllocations: [PlanAllocationDraft]) {
+        let keys = Set(
+            draftAllocations.map {
+                allocationAnimationKey(protocolId: $0.protocolId, day: $0.day, slot: planSlot(from: $0.slot))
+            }
+        )
+        guard keys.isEmpty == false else { return }
+
+        recentlyLockedAllocationKeys = keys
+        lockInPulseActive = false
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
+            withAnimation(reduceMotion ? .none : Theme.Animation.snappy) {
+                lockInPulseActive = true
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) {
+            withAnimation(reduceMotion ? .none : Theme.Animation.content) {
+                lockInPulseActive = false
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.55) {
+            recentlyLockedAllocationKeys.subtract(keys)
+        }
+    }
+
+    func isRecentlyLockedAllocation(protocolId: UUID, day: Date, slot: PlanSlot) -> Bool {
+        recentlyLockedAllocationKeys.contains(
+            allocationAnimationKey(protocolId: protocolId, day: day, slot: slot)
+        )
+    }
+
+    func allocationAnimationKey(protocolId: UUID, day: Date, slot: PlanSlot) -> String {
+        let dayStart = DateRules.startOfDay(day, calendar: DateRules.isoCalendar)
+        return "\(protocolId.uuidString)|\(Int(dayStart.timeIntervalSince1970))|\(slot.rawValue)"
+    }
+
+    func planSlot(from regulationSlot: RegulationSlot) -> PlanSlot {
+        switch regulationSlot {
+        case .am: return .am
+        case .pm: return .pm
+        case .eve: return .eve
+        }
     }
 
     func dayWidth(for day: PlanDayModel, isCompact: Bool) -> CGFloat {
@@ -1493,6 +1709,11 @@ private struct PlanRegulatorSheet: View {
     let onDiscard: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var accent: Color {
+        colorScheme == .dark ? Color(hex: "#22D3EE") : Color(hex: "#0369A1")
+    }
 
     var body: some View {
         NavigationStack {
@@ -1538,16 +1759,20 @@ private struct PlanRegulatorSheet: View {
 
                 HStack(spacing: 10) {
                     Button("Discard") {
+                        Haptics.selection()
                         onDiscard()
                         dismiss()
                     }
                     .buttonStyle(.bordered)
+                    .tint(accent.opacity(colorScheme == .dark ? 0.9 : 0.8))
 
                     Button("Apply Draft") {
+                        Haptics.selection()
                         onApply()
                         dismiss()
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(accent)
                     .disabled(hasDraft == false)
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -1555,9 +1780,11 @@ private struct PlanRegulatorSheet: View {
             .padding(16)
             .navigationTitle("Regulator")
             .navigationBarTitleDisplayMode(.inline)
+            .tint(accent)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {
+                        Haptics.selection()
                         dismiss()
                     }
                 }
@@ -1567,8 +1794,8 @@ private struct PlanRegulatorSheet: View {
 
     func kindColor(_ kind: PlanSuggestionKind) -> Color {
         switch kind {
-        case .recommendOnly: return .blue
-        case .draftCandidate: return .teal
+        case .recommendOnly: return Color(hex: "#2563EB")
+        case .draftCandidate: return Color(hex: "#0891B2")
         case .warning: return .orange
         }
     }
@@ -1623,6 +1850,7 @@ private struct PlanAllocationEditorSheet: View {
                     }
 
                     Button("Apply Move") {
+                        Haptics.success()
                         onMove(selectedDay, selectedSlot)
                         dismiss()
                     }
@@ -1630,6 +1858,7 @@ private struct PlanAllocationEditorSheet: View {
 
                 Section {
                     Button("Remove Allocation", role: .destructive) {
+                        Haptics.success()
                         onRemove()
                         dismiss()
                     }
@@ -1639,7 +1868,10 @@ private struct PlanAllocationEditorSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
+                    Button("Done") {
+                        Haptics.selection()
+                        dismiss()
+                    }
                 }
             }
         }
@@ -1653,6 +1885,7 @@ private struct ProtocolSchedulingEditorSheet: View {
     let onCancel: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var title: String
     @State private var selectedIconSystemName: String
@@ -1664,6 +1897,9 @@ private struct ProtocolSchedulingEditorSheet: View {
     @State private var showingIconPicker = false
 
     private static let durationPresets: [Int] = [15, 30, 45, 60, 90]
+    private var accent: Color {
+        colorScheme == .dark ? Color(hex: "#22D3EE") : Color(hex: "#0369A1")
+    }
 
     init(
         editor: ProtocolSchedulingEditorState,
@@ -1706,16 +1942,17 @@ private struct ProtocolSchedulingEditorSheet: View {
 
                 Section("Icon") {
                     Button {
+                        Haptics.selection()
                         showingIconPicker = true
                     } label: {
                         HStack(spacing: 10) {
                             Image(systemName: selectedIconSystemName)
                                 .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(.cyan)
+                                .foregroundColor(accent)
                                 .frame(width: 30, height: 30)
                                 .background(
                                     Circle()
-                                        .fill(Color.cyan.opacity(0.15))
+                                        .fill(accent.opacity(0.15))
                                 )
                             Text("Change Protocol Icon")
                                 .font(.system(size: 14, weight: .semibold))
@@ -1732,10 +1969,11 @@ private struct ProtocolSchedulingEditorSheet: View {
                     HStack(spacing: 8) {
                         ForEach(PreferredExecutionSlot.allCases, id: \.self) { slot in
                             Button(slot.title) {
+                                Haptics.selection()
                                 preferredSlot = slot
                             }
                             .buttonStyle(.borderedProminent)
-                            .tint(preferredSlot == slot ? .cyan : .gray.opacity(0.3))
+                            .tint(preferredSlot == slot ? accent : .gray.opacity(0.3))
                         }
                     }
                 }
@@ -1744,13 +1982,14 @@ private struct ProtocolSchedulingEditorSheet: View {
                     HStack(spacing: 8) {
                         ForEach(Self.durationPresets, id: \.self) { preset in
                             Button("\(preset)m") {
+                                Haptics.selection()
                                 selectedDurationPreset = preset
                                 isUsingCustomDuration = false
                                 customDurationText = ""
                                 localErrorMessage = nil
                             }
                             .buttonStyle(.borderedProminent)
-                            .tint((selectedDurationPreset == preset && isUsingCustomDuration == false) ? .cyan : .gray.opacity(0.3))
+                            .tint((selectedDurationPreset == preset && isUsingCustomDuration == false) ? accent : .gray.opacity(0.3))
                         }
                     }
 
@@ -1791,9 +2030,11 @@ private struct ProtocolSchedulingEditorSheet: View {
             }
             .navigationTitle("Edit Protocol")
             .navigationBarTitleDisplayMode(.inline)
+            .tint(accent)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") {
+                        Haptics.selection()
                         onCancel()
                         dismiss()
                     }
@@ -1803,6 +2044,7 @@ private struct ProtocolSchedulingEditorSheet: View {
                     Button("Save") {
                         guard let durationMinutes = resolvedDurationMinutes() else {
                             localErrorMessage = "Duration must be between 5 and 360 minutes."
+                            Haptics.warning()
                             return
                         }
 
@@ -1813,8 +2055,10 @@ private struct ProtocolSchedulingEditorSheet: View {
                             selectedIconSystemName
                         )
                         if didSave {
+                            Haptics.success()
                             dismiss()
                         } else {
+                            Haptics.warning()
                             localErrorMessage = errorMessage ?? "Unable to update protocol right now."
                         }
                     }
@@ -1825,7 +2069,7 @@ private struct ProtocolSchedulingEditorSheet: View {
                 ProtocolIconPickerSheet(
                     protocolTitle: title,
                     initialSelection: selectedIconSystemName,
-                    accentColor: .cyan
+                    accentColor: accent
                 ) { selected in
                     selectedIconSystemName = selected
                 }

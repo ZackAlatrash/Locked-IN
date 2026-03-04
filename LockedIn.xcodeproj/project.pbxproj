@@ -83,6 +83,8 @@
 		A10000000000000000000027 /* StreakDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* StreakDetailView.swift */; };
 		A10000000000000000000028 /* CapacityDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000028 /* CapacityDetailView.swift */; };
 		A1000000000000000000002A /* ProfilePlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002A /* ProfilePlaceholderView.swift */; };
+		A10000000000000000000034 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000034 /* Haptics.swift */; };
+		A10000000000000000000035 /* MotionRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000035 /* MotionRuntime.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -165,6 +167,8 @@
 		A20000000000000000000027 /* StreakDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StreakDetailView.swift; path = LockedIn/Features/Cockpit/Views/StreakDetailView.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000028 /* CapacityDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CapacityDetailView.swift; path = LockedIn/Features/Cockpit/Views/CapacityDetailView.swift; sourceTree = SOURCE_ROOT; };
 		A2000000000000000000002A /* ProfilePlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProfilePlaceholderView.swift; path = LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000034 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Haptics.swift; path = LockedIn/CoreUI/Utilities/Haptics.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000035 /* MotionRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MotionRuntime.swift; path = LockedIn/CoreUI/Utilities/MotionRuntime.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -189,6 +193,8 @@
 				A20000000000000000000004 /* RepositorySimulation.swift */,
 				A20000000000000000000005 /* LiquidGlassNavBar.swift */,
 				A20000000000000000000006 /* FitnessLiquidGlassNavStyle.swift */,
+				A20000000000000000000034 /* Haptics.swift */,
+				A20000000000000000000035 /* MotionRuntime.swift */,
 				A20000000000000000000008 /* CockpitViewModel.swift */,
 				A20000000000000000000009 /* CockpitUIModel.swift */,
 				A2000000000000000000000A /* CockpitNonNegotiableCard.swift */,
@@ -481,6 +487,8 @@
 				A10000000000000000000004 /* RepositorySimulation.swift in Sources */,
 				A10000000000000000000005 /* LiquidGlassNavBar.swift in Sources */,
 				A10000000000000000000006 /* FitnessLiquidGlassNavStyle.swift in Sources */,
+				A10000000000000000000034 /* Haptics.swift in Sources */,
+				A10000000000000000000035 /* MotionRuntime.swift in Sources */,
 				A10000000000000000000008 /* CockpitViewModel.swift in Sources */,
 				A10000000000000000000009 /* CockpitUIModel.swift in Sources */,
 				A1000000000000000000000A /* CockpitNonNegotiableCard.swift in Sources */,

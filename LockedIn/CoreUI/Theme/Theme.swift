@@ -148,6 +148,10 @@ enum Theme {
         static let defaultDuration: Double = 0.2
         static let springResponse: Double = 0.3
         static let springDamping: Double = 0.7
+        static let micro = SwiftUI.Animation.easeOut(duration: 0.18)
+        static let content = SwiftUI.Animation.spring(response: 0.36, dampingFraction: 0.82)
+        static let context = SwiftUI.Animation.easeInOut(duration: 0.45)
+        static let snappy = SwiftUI.Animation.spring(response: 0.26, dampingFraction: 0.86)
     }
 }
 

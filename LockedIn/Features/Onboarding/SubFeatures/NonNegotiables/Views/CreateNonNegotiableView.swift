@@ -78,6 +78,7 @@ struct CreateNonNegotiableView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button {
+                    Haptics.selection()
                     if let onBack {
                         onBack()
                     } else {
@@ -110,7 +111,13 @@ struct CreateNonNegotiableView: View {
                 initialSelection: viewModel.selectedIconSystemName,
                 accentColor: cockpitAccentColor
             ) { selected in
+                Haptics.selection()
                 viewModel.selectIconSystemName(selected)
+            }
+        }
+        .onChange(of: viewModel.submissionErrorMessage) { message in
+            if message?.isEmpty == false {
+                Haptics.warning()
             }
         }
     }
@@ -126,7 +133,11 @@ private extension CreateNonNegotiableView {
     }
 
     var cockpitAccentColor: Color {
-        accentColorOverride ?? Color(hex: "#A3FF12")
+        accentColorOverride ?? (isDarkMode ? Color(hex: "#22D3EE") : Color(hex: "#0369A1"))
+    }
+
+    var ctaForegroundColor: Color {
+        isDarkMode ? Color.black.opacity(0.88) : Color.white.opacity(0.96)
     }
 
     var canvasColor: Color {
@@ -312,6 +323,7 @@ private extension CreateNonNegotiableView {
                     .foregroundColor(subtitleColor)
 
                 Button {
+                    Haptics.selection()
                     showingIconPicker = true
                 } label: {
                     HStack(spacing: 8) {
@@ -345,6 +357,7 @@ private extension CreateNonNegotiableView {
                 Menu {
                     ForEach(CreateNonNegotiableViewModel.goalOptions) { option in
                         Button(option.title) {
+                            Haptics.selection()
                             viewModel.selectedGoalId = option.id
                         }
                     }
@@ -434,6 +447,7 @@ private extension CreateNonNegotiableView {
 
                     HStack(spacing: 8) {
                         Button {
+                            Haptics.selection()
                             viewModel.enableCustomDuration()
                         } label: {
                             Text("Custom")
@@ -488,6 +502,7 @@ private extension CreateNonNegotiableView {
         HStack(spacing: 8) {
             Button {
                 guard viewModel.mode == .session else { return }
+                Haptics.selection()
                 withAnimation(.easeInOut(duration: Theme.Animation.defaultDuration)) {
                     viewModel.frequencyPerWeek = max(1, viewModel.frequencyPerWeek - 1)
                 }
@@ -509,6 +524,7 @@ private extension CreateNonNegotiableView {
 
             Button {
                 guard viewModel.mode == .session else { return }
+                Haptics.selection()
                 withAnimation(.easeInOut(duration: Theme.Animation.defaultDuration)) {
                     viewModel.frequencyPerWeek = min(7, viewModel.frequencyPerWeek + 1)
                 }
@@ -552,6 +568,7 @@ private extension CreateNonNegotiableView {
 
         return Button {
             guard option.isAvailable else { return }
+            Haptics.selection()
             withAnimation(.easeInOut(duration: Theme.Animation.defaultDuration)) {
                 viewModel.totalLockDays = option.days
             }
@@ -762,8 +779,13 @@ private extension CreateNonNegotiableView {
             .frame(height: 52)
 
             Button {
-                guard canCreateProtocol else { return }
+                guard canCreateProtocol else {
+                    Haptics.warning()
+                    return
+                }
+                Haptics.selection()
                 viewModel.submit(using: store) {
+                    Haptics.success()
                     onSuccess?()
                     dismiss()
                 }
@@ -771,7 +793,7 @@ private extension CreateNonNegotiableView {
                 HStack(spacing: 10) {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(Color.black.opacity(0.86))
+                        .foregroundColor(ctaForegroundColor)
                     Text(
                         viewModel.isSubmitting
                             ? "LOCKING..."
@@ -779,7 +801,7 @@ private extension CreateNonNegotiableView {
                     )
                         .font(.system(size: 22, weight: .black))
                         .tracking(0.7)
-                        .foregroundColor(Color.black.opacity(0.90))
+                        .foregroundColor(ctaForegroundColor)
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 64)
@@ -793,7 +815,7 @@ private extension CreateNonNegotiableView {
                 )
             }
             .buttonStyle(.plain)
-            .disabled(viewModel.isSubmitting || !canCreateProtocol)
+            .disabled(viewModel.isSubmitting)
             .opacity((viewModel.isSubmitting || !canCreateProtocol) ? 0.7 : 1)
             .padding(.horizontal, Theme.Spacing.lg)
             .padding(.bottom, 24)
@@ -803,6 +825,7 @@ private extension CreateNonNegotiableView {
 
     func modeChip(title: String, mode: NonNegotiableMode) -> some View {
         Button {
+            Haptics.selection()
             withAnimation(.easeInOut(duration: Theme.Animation.defaultDuration)) {
                 viewModel.mode = mode
                 if mode == .daily {
@@ -829,6 +852,7 @@ private extension CreateNonNegotiableView {
 
     func preferredSlotChip(_ slot: PreferredExecutionSlot) -> some View {
         Button {
+            Haptics.selection()
             withAnimation(.easeInOut(duration: Theme.Animation.defaultDuration)) {
                 viewModel.preferredExecutionSlot = slot
             }
@@ -853,6 +877,7 @@ private extension CreateNonNegotiableView {
     func durationPresetChip(_ minutes: Int) -> some View {
         let isSelected = viewModel.isUsingCustomDuration == false && viewModel.selectedDurationMinutes == minutes
         return Button {
+            Haptics.selection()
             withAnimation(.easeInOut(duration: Theme.Animation.defaultDuration)) {
                 viewModel.selectDurationPreset(minutes)
             }
@@ -985,7 +1010,10 @@ struct ProtocolIconPickerSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        Haptics.selection()
+                        dismiss()
+                    }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Apply") {
@@ -1048,6 +1076,7 @@ struct ProtocolIconPickerSheet: View {
                 .autocorrectionDisabled()
             if searchText.isEmpty == false {
                 Button {
+                    Haptics.selection()
                     searchText = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -1093,6 +1122,7 @@ struct ProtocolIconPickerSheet: View {
             HStack(spacing: 8) {
                 ForEach(ProtocolIconCatalog.Category.allCases) { category in
                     Button {
+                        Haptics.selection()
                         selectedCategory = category
                     } label: {
                         Text(category.title)
@@ -1133,6 +1163,7 @@ struct ProtocolIconPickerSheet: View {
     private func iconButton(symbol: String, compact: Bool) -> some View {
         let isSelected = symbol == selectedSymbol
         return Button {
+            Haptics.selection()
             selectedSymbol = symbol
         } label: {
             Image(systemName: symbol)
@@ -1152,6 +1183,7 @@ struct ProtocolIconPickerSheet: View {
     }
 
     private func applySelection() {
+        Haptics.selection()
         let resolved = ProtocolIconCatalog.resolvedSymbolName(
             selectedSymbol,
             fallback: NonNegotiableDefinition.defaultIconSystemName(for: .session, title: protocolTitle)

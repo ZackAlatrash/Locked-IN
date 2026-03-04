@@ -3,6 +3,7 @@ import SwiftUI
 struct ProfilePlaceholderView: View {
     @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var isDarkMode: Bool { colorScheme == .dark }
     private var pageBackground: Color { isDarkMode ? Color.black : Color(hex: "F2F2F7") }
@@ -70,7 +71,7 @@ private extension ProfilePlaceholderView {
                 .foregroundColor(textMain)
             Picker(
                 "Appearance",
-                selection: $appAppearanceModeRaw
+                selection: appearanceModeBinding
             ) {
                 ForEach(AppAppearanceMode.allCases) { mode in
                     Text(mode.title).tag(mode.rawValue)
@@ -81,6 +82,19 @@ private extension ProfilePlaceholderView {
         .padding(14)
         .background(panelBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    var appearanceModeBinding: Binding<String> {
+        Binding(
+            get: { appAppearanceModeRaw },
+            set: { newValue in
+                guard newValue != appAppearanceModeRaw else { return }
+                Haptics.selection()
+                MotionRuntime.runMotion(reduceMotion, animation: Theme.Animation.context) {
+                    appAppearanceModeRaw = newValue
+                }
+            }
+        )
     }
 
     func settingRow(title: String, subtitle: String) -> some View {

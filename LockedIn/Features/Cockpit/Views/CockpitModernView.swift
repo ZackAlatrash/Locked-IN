@@ -31,6 +31,17 @@ struct CockpitModernView: View {
     let onProtocolComplete: (UUID) -> Void
     let onProtocolTap: (UUID) -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage("phase1MotionSessionID") private var motionSessionID = ""
+    @AppStorage("didAnimateCockpitPhase1SessionID") private var didAnimateCockpitPhase1SessionID = ""
+
+    @State private var hasStartedEntrance = false
+    @State private var showReliabilityModule = false
+    @State private var showWeeklyStrip = false
+    @State private var showActiveSection = false
+    @State private var revealedProtocolRows = 0
+    @State private var animatedReliabilityValue: Double = 0
+
     init(
         style: CockpitModernStyle,
         accentColor: Color = Color(hex: "06B6D4"),
@@ -124,6 +135,12 @@ struct CockpitModernView: View {
     private var systemStateColor: Color {
         capacityStatusText.uppercased() == "STABLE" ? primary : Color(hex: "FBBF24")
     }
+    private var effectiveMotionSessionID: String {
+        motionSessionID.isEmpty ? "launch-pending" : motionSessionID
+    }
+    private var didAnimateThisSession: Bool {
+        didAnimateCockpitPhase1SessionID == effectiveMotionSessionID
+    }
 
     var body: some View {
         ZStack {
@@ -141,18 +158,35 @@ struct CockpitModernView: View {
                     ringModule
                         .padding(.top, 32)
                         .padding(.bottom, 10)
+                        .opacity(showReliabilityModule ? 1 : 0)
+                        .offset(y: showReliabilityModule ? 0 : 12)
 
                     weeklyStrip
                         .padding(.top, 18)
+                        .opacity(showWeeklyStrip ? 1 : 0)
+                        .offset(y: showWeeklyStrip ? 0 : 12)
 
                     activeProtocolsSection
                         .padding(.top, 22)
+                        .opacity(showActiveSection ? 1 : 0)
+                        .offset(y: showActiveSection ? 0 : 14)
 
                     Spacer(minLength: 120)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, topPadding)
             }
+        }
+        .onAppear {
+            runEntranceIfNeeded()
+            if didAnimateThisSession || reduceMotion {
+                animatedReliabilityValue = Double(max(0, min(reliabilityScore, 100)))
+            } else {
+                animateReliabilityValue(to: reliabilityScore)
+            }
+        }
+        .onChange(of: reliabilityScore) { newValue in
+            animateReliabilityValue(to: newValue)
         }
     }
 }
@@ -250,7 +284,7 @@ private extension CockpitModernView {
                 .frame(width: ringSize, height: ringSize)
 
             Circle()
-                .trim(from: 0, to: CGFloat(max(0, min(reliabilityScore, 100))) / 100)
+                .trim(from: 0, to: CGFloat(max(0, min(animatedReliabilityValue, 100))) / 100)
                 .stroke(primary, style: StrokeStyle(lineWidth: ringStroke, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .frame(width: ringSize, height: ringSize)
@@ -261,9 +295,10 @@ private extension CockpitModernView {
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .tracking(2.0)
                     .foregroundColor(textSecondary)
-                Text("\(reliabilityScore)%")
+                Text("\(Int(animatedReliabilityValue.rounded()))%")
                     .font(.system(size: 58, weight: .black))
                     .foregroundColor(ringValueTextColor)
+                    .contentTransition(.numericText())
                     .shadow(color: primary.opacity(style == .dark ? 0.4 : 0.15), radius: 8, x: 0, y: 0)
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.up.right")
@@ -281,9 +316,11 @@ private extension CockpitModernView {
                 )
             }
 
-            streakBadge
-                .offset(x: 98, y: -68)
-                .onTapGesture(perform: onStreakTap)
+            Button(action: onStreakTap) {
+                streakBadge
+            }
+            .buttonStyle(CockpitPressScaleButtonStyle())
+            .offset(x: 98, y: -68)
         }
     }
 
@@ -309,42 +346,44 @@ private extension CockpitModernView {
     }
 
     var weeklyStrip: some View {
-        HStack(spacing: 8) {
-            ForEach(0..<7, id: \.self) { index in
-                let hasCompleted = index < weeklyCompletionByDay.count && weeklyCompletionByDay[index] > 0
-                let isToday = index == currentWeekdayIndex
-                VStack(spacing: 6) {
-                    ZStack {
-                        Circle()
-                            .fill(hasCompleted ? subtleCard : glassCard)
-                            .overlay(
-                                Circle()
-                                    .stroke(
-                                        isToday ? weeklyAccentColor : (style == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08)),
-                                        lineWidth: isToday ? 2 : 1
-                                    )
-                            )
-                            .frame(width: 36, height: 36)
+        Button(action: onWeeklyActivityTap) {
+            HStack(spacing: 8) {
+                ForEach(0..<7, id: \.self) { index in
+                    let hasCompleted = index < weeklyCompletionByDay.count && weeklyCompletionByDay[index] > 0
+                    let isToday = index == currentWeekdayIndex
+                    VStack(spacing: 6) {
+                        ZStack {
+                            Circle()
+                                .fill(hasCompleted ? subtleCard : glassCard)
+                                .overlay(
+                                    Circle()
+                                        .stroke(
+                                            isToday ? weeklyAccentColor : (style == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08)),
+                                            lineWidth: isToday ? 2 : 1
+                                        )
+                                )
+                                .frame(width: 36, height: 36)
 
-                        if isToday {
-                            Text("\(currentDayOfMonth)")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(weeklyAccentColor)
-                        } else if hasCompleted {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(weeklyAccentColor)
+                            if isToday {
+                                Text("\(currentDayOfMonth)")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(weeklyAccentColor)
+                            } else if hasCompleted {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(weeklyAccentColor)
+                            }
                         }
+                        Text(dayLabel(for: index))
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundColor(isToday ? weeklyAccentColor : textSecondary)
                     }
-                    Text(dayLabel(for: index))
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundColor(isToday ? weeklyAccentColor : textSecondary)
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
             }
         }
         .contentShape(Rectangle())
-        .onTapGesture(perform: onWeeklyActivityTap)
+        .buttonStyle(CockpitPressScaleButtonStyle())
     }
 
     var activeProtocolsSection: some View {
@@ -396,11 +435,13 @@ private extension CockpitModernView {
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(CockpitPressScaleButtonStyle())
 
             VStack(spacing: 10) {
-                ForEach(capacityProtocols.prefix(3)) { task in
+                ForEach(Array(capacityProtocols.prefix(3).enumerated()), id: \.element.id) { index, task in
                     protocolRow(task)
+                        .opacity(revealedProtocolRows > index ? 1 : 0)
+                        .offset(y: revealedProtocolRows > index ? 0 : 10)
                 }
             }
         }
@@ -460,6 +501,63 @@ private extension CockpitModernView {
         }
     }
 
+    func runEntranceIfNeeded() {
+        guard hasStartedEntrance == false else { return }
+        hasStartedEntrance = true
+
+        if didAnimateThisSession || reduceMotion {
+            showReliabilityModule = true
+            showWeeklyStrip = true
+            showActiveSection = true
+            revealedProtocolRows = 3
+            didAnimateCockpitPhase1SessionID = effectiveMotionSessionID
+            return
+        }
+
+        showReliabilityModule = false
+        showWeeklyStrip = false
+        showActiveSection = false
+        revealedProtocolRows = 0
+
+        MotionRuntime.runMotion(reduceMotion, animation: Theme.Animation.content) {
+            showReliabilityModule = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) {
+            MotionRuntime.runMotion(reduceMotion, animation: Theme.Animation.content) {
+                showWeeklyStrip = true
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+            MotionRuntime.runMotion(reduceMotion, animation: Theme.Animation.content) {
+                showActiveSection = true
+            }
+        }
+
+        for index in 0..<3 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.28 + (Double(index) * 0.07)) {
+                MotionRuntime.runMotion(reduceMotion, animation: Theme.Animation.content) {
+                    revealedProtocolRows = max(revealedProtocolRows, index + 1)
+                }
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.52) {
+            didAnimateCockpitPhase1SessionID = effectiveMotionSessionID
+        }
+    }
+
+    func animateReliabilityValue(to score: Int) {
+        let clamped = Double(max(0, min(score, 100)))
+        MotionRuntime.runMotion(
+            reduceMotion,
+            animation: .easeOut(duration: 0.55)
+        ) {
+            animatedReliabilityValue = clamped
+        }
+    }
+
     func dayLabel(for index: Int) -> String {
         let labels = ["M", "T", "W", "T", "F", "S", "S"]
         guard labels.indices.contains(index) else { return "" }
@@ -473,5 +571,19 @@ private extension CockpitModernView {
 
     var currentDayOfMonth: Int {
         DateRules.isoCalendar.component(.day, from: Date())
+    }
+}
+
+private struct CockpitPressScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .shadow(
+                color: Color.black.opacity(configuration.isPressed ? 0.08 : 0),
+                radius: configuration.isPressed ? 4 : 0,
+                x: 0,
+                y: configuration.isPressed ? 1 : 0
+            )
+            .animation(Theme.Animation.micro, value: configuration.isPressed)
     }
 }

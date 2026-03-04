@@ -39,10 +39,12 @@ struct OnboardingShellView: View {
         .fullScreenCover(isPresented: $showPaywall) {
             PaywallContentView(
                 onStartTrial: {
+                    Haptics.success()
                     showPaywall = false
                     shellVM.completeOnboarding()
                 },
                 onDismiss: {
+                    Haptics.selection()
                     shellVM.completeOnboarding()
                 }
             )
@@ -67,10 +69,13 @@ private extension OnboardingShellView {
         let result = shellVM.next()
         switch result {
         case .advanced:
+            Haptics.selection()
             break
         case .reachedEnd:
+            Haptics.selection()
             showPaywall = true
         case .blocked:
+            Haptics.warning()
             break
         }
     }
@@ -82,6 +87,7 @@ private extension OnboardingShellView {
             HStack {
                 Button(action: {
                     if presentationConfig.showBackButton {
+                        Haptics.selection()
                         withAnimation(.easeInOut(duration: 0.3)) {
                             _ = shellVM.back()
                         }
@@ -98,6 +104,7 @@ private extension OnboardingShellView {
 
                 Button(action: {
                     if presentationConfig.showSkipButton {
+                        Haptics.selection()
                         _ = shellVM.skip()
                     }
                 }) {

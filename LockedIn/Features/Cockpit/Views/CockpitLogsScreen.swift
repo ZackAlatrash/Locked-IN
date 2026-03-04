@@ -4,10 +4,26 @@ struct CockpitLogsScreen: View {
     @Binding var selectedTab: MainTab
     @EnvironmentObject private var store: CommitmentSystemStore
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage("phase1MotionSessionID") private var motionSessionID = ""
+    @AppStorage("didAnimateLogsPhase1SessionID") private var didAnimateLogsPhase1SessionID = ""
     @State private var showProfile = false
+    @State private var hasStartedEntrance = false
+    @State private var showIntegritySection = false
+    @State private var showPerformanceSection = false
+    @State private var showHistorySection = false
+    @State private var revealedMatrixCount = 0
+    @State private var metricsAnimatedIn = false
+    @State private var revealedHistoryCount = 0
 
     private var matrixColumns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
+    }
+    private var effectiveMotionSessionID: String {
+        motionSessionID.isEmpty ? "launch-pending" : motionSessionID
+    }
+    private var didAnimateThisSession: Bool {
+        didAnimateLogsPhase1SessionID == effectiveMotionSessionID
     }
 
     init(selectedTab: Binding<MainTab> = .constant(.logs)) {
@@ -22,8 +38,14 @@ struct CockpitLogsScreen: View {
                 VStack(alignment: .leading, spacing: 18) {
                     header
                     integrityMatrixCard
+                        .opacity(showIntegritySection ? 1 : 0)
+                        .offset(y: showIntegritySection ? 0 : 14)
                     performanceCards
+                        .opacity(showPerformanceSection ? 1 : 0)
+                        .offset(y: showPerformanceSection ? 0 : 14)
                     sessionHistory
+                        .opacity(showHistorySection ? 1 : 0)
+                        .offset(y: showHistorySection ? 0 : 14)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
@@ -32,9 +54,13 @@ struct CockpitLogsScreen: View {
         }
         .navigationTitle("Diagnostic Log")
         .navigationBarTitleDisplayMode(.large)
+        .onAppear {
+            runEntranceIfNeeded()
+        }
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
+                    Haptics.selection()
                     selectedTab = .logs
                 } label: {
                     ZStack(alignment: .topTrailing) {
@@ -51,6 +77,7 @@ struct CockpitLogsScreen: View {
                 .accessibilityLabel("Open logs")
 
                 Button {
+                    Haptics.selection()
                     showProfile = true
                 } label: {
                     Image(systemName: "person.crop.circle")
@@ -122,7 +149,7 @@ private extension CockpitLogsScreen {
             }
 
             LazyVGrid(columns: matrixColumns, spacing: 6) {
-                ForEach(matrixDays) { point in
+                ForEach(Array(matrixDays.enumerated()), id: \.element.id) { index, point in
                     RoundedRectangle(cornerRadius: 4, style: .continuous)
                         .fill(matrixFill(for: point))
                         .shadow(color: matrixGlow(for: point), radius: 8, x: 0, y: 0)
@@ -142,6 +169,8 @@ private extension CockpitLogsScreen {
                                 .padding(.leading, 4)
                                 .padding(.top, 3)
                         }
+                        .opacity(revealedMatrixCount > index ? 1 : 0)
+                        .scaleEffect(revealedMatrixCount > index ? 1 : 0.92)
                         .aspectRatio(1, contentMode: .fit)
                 }
             }
@@ -205,7 +234,13 @@ private extension CockpitLogsScreen {
                     RoundedRectangle(cornerRadius: 3, style: .continuous)
                         .fill(metricBarColor(index: index, count: bars.count, accent: iconColor))
                         .frame(maxWidth: .infinity)
-                        .frame(height: max(8, item * 28))
+                        .frame(height: max(8, item * 28 * (metricsAnimatedIn ? 1 : 0.28)))
+                        .animation(
+                            reduceMotion
+                                ? .none
+                                : Theme.Animation.content.delay(Double(index) * 0.04),
+                            value: metricsAnimatedIn
+                        )
                 }
             }
             .frame(height: 34)
@@ -238,6 +273,8 @@ private extension CockpitLogsScreen {
             } else {
                 ForEach(Array(recentEntries.prefix(3).enumerated()), id: \.element.id) { index, entry in
                     sessionCard(entry, index: index)
+                        .opacity(revealedHistoryCount > index ? 1 : 0)
+                        .offset(y: revealedHistoryCount > index ? 0 : 10)
                 }
             }
         }
@@ -358,6 +395,64 @@ private extension CockpitLogsScreen {
 }
 
 private extension CockpitLogsScreen {
+    func runEntranceIfNeeded() {
+        guard hasStartedEntrance == false else { return }
+        hasStartedEntrance = true
+
+        if didAnimateThisSession || reduceMotion {
+            showIntegritySection = true
+            showPerformanceSection = true
+            showHistorySection = true
+            revealedMatrixCount = matrixDays.count
+            metricsAnimatedIn = true
+            revealedHistoryCount = 3
+            didAnimateLogsPhase1SessionID = effectiveMotionSessionID
+            return
+        }
+
+        showIntegritySection = false
+        showPerformanceSection = false
+        showHistorySection = false
+        revealedMatrixCount = 0
+        metricsAnimatedIn = false
+        revealedHistoryCount = 0
+
+        MotionRuntime.runMotion(reduceMotion, animation: Theme.Animation.content) {
+            showIntegritySection = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            MotionRuntime.runMotion(reduceMotion, animation: Theme.Animation.content) {
+                revealedMatrixCount = matrixDays.count
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+            MotionRuntime.runMotion(reduceMotion, animation: Theme.Animation.content) {
+                showPerformanceSection = true
+                metricsAnimatedIn = true
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+            MotionRuntime.runMotion(reduceMotion, animation: Theme.Animation.content) {
+                showHistorySection = true
+            }
+        }
+
+        for index in 0..<3 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.36 + (Double(index) * 0.06)) {
+                MotionRuntime.runMotion(reduceMotion, animation: Theme.Animation.content) {
+                    revealedHistoryCount = max(revealedHistoryCount, index + 1)
+                }
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.62) {
+            didAnimateLogsPhase1SessionID = effectiveMotionSessionID
+        }
+    }
+
     var isDarkMode: Bool { colorScheme == .dark }
 
     var activeAccent: Color { isDarkMode ? cyanAccent : Color(hex: "2563EB") }

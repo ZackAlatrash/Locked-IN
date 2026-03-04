@@ -12,6 +12,16 @@ struct PlanRegulatorEngine {
         let days: [Date] = (0..<7).compactMap {
             calendar.date(byAdding: .day, value: $0, to: weekStart).map { DateRules.startOfDay($0, calendar: calendar) }
         }
+        let todayStart = DateRules.startOfDay(Date(), calendar: calendar)
+        let dayDeltaFromWeekStart = calendar.dateComponents([.day], from: weekStart, to: todayStart).day ?? 0
+        let firstEligibleDayIndex: Int
+        if dayDeltaFromWeekStart <= 0 {
+            firstEligibleDayIndex = 0
+        } else if dayDeltaFromWeekStart >= days.count {
+            firstEligibleDayIndex = days.count
+        } else {
+            firstEligibleDayIndex = dayDeltaFromWeekStart
+        }
 
         var suggestions: [PlanSuggestion] = []
         var draftAllocations: [PlanAllocationDraft] = []
@@ -75,6 +85,7 @@ struct PlanRegulatorEngine {
                 let candidates = buildCandidates(
                     protocolItem: protocolItem,
                     days: days,
+                    firstEligibleDayIndex: firstEligibleDayIndex,
                     slotBusyByCalendar: slotBusyByCalendar,
                     dayProtocolCounts: dayProtocolCounts,
                     daySlotCounts: daySlotCounts,
@@ -170,6 +181,7 @@ private extension PlanRegulatorEngine {
     func buildCandidates(
         protocolItem: ProtocolPlanItem,
         days: [Date],
+        firstEligibleDayIndex: Int,
         slotBusyByCalendar: Set<String>,
         dayProtocolCounts: [Int: Int],
         daySlotCounts: [String: Int],
@@ -180,7 +192,9 @@ private extension PlanRegulatorEngine {
     ) -> [Candidate] {
         var candidates: [Candidate] = []
 
-        for dayIndex in 0..<days.count {
+        guard firstEligibleDayIndex < days.count else { return [] }
+
+        for dayIndex in firstEligibleDayIndex..<days.count {
             let dayLoad = dayProtocolCounts[dayIndex, default: 0]
             if dayLoad >= maxPerDay { continue }
             if protocolDaySet.contains(protocolDayKey(protocolId: protocolItem.id, dayIndex: dayIndex)) { continue }

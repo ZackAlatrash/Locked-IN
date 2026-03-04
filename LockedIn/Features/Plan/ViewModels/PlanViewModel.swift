@@ -263,17 +263,19 @@ final class PlanViewModel: ObservableObject {
         print("warnings=\(warningsCount)")
     }
 
-    func applyDraft() {
-        guard let planStore else { return }
-        guard hasDraft else { return }
+    @discardableResult
+    func applyDraft() -> Bool {
+        guard let planStore else { return false }
+        guard hasDraft else { return false }
 
         let result = planStore.applyDraft(draftAllocations)
         switch result {
         case .success:
             discardDraft()
             refresh(referenceDate: Date())
+            return true
         case .failure:
-            break
+            return false
         }
     }
 

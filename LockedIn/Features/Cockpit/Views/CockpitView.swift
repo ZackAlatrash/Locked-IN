@@ -294,40 +294,52 @@ private extension CockpitView {
             do {
                 try store.recordCompletion(for: nnId, at: Date())
                 store.runDailyIntegrityTick(referenceDate: Date())
+                Haptics.success()
             } catch {
+                Haptics.warning()
                 actionErrorMessage = actionMessage(for: error)
             }
 
         case .openDetails(let nnId):
+            Haptics.selection()
             detailsSelection = CockpitDetailsSelection(id: nnId)
 
         case .openCreate:
+            Haptics.selection()
             showCreateNonNegotiable = true
 
         case .openLogs:
+            Haptics.selection()
             selectedTab = .logs
 
         case .openPlan:
+            Haptics.selection()
             selectedTab = .plan
 
         case .openWeeklyActivity:
+            Haptics.selection()
             activeRoute = .weeklyActivity
 
         case .openStreak:
+            Haptics.selection()
             activeRoute = .streak
 
         case .openCapacity:
+            Haptics.selection()
             activeRoute = .capacity
 
         case .openProfile:
+            Haptics.selection()
             activeRoute = .profile
 
         case .retire(let nnId):
             do {
                 store.runDailyIntegrityTick(referenceDate: Date())
                 try store.removeNonNegotiable(id: nnId)
+                Haptics.success()
                 detailsSelection = nil
             } catch {
+                Haptics.warning()
                 actionErrorMessage = actionMessage(for: error)
             }
         }

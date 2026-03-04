@@ -29,14 +29,15 @@ enum AppAppearanceMode: String, CaseIterable, Identifiable {
 
     var primaryAccentColor: Color {
         switch self {
-        case .light: return Color(hex: "#7BA70A")
-        case .dark: return Color(hex: "#A3FF12")
+        case .light: return Color(hex: "#0369A1")
+        case .dark: return Color(hex: "#22D3EE")
         }
     }
 }
 
 struct MainAppView: View {
     @EnvironmentObject private var store: CommitmentSystemStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selectedTab: MainTab = .cockpit
     @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
 
@@ -74,5 +75,9 @@ struct MainAppView: View {
         }
         .tint(appAppearanceMode.primaryAccentColor)
         .preferredColorScheme(appAppearanceMode.colorScheme)
+        .animation(reduceMotion ? .none : Theme.Animation.context, value: appAppearanceModeRaw)
+        .onChange(of: selectedTab) { _ in
+            Haptics.selection()
+        }
     }
 }

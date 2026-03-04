@@ -902,6 +902,11 @@ private extension PlanStore {
         }
 
         let dayStart = DateRules.startOfDay(day, calendar: calendar)
+        let todayStart = DateRules.startOfDay(lastReferenceDate, calendar: calendar)
+        if dayStart < todayStart {
+            return .blocked(message: "Cannot schedule protocols in past days.")
+        }
+
         if dailyPlannedCount(
             protocolId: protocolId,
             day: dayStart,
@@ -913,7 +918,6 @@ private extension PlanStore {
 
         if descriptor.mode == .daily {
             if context == .manual {
-                let todayStart = DateRules.startOfDay(lastReferenceDate, calendar: calendar)
                 let tomorrowStart = DateRules.addingDays(1, to: todayStart, calendar: calendar)
                 if dayStart != todayStart && dayStart != tomorrowStart {
                     return .blocked(message: "Daily protocols can only be planned for today or tomorrow.")

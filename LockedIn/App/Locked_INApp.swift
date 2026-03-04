@@ -19,15 +19,18 @@ struct Locked_INApp: App {
 /// Root view factory for the LockedIn app
 struct LockedInAppRoot: View {
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
+    @AppStorage("phase1MotionSessionID") private var phase1MotionSessionID = ""
     @StateObject private var commitmentSystemStore: CommitmentSystemStore
     @StateObject private var planStore: PlanStore
     @StateObject private var onboardingCoordinator = OnboardingCoordinator(
         flow: OnboardingFlow(),
         engine: OnboardingEngine()
     )
+    @State private var didInitializeMotionSession = false
 
     init() {
         let repository = JSONFileCommitmentSystemRepository()
@@ -60,9 +63,14 @@ struct LockedInAppRoot: View {
             }
         }
         .preferredColorScheme(appAppearanceMode.colorScheme)
+        .animation(reduceMotion ? .none : Theme.Animation.context, value: appAppearanceModeRaw)
         .environmentObject(commitmentSystemStore)
         .environmentObject(planStore)
         .onAppear {
+            if didInitializeMotionSession == false {
+                didInitializeMotionSession = true
+                phase1MotionSessionID = UUID().uuidString
+            }
             let freshStartResetKey = "didRunFreshStartReset20260303"
             if UserDefaults.standard.bool(forKey: freshStartResetKey) == false {
                 hasCompletedOnboarding = false
