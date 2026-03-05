@@ -18,24 +18,47 @@ func runNonNegotiableEngineSimulation() {
 
         var sessionNN = try engine.create(definition: sessionDefinition, startDate: mondayStart, totalLockDays: 28)
 
-        try engine.recordCompletion(&sessionNN, at: DateRules.date(year: 2026, month: 1, day: 5, hour: 8, calendar: calendar))
+        let firstSession = try engine.recordCompletion(
+            &sessionNN,
+            at: DateRules.date(year: 2026, month: 1, day: 5, hour: 8, calendar: calendar)
+        )
         do {
-            try engine.recordCompletion(&sessionNN, at: DateRules.date(year: 2026, month: 1, day: 5, hour: 20, calendar: calendar))
-            print("Duplicate-day completion accepted (unexpected)")
+            _ = try engine.recordCompletion(
+                &sessionNN,
+                at: DateRules.date(year: 2026, month: 1, day: 5, hour: 20, calendar: calendar)
+            )
+            print("Session duplicate same-day before weekly cap unexpectedly succeeded")
         } catch NonNegotiableEngineError.alreadyCompletedToday {
-            print("Duplicate-day completion blocked with alreadyCompletedToday (expected)")
+            print("Session duplicate same-day before weekly cap blocked: true (expected true)")
         } catch {
-            print("Duplicate-day completion failed with unexpected error: \(error)")
+            print("Session duplicate same-day before weekly cap blocked with unexpected error: \(error)")
         }
-        try engine.recordCompletion(&sessionNN, at: DateRules.date(year: 2026, month: 1, day: 6, hour: 8, calendar: calendar))
-        try engine.recordCompletion(&sessionNN, at: DateRules.date(year: 2026, month: 1, day: 7, hour: 8, calendar: calendar))
+        _ = try engine.recordCompletion(&sessionNN, at: DateRules.date(year: 2026, month: 1, day: 6, hour: 8, calendar: calendar))
+        _ = try engine.recordCompletion(&sessionNN, at: DateRules.date(year: 2026, month: 1, day: 7, hour: 8, calendar: calendar))
+        let overCapSession = try engine.recordCompletion(
+            &sessionNN,
+            at: DateRules.date(year: 2026, month: 1, day: 8, hour: 8, calendar: calendar)
+        )
+        do {
+            _ = try engine.recordCompletion(
+                &sessionNN,
+                at: DateRules.date(year: 2026, month: 1, day: 8, hour: 21, calendar: calendar)
+            )
+            print("Session second extra same-day unexpectedly succeeded")
+        } catch NonNegotiableEngineError.extraAlreadyLoggedToday {
+            print("Session second extra same-day blocked: true (expected true)")
+        } catch {
+            print("Session second extra same-day blocked with unexpected error: \(error)")
+        }
+        print("Session first completion kind: \(firstSession.kind.rawValue) (expected counted)")
+        print("Session over-cap kind: \(overCapSession.kind.rawValue) (expected extra)")
 
         engine.evaluateWeekIfNeeded(&sessionNN, weekEnding: DateRules.date(year: 2026, month: 1, day: 11, hour: 23, minute: 59, calendar: calendar))
         print("Session Week 1 violations: \(sessionNN.windows[0].weeklyViolationCount) (expected 0)")
 
         // Week 2 intentionally under-completed for weekly violation.
-        try engine.recordCompletion(&sessionNN, at: DateRules.date(year: 2026, month: 1, day: 12, hour: 8, calendar: calendar))
-        try engine.recordCompletion(&sessionNN, at: DateRules.date(year: 2026, month: 1, day: 13, hour: 8, calendar: calendar))
+        _ = try engine.recordCompletion(&sessionNN, at: DateRules.date(year: 2026, month: 1, day: 12, hour: 8, calendar: calendar))
+        _ = try engine.recordCompletion(&sessionNN, at: DateRules.date(year: 2026, month: 1, day: 13, hour: 8, calendar: calendar))
         engine.evaluateWeekIfNeeded(&sessionNN, weekEnding: DateRules.date(year: 2026, month: 1, day: 18, hour: 23, minute: 59, calendar: calendar))
         print("Session Week 2 violations: \(sessionNN.violations.filter { $0.kind == .missedWeeklyFrequency }.count) (expected 1)")
 
@@ -49,7 +72,22 @@ func runNonNegotiableEngineSimulation() {
         print("Daily mode normalized frequency: \(dailyNN.definition.frequencyPerWeek) (expected 7)")
 
         // Complete Jan 5, skip Jan 6; check on Jan 7 should add exactly one daily violation.
-        try engine.recordCompletion(&dailyNN, at: DateRules.date(year: 2026, month: 1, day: 5, hour: 21, calendar: calendar))
+        let dailyFirst = try engine.recordCompletion(
+            &dailyNN,
+            at: DateRules.date(year: 2026, month: 1, day: 5, hour: 21, calendar: calendar)
+        )
+        do {
+            _ = try engine.recordCompletion(
+                &dailyNN,
+                at: DateRules.date(year: 2026, month: 1, day: 5, hour: 22, calendar: calendar)
+            )
+            print("Daily second same-day before weekly cap unexpectedly succeeded")
+        } catch NonNegotiableEngineError.alreadyCompletedToday {
+            print("Daily second same-day before weekly cap blocked: true (expected true)")
+        } catch {
+            print("Daily second same-day before weekly cap blocked with unexpected error: \(error)")
+        }
+        print("Daily first completion kind: \(dailyFirst.kind.rawValue) (expected counted)")
         engine.evaluateDailyComplianceIfNeeded(&dailyNN, at: DateRules.date(year: 2026, month: 1, day: 7, hour: 8, calendar: calendar))
         let firstDailyViolations = dailyNN.violations.filter { $0.kind == .missedDailyCompliance }.count
         print("Daily violations after first check: \(firstDailyViolations) (expected 1)")
@@ -60,15 +98,27 @@ func runNonNegotiableEngineSimulation() {
         print("Daily violations after second check: \(secondDailyViolations) (expected 1)")
 
         let streakCompletions = [
-            CompletionRecord(date: DateRules.date(year: 2026, month: 1, day: 10, hour: 7, calendar: calendar), weekId: DateRules.weekID(for: DateRules.date(year: 2026, month: 1, day: 10, hour: 7, calendar: calendar), calendar: calendar)),
-            CompletionRecord(date: DateRules.date(year: 2026, month: 1, day: 11, hour: 7, calendar: calendar), weekId: DateRules.weekID(for: DateRules.date(year: 2026, month: 1, day: 11, hour: 7, calendar: calendar), calendar: calendar)),
-            CompletionRecord(date: DateRules.date(year: 2026, month: 1, day: 12, hour: 7, calendar: calendar), weekId: DateRules.weekID(for: DateRules.date(year: 2026, month: 1, day: 12, hour: 7, calendar: calendar), calendar: calendar))
+            CompletionRecord(
+                date: DateRules.date(year: 2026, month: 1, day: 10, hour: 7, calendar: calendar),
+                weekId: DateRules.weekID(for: DateRules.date(year: 2026, month: 1, day: 10, hour: 7, calendar: calendar), calendar: calendar),
+                kind: .counted
+            ),
+            CompletionRecord(
+                date: DateRules.date(year: 2026, month: 1, day: 11, hour: 7, calendar: calendar),
+                weekId: DateRules.weekID(for: DateRules.date(year: 2026, month: 1, day: 11, hour: 7, calendar: calendar), calendar: calendar),
+                kind: .counted
+            ),
+            CompletionRecord(
+                date: DateRules.date(year: 2026, month: 1, day: 12, hour: 7, calendar: calendar),
+                weekId: DateRules.weekID(for: DateRules.date(year: 2026, month: 1, day: 12, hour: 7, calendar: calendar), calendar: calendar),
+                kind: .extra
+            )
         ]
         let streak = streakEngine.currentStreakDays(
             from: streakCompletions,
             referenceDate: DateRules.date(year: 2026, month: 1, day: 12, hour: 21, calendar: calendar)
         )
-        print("Current streak days: \(streak) (expected 3)")
+        print("Current streak days with extra-only day: \(streak) (expected 0)")
 
         let legacyJSON = """
         {

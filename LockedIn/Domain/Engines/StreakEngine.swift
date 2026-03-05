@@ -29,6 +29,7 @@ struct StreakEngine {
     func completedOnDay(_ date: Date, completions: [CompletionRecord]) -> Bool {
         let targetDay = DateRules.startOfDay(date, calendar: calendar)
         return completions.contains { completion in
+            completion.kind == .counted &&
             calendar.isDate(DateRules.startOfDay(completion.date, calendar: calendar), inSameDayAs: targetDay)
         }
     }

@@ -28,6 +28,7 @@ struct CockpitModernView: View {
     let onWeeklyActivityTap: () -> Void
     let onStreakTap: () -> Void
     let onCapacityTap: () -> Void
+    let onCheckInTap: () -> Void
     let onProtocolComplete: (UUID) -> Void
     let onProtocolTap: (UUID) -> Void
 
@@ -65,6 +66,7 @@ struct CockpitModernView: View {
         onWeeklyActivityTap: @escaping () -> Void = {},
         onStreakTap: @escaping () -> Void = {},
         onCapacityTap: @escaping () -> Void = {},
+        onCheckInTap: @escaping () -> Void = {},
         onProtocolComplete: @escaping (UUID) -> Void = { _ in },
         onProtocolTap: @escaping (UUID) -> Void = { _ in }
     ) {
@@ -90,6 +92,7 @@ struct CockpitModernView: View {
         self.onWeeklyActivityTap = onWeeklyActivityTap
         self.onStreakTap = onStreakTap
         self.onCapacityTap = onCapacityTap
+        self.onCheckInTap = onCheckInTap
         self.onProtocolComplete = onProtocolComplete
         self.onProtocolTap = onProtocolTap
     }
@@ -112,7 +115,7 @@ struct CockpitModernView: View {
     private var ringValueTextColor: Color { style == .dark ? primary : Color(hex: "111827") }
     private var ringMetaTextColor: Color { style == .dark ? primary : Color(hex: "374151") }
     private var topPadding: CGFloat { showEmbeddedHeader ? 52 : 8 }
-    private var dueCount: Int { capacityProtocols.filter(\.isCtaEnabled).count }
+    private var dueCount: Int { capacityProtocols.filter(\.isRequiredToday).count }
     private var activeCount: Int {
         let chunks = activeCapacityCountText.replacingOccurrences(of: " ", with: "").split(separator: "/")
         return Int(chunks.first ?? "0") ?? 0
@@ -388,10 +391,29 @@ private extension CockpitModernView {
 
     var activeProtocolsSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("ACTIVE PROTOCOLS")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .tracking(2.1)
-                .foregroundColor(primary)
+            HStack {
+                Text("ACTIVE PROTOCOLS")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(2.1)
+                    .foregroundColor(primary)
+                Spacer()
+                Button(action: onCheckInTap) {
+                    Label("CHECK IN", systemImage: "checkmark.seal.fill")
+                        .font(.system(size: 10, weight: .black, design: .monospaced))
+                        .tracking(1.1)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(primary.opacity(style == .dark ? 0.16 : 0.12))
+                        )
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .stroke(primary.opacity(0.36), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(CockpitPressScaleButtonStyle())
+            }
 
             Button(action: onCapacityTap) {
                 HStack(alignment: .center, spacing: 12) {
@@ -448,7 +470,19 @@ private extension CockpitModernView {
     }
 
     func protocolRow(_ task: TodayTask) -> some View {
-        HStack(spacing: 12) {
+        let completionTint: Color = {
+            switch task.completionVisual {
+            case .none:
+                return primary
+            case .counted:
+                return primary
+            case .extra:
+                return Color(hex: "FDE047")
+            }
+        }()
+        let showCompletionCheck = task.completionVisual != .none
+
+        return HStack(spacing: 12) {
             Button {
                 if task.isCtaEnabled {
                     onProtocolComplete(task.nnId)
@@ -459,12 +493,12 @@ private extension CockpitModernView {
                         .stroke(style == .dark ? Color.white.opacity(0.2) : Color.black.opacity(0.18), lineWidth: 2)
                         .background(
                             Circle()
-                                .fill(task.isCtaEnabled ? Color.clear : primary.opacity(0.2))
+                                .fill(showCompletionCheck ? completionTint.opacity(0.2) : Color.clear)
                         )
-                    if !task.isCtaEnabled {
+                    if showCompletionCheck {
                         Image(systemName: "checkmark")
                             .font(.system(size: 10, weight: .black))
-                            .foregroundColor(primary)
+                            .foregroundColor(completionTint)
                     }
                 }
                 .frame(width: 22, height: 22)

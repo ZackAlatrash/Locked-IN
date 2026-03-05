@@ -10,9 +10,10 @@ final class CockpitViewModel: ObservableObject {
         isStable: Bool,
         reliabilityOverride: Int? = nil,
         currentStreakDays: Int = 0,
-        todayCompleted: Bool = false
+        todayCompleted: Bool = false,
+        referenceDate: Date = Date()
     ) {
-        let now = Date()
+        let now = referenceDate
 
         let computedScore = reliabilityScore(for: system, referenceDate: now)
         let reliabilityScore = min(max(reliabilityOverride ?? computedScore, 0), 100)
@@ -76,7 +77,7 @@ private extension CockpitViewModel {
                 let daysLeft = daysLeftText(for: nn, referenceDate: referenceDate)
                 let badge = badge(for: nn, referenceDate: referenceDate)
                 let weekId = DateRules.weekID(for: referenceDate)
-                let completionsThisWeek = nn.completions.filter { $0.weekId == weekId }.count
+                let completionsThisWeek = countedCompletionsThisWeek(nn, weekId: weekId)
                 let weeklyTarget = nn.definition.frequencyPerWeek
                 let weeklyProgress = "\(min(completionsThisWeek, weeklyTarget))/\(weeklyTarget) this week"
 
@@ -143,11 +144,9 @@ private extension CockpitViewModel {
             break
         }
 
-        let completedToday = nn.completions.contains {
-            DateRules.isoCalendar.isDate($0.date, inSameDayAs: referenceDate)
-        }
+        let completedToday = countedCompletedToday(nn, on: referenceDate)
         let weekId = DateRules.weekID(for: referenceDate)
-        let completionsThisWeek = nn.completions.filter { $0.weekId == weekId }.count
+        let completionsThisWeek = countedCompletionsThisWeek(nn, weekId: weekId)
         let weeklyTargetMet = completionsThisWeek >= nn.definition.frequencyPerWeek
 
         if completedToday {
@@ -168,7 +167,7 @@ private extension CockpitViewModel {
 
         for nn in system.nonNegotiables {
             let currentWindow = currentWindow(for: nn, referenceDate: referenceDate)
-            let thisWeekCompletions = nn.completions.filter { $0.weekId == weekId }.count
+            let thisWeekCompletions = countedCompletionsThisWeek(nn, weekId: weekId)
             let currentWindowViolations = nn.violations.filter { violation in
                 violation.windowIndex == currentWindow?.index
             }.count
@@ -200,10 +199,11 @@ private extension CockpitViewModel {
             ($0.state == .active || $0.state == .recovery) &&
             badge(for: $0, referenceDate: referenceDate) == .due
         }.count
-        let doneToday = system.nonNegotiables
-            .flatMap(\.completions)
-            .filter { DateRules.isoCalendar.isDate($0.date, inSameDayAs: referenceDate) }
-            .count
+        let doneToday = system.nonNegotiables.reduce(into: 0) { partial, nonNegotiable in
+            if countedCompletedToday(nonNegotiable, on: referenceDate) {
+                partial += 1
+            }
+        }
 
         if dueCount == 0 {
             if doneToday > 0 {
@@ -223,9 +223,12 @@ private extension CockpitViewModel {
             .sorted { $0.createdAt > $1.createdAt }
             .map { nn in
                 let completedToday = nn.completions.contains {
-                    DateRules.isoCalendar.isDate($0.date, inSameDayAs: referenceDate)
+                    $0.kind == .counted && DateRules.isoCalendar.isDate($0.date, inSameDayAs: referenceDate)
                 }
-                let thisWeekCount = nn.completions.filter { $0.weekId == weekId }.count
+                let extraLoggedToday = nn.completions.contains {
+                    $0.kind == .extra && DateRules.isoCalendar.isDate($0.date, inSameDayAs: referenceDate)
+                }
+                let thisWeekCount = countedCompletionsThisWeek(nn, weekId: weekId)
                 let isSuspended = nn.state == .suspended
                 let recoveryHint = nn.state == .recovery ? "Recovery rules active" : nil
 
@@ -235,22 +238,37 @@ private extension CockpitViewModel {
                     let ctaEnabled: Bool
                     let ctaTitle: String
                     let statusText: String
+                    let isRequiredToday: Bool
+                    let completionVisual: TodayTask.CompletionVisual
 
                     if isSuspended {
                         subtitle = "Suspended (system stabilizing)"
                         statusText = "Suspended (system stabilizing)"
                         ctaEnabled = false
                         ctaTitle = "Unavailable"
+                        isRequiredToday = false
+                        completionVisual = .none
+                    } else if extraLoggedToday {
+                        subtitle = "Extra logged"
+                        statusText = "Extra logged"
+                        ctaEnabled = false
+                        ctaTitle = "Extra Logged"
+                        isRequiredToday = completedToday == false
+                        completionVisual = .extra
                     } else if completedToday {
                         subtitle = "Completed today"
                         statusText = "Completed today"
                         ctaEnabled = false
-                        ctaTitle = "Completed"
+                        ctaTitle = "Done"
+                        isRequiredToday = false
+                        completionVisual = .counted
                     } else {
                         subtitle = "Due today"
                         statusText = "Due today"
                         ctaEnabled = true
                         ctaTitle = "Mark Done"
+                        isRequiredToday = true
+                        completionVisual = .none
                     }
 
                     return TodayTask(
@@ -263,6 +281,9 @@ private extension CockpitViewModel {
                         recoveryHint: recoveryHint,
                         modeLabel: .daily,
                         isCompleteToday: completedToday,
+                        isExtraToday: extraLoggedToday,
+                        isRequiredToday: isRequiredToday,
+                        completionVisual: completionVisual,
                         ctaTitle: ctaTitle,
                         isCtaEnabled: ctaEnabled
                     )
@@ -272,27 +293,51 @@ private extension CockpitViewModel {
                     let statusText: String
                     let ctaEnabled: Bool
                     let ctaTitle: String
+                    let isRequiredToday: Bool
+                    let completionVisual: TodayTask.CompletionVisual
 
                     if isSuspended {
                         subtitle = "Suspended (system stabilizing)"
                         statusText = "Suspended (system stabilizing)"
                         ctaEnabled = false
                         ctaTitle = "Unavailable"
+                        isRequiredToday = false
+                        completionVisual = .none
+                    } else if extraLoggedToday {
+                        subtitle = "Extra logged"
+                        statusText = "Extra logged"
+                        ctaEnabled = false
+                        ctaTitle = "Extra Logged"
+                        isRequiredToday = false
+                        completionVisual = .extra
                     } else if completedToday {
                         subtitle = "Completed today"
                         statusText = "Completed today"
                         ctaEnabled = false
-                        ctaTitle = "Completed"
+                        ctaTitle = "Done"
+                        isRequiredToday = false
+                        completionVisual = .counted
+                    } else if remaining == 0 {
+                        subtitle = "Weekly target met"
+                        statusText = "Weekly target met"
+                        ctaEnabled = true
+                        ctaTitle = "Log Extra"
+                        completionVisual = .none
+                        isRequiredToday = false
                     } else if remaining > 0 {
                         subtitle = "\(remaining) session\(remaining == 1 ? "" : "s") remaining this week"
                         statusText = "\(remaining) remaining this week"
                         ctaEnabled = true
                         ctaTitle = "Mark Done"
+                        completionVisual = .none
+                        isRequiredToday = true
                     } else {
                         subtitle = "Weekly target met"
                         statusText = "Weekly target met"
                         ctaEnabled = false
                         ctaTitle = "Complete"
+                        isRequiredToday = false
+                        completionVisual = .none
                     }
 
                     return TodayTask(
@@ -305,6 +350,9 @@ private extension CockpitViewModel {
                         recoveryHint: recoveryHint,
                         modeLabel: .session,
                         isCompleteToday: completedToday,
+                        isExtraToday: extraLoggedToday,
+                        isRequiredToday: isRequiredToday,
+                        completionVisual: completionVisual,
                         ctaTitle: ctaTitle,
                         isCtaEnabled: ctaEnabled
                     )
@@ -338,5 +386,19 @@ private extension CockpitViewModel {
             g: from.g + (to.g - from.g) * t,
             b: from.b + (to.b - from.b) * t
         )
+    }
+
+    func countedCompletionsThisWeek(_ nonNegotiable: NonNegotiable, weekId: WeekID) -> Int {
+        nonNegotiable.completions.reduce(into: 0) { partial, completion in
+            if completion.weekId == weekId && completion.kind == .counted {
+                partial += 1
+            }
+        }
+    }
+
+    func countedCompletedToday(_ nonNegotiable: NonNegotiable, on date: Date) -> Bool {
+        nonNegotiable.completions.contains {
+            $0.kind == .counted && DateRules.isoCalendar.isDate($0.date, inSameDayAs: date)
+        }
     }
 }

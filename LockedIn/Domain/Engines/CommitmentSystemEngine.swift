@@ -7,6 +7,12 @@ enum CommitmentSystemError: Error {
     case systemUnstable
 }
 
+struct CompletionWriteOutcome: Equatable {
+    let protocolId: UUID
+    let date: Date
+    let kind: CompletionKind
+}
+
 final class CommitmentSystemEngine {
     private let nonNegotiableEngine: NonNegotiableEngine
     private let requireCompletionForCleanDay: Bool
@@ -42,7 +48,7 @@ final class CommitmentSystemEngine {
         }
     }
 
-    func recordCompletion(nnId: UUID, date: Date, in system: inout CommitmentSystem) throws {
+    func recordCompletion(nnId: UUID, date: Date, in system: inout CommitmentSystem) throws -> CompletionWriteOutcome {
         guard let index = system.nonNegotiables.firstIndex(where: { $0.id == nnId }) else {
             throw CommitmentSystemError.nonNegotiableNotFound
         }
@@ -52,10 +58,11 @@ final class CommitmentSystemEngine {
         }
 
         var nn = system.nonNegotiables[index]
-        try nonNegotiableEngine.recordCompletion(&nn, at: date)
+        let decision = try nonNegotiableEngine.recordCompletion(&nn, at: date)
         system.nonNegotiables[index] = nn
 
         enforceCapacityIfNeeded(in: &system)
+        return CompletionWriteOutcome(protocolId: nnId, date: date, kind: decision.kind)
     }
 
     func evaluateWeek(for date: Date, in system: inout CommitmentSystem) {
@@ -234,7 +241,7 @@ final class CommitmentSystemEngine {
         let hasCompletionToday = system.nonNegotiables
             .filter { $0.state == .active || $0.state == .recovery }
             .flatMap(\.completions)
-            .contains { $0.date >= day && $0.date < nextDay }
+            .contains { $0.kind == .counted && $0.date >= day && $0.date < nextDay }
 
         return hasCompletionToday
     }

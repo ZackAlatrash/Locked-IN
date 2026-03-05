@@ -25,6 +25,7 @@ final class PlanViewModel: ObservableObject {
     private let calendarProvider: PlanCalendarProviding
     private let regulatorEngine: PlanRegulatorEngine
     private var cancellables: Set<AnyCancellable> = []
+    private var referenceDateProvider: () -> Date = { Date() }
 
     private weak var planStore: PlanStore?
     private weak var commitmentStore: CommitmentSystemStore?
@@ -58,6 +59,10 @@ final class PlanViewModel: ObservableObject {
 
     var weekSubtitle: String {
         planStore?.weekSubtitle ?? ""
+    }
+
+    func setReferenceDateProvider(_ provider: @escaping () -> Date) {
+        referenceDateProvider = provider
     }
 
     func bind(planStore: PlanStore, commitmentStore: CommitmentSystemStore) {
@@ -104,15 +109,16 @@ final class PlanViewModel: ObservableObject {
 
         commitmentStore.$system
             .sink { [weak self] _ in
-                self?.refresh(referenceDate: Date())
+                self?.refresh(referenceDate: self?.currentReferenceDate())
             }
             .store(in: &cancellables)
 
-        refresh(referenceDate: Date())
+        refresh(referenceDate: currentReferenceDate())
     }
 
-    func refresh(referenceDate: Date = Date()) {
+    func refresh(referenceDate: Date? = nil) {
         guard let planStore, let commitmentStore else { return }
+        let referenceDate = referenceDate ?? currentReferenceDate()
         let week = DateRules.weekInterval(containing: referenceDate, calendar: DateRules.isoCalendar)
         calendarAccessStatus = calendarProvider.authorizationStatus()
         let events: [PlanCalendarEvent]
@@ -128,11 +134,11 @@ final class PlanViewModel: ObservableObject {
     func requestCalendarAccess() async {
         let status = await calendarProvider.requestAccess()
         calendarAccessStatus = status
-        refresh(referenceDate: Date())
+        refresh(referenceDate: currentReferenceDate())
     }
 
-    func handleDidBecomeActive() {
-        refresh(referenceDate: Date())
+    func handleDidBecomeActive(referenceDate: Date? = nil) {
+        refresh(referenceDate: referenceDate ?? currentReferenceDate())
     }
 
     func protocolTitle(for id: UUID) -> String {
@@ -162,6 +168,10 @@ final class PlanViewModel: ObservableObject {
 
     func selectProtocol(id: UUID) {
         planStore?.selectProtocol(id)
+    }
+
+    func focusProtocol(id: UUID?) {
+        planStore?.focusProtocol(id)
     }
 
     func clearWarning() {
@@ -272,7 +282,7 @@ final class PlanViewModel: ObservableObject {
         switch result {
         case .success:
             discardDraft()
-            refresh(referenceDate: Date())
+            refresh(referenceDate: currentReferenceDate())
             return true
         case .failure:
             return false
@@ -333,7 +343,7 @@ final class PlanViewModel: ObservableObject {
             )
             protocolSchedulingEditor = nil
             protocolEditErrorMessage = nil
-            refresh(referenceDate: Date())
+            refresh(referenceDate: currentReferenceDate())
             return true
         } catch {
             protocolEditErrorMessage = mapProtocolEditError(error)
@@ -354,7 +364,9 @@ private extension PlanViewModel {
             }
             .map { nn in
                 let plannedThisWeek = allocations.filter { $0.protocolId == nn.id }.count
-                let completionsThisWeek = nn.completions.filter { $0.weekId == weekId }.count
+                let completionsThisWeek = nn.completions.filter {
+                    $0.weekId == weekId && $0.kind == .counted
+                }.count
                 return ProtocolPlanItem(
                     id: nn.id,
                     title: nn.definition.title,
@@ -443,6 +455,10 @@ private extension PlanViewModel {
                 kind: suggestion.kind
             )
         }
+    }
+
+    func currentReferenceDate() -> Date {
+        referenceDateProvider()
     }
 
     func mapProtocolEditError(_ error: Error) -> String {

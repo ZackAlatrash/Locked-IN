@@ -25,6 +25,11 @@ enum NonNegotiableEngineError: Error {
     case outsideLockPeriod
     case alreadyRetiredOrCompleted
     case alreadyCompletedToday
+    case extraAlreadyLoggedToday
+}
+
+struct CompletionDecision: Equatable {
+    let kind: CompletionKind
 }
 
 struct NonNegotiableEngine {
@@ -55,16 +60,17 @@ struct NonNegotiableEngine {
         )
     }
 
-    func recordCompletion(_ nn: inout NonNegotiable, at date: Date) throws {
+    func recordCompletion(_ nn: inout NonNegotiable, at date: Date) throws -> CompletionDecision {
         guard nn.state != .retired, nn.state != .completed else {
             throw NonNegotiableEngineError.alreadyRetiredOrCompleted
         }
 
         try ensureWithinLock(nn, date: date)
-        try ensureSingleCompletionPerDay(nn, date: date)
 
         let weekId = DateRules.weekID(for: date, calendar: calendar)
-        nn.completions.append(CompletionRecord(date: date, weekId: weekId))
+        let completionKind = try determineCompletionKind(nn, date: date, weekId: weekId)
+        nn.completions.append(CompletionRecord(date: date, weekId: weekId, kind: completionKind))
+        return CompletionDecision(kind: completionKind)
     }
 
     func evaluateDailyComplianceIfNeeded(_ nn: inout NonNegotiable, at currentDate: Date) {
@@ -97,7 +103,7 @@ struct NonNegotiableEngine {
         }
 
         let didCompleteYesterday = nn.completions.contains { completion in
-            calendar.isDate(completion.date, inSameDayAs: yesterday)
+            completion.kind == .counted && calendar.isDate(completion.date, inSameDayAs: yesterday)
         }
 
         if !didCompleteYesterday {
@@ -215,12 +221,6 @@ struct NonNegotiableEngine {
         }
     }
 
-    private func ensureSingleCompletionPerDay(_ nn: NonNegotiable, date: Date) throws {
-        if nn.completions.contains(where: { calendar.isDate($0.date, inSameDayAs: date) }) {
-            throw NonNegotiableEngineError.alreadyCompletedToday
-        }
-    }
-
     private func expectedCompletionsPerWeek(for definition: NonNegotiableDefinition) -> Int {
         NonNegotiableDefinition.normalizedFrequency(definition.frequencyPerWeek, mode: definition.mode)
     }
@@ -242,6 +242,7 @@ struct NonNegotiableEngine {
 
         return nn.completions.filter { record in
             record.weekId == weekId
+            && record.kind == .counted
             && record.date >= weekInterval.start
             && record.date < weekInterval.end
             && record.date >= window.startDate
@@ -249,6 +250,57 @@ struct NonNegotiableEngine {
             && record.date >= nn.lock.startDate
             && record.date < lockEnd
         }.count
+    }
+
+    private func determineCompletionKind(_ nn: NonNegotiable, date: Date, weekId: WeekID) throws -> CompletionKind {
+        let hasCountedToday = nn.completions.contains {
+            $0.kind == .counted && calendar.isDate($0.date, inSameDayAs: date)
+        }
+        let hasExtraToday = nn.completions.contains {
+            $0.kind == .extra && calendar.isDate($0.date, inSameDayAs: date)
+        }
+        let countedThisWeek = nn.completions.reduce(into: 0) { partial, completion in
+            if completion.weekId == weekId && completion.kind == .counted {
+                partial += 1
+            }
+        }
+        let weeklyTarget = NonNegotiableDefinition.normalizedFrequency(
+            nn.definition.frequencyPerWeek,
+            mode: nn.definition.mode
+        )
+
+        switch nn.definition.mode {
+        case .daily:
+            if countedThisWeek < weeklyTarget {
+                if hasCountedToday {
+                    throw NonNegotiableEngineError.alreadyCompletedToday
+                }
+                return .counted
+            }
+
+            if hasCountedToday {
+                throw NonNegotiableEngineError.alreadyCompletedToday
+            }
+            if hasExtraToday {
+                throw NonNegotiableEngineError.extraAlreadyLoggedToday
+            }
+            return .extra
+        case .session:
+            if countedThisWeek < weeklyTarget {
+                if hasCountedToday {
+                    throw NonNegotiableEngineError.alreadyCompletedToday
+                }
+                return .counted
+            }
+
+            if hasCountedToday {
+                throw NonNegotiableEngineError.alreadyCompletedToday
+            }
+            if hasExtraToday {
+                throw NonNegotiableEngineError.extraAlreadyLoggedToday
+            }
+            return .extra
+        }
     }
 
     private func updateRecoveryState(_ nn: inout NonNegotiable, windowIndex: Int) {

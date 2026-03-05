@@ -927,7 +927,9 @@ private extension CreateNonNegotiableView {
             let currentWindow = nn.windows.first {
                 referenceDate >= $0.startDate && referenceDate < $0.endDate
             }
-            let thisWeekCompletions = nn.completions.filter { $0.weekId == weekId }.count
+            let thisWeekCompletions = nn.completions.filter {
+                $0.weekId == weekId && $0.kind == .counted
+            }.count
             let currentWindowViolations = nn.violations.filter { violation in
                 violation.windowIndex == currentWindow?.index
             }.count

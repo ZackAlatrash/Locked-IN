@@ -25,6 +25,17 @@ enum PlanDraftApplyError: Error, LocalizedError {
     }
 }
 
+struct ReleasedAllocationInfo: Equatable {
+    let protocolId: UUID
+    let day: Date
+    let slot: PlanSlot
+}
+
+enum PlanCompletionReconciliationOutcome: Equatable {
+    case none
+    case released(ReleasedAllocationInfo)
+}
+
 @MainActor
 final class PlanStore: ObservableObject {
     @Published private(set) var currentWeekDays: [PlanDayModel] = []
@@ -138,6 +149,19 @@ final class PlanStore: ObservableObject {
             selectedQueueProtocolId = nil
         } else {
             selectedQueueProtocolId = id
+        }
+    }
+
+    func focusProtocol(_ id: UUID?) {
+        guard let id else {
+            selectedQueueProtocolId = nil
+            return
+        }
+
+        if queueItems.contains(where: { $0.protocolId == id }) || protocolsById[id] != nil {
+            selectedQueueProtocolId = id
+        } else {
+            selectedQueueProtocolId = nil
         }
     }
 
@@ -280,6 +304,54 @@ final class PlanStore: ObservableObject {
     func removeAllocation(id: UUID) {
         allAllocations.removeAll(where: { $0.id == id })
         saveAndRefresh()
+    }
+
+    func reconcileAfterCompletion(
+        protocolId: UUID,
+        mode: NonNegotiableMode,
+        completionDate: Date,
+        completionKind: CompletionKind
+    ) -> PlanCompletionReconciliationOutcome {
+        guard mode == .session, completionKind == .counted else {
+            return .none
+        }
+
+        let completionWeekId = DateRules.weekID(for: completionDate, calendar: calendar)
+        let completionDayStart = DateRules.startOfDay(completionDate, calendar: calendar)
+
+        let hasAllocationOnCompletionDay = allAllocations.contains { allocation in
+            allocation.protocolId == protocolId &&
+            allocation.weekId == completionWeekId &&
+            DateRules.startOfDay(allocation.day, calendar: calendar) == completionDayStart
+        }
+        if hasAllocationOnCompletionDay {
+            return .none
+        }
+
+        guard let candidate = nearestFutureAllocationCandidate(
+            protocolId: protocolId,
+            completionDate: completionDate,
+            completionWeekId: completionWeekId
+        ) else {
+            return .none
+        }
+
+        allAllocations.removeAll { $0.id == candidate.allocation.id }
+        do {
+            try repository.save(allAllocations)
+        } catch {
+            setWarning("Could not update plan after completion.")
+            return .none
+        }
+
+        refreshWithLastContext()
+        return .released(
+            ReleasedAllocationInfo(
+                protocolId: protocolId,
+                day: candidate.allocation.day,
+                slot: candidate.allocation.slot
+            )
+        )
     }
 
     func clearAllAllocations() {
@@ -453,7 +525,88 @@ private extension PlanStore {
         let freeMinutes: Int
     }
 
+    struct FutureAllocationCandidate {
+        let allocation: PlanAllocation
+        let dayIndex: Int
+        let slotOrder: Int
+        let startMinutesFromMidnight: Int
+    }
+
     var dailyPlacementsPerDayTarget: Int { 1 }
+
+    func nearestFutureAllocationCandidate(
+        protocolId: UUID,
+        completionDate: Date,
+        completionWeekId: WeekID
+    ) -> FutureAllocationCandidate? {
+        let weekStart = DateRules.weekInterval(containing: completionDate, calendar: calendar).start
+        let weekStartDay = DateRules.startOfDay(weekStart, calendar: calendar)
+
+        let candidates = allAllocations.compactMap { allocation -> FutureAllocationCandidate? in
+            guard allocation.protocolId == protocolId, allocation.weekId == completionWeekId else {
+                return nil
+            }
+            guard let effectiveStart = effectiveAllocationStartDate(allocation) else {
+                return nil
+            }
+            guard effectiveStart > completionDate else {
+                return nil
+            }
+
+            let dayStart = DateRules.startOfDay(allocation.day, calendar: calendar)
+            let dayIndex = calendar.dateComponents([.day], from: weekStartDay, to: dayStart).day ?? Int.max
+            let slotOrder = slotSortOrder(allocation.slot)
+            let startMinutesFromMidnight: Int
+            if let startTime = allocation.startTime {
+                let components = calendar.dateComponents([.hour, .minute], from: startTime)
+                startMinutesFromMidnight = (components.hour ?? allocation.slot.startHour) * 60 + (components.minute ?? 0)
+            } else {
+                startMinutesFromMidnight = allocation.slot.startHour * 60
+            }
+
+            return FutureAllocationCandidate(
+                allocation: allocation,
+                dayIndex: dayIndex,
+                slotOrder: slotOrder,
+                startMinutesFromMidnight: startMinutesFromMidnight
+            )
+        }
+
+        return candidates.sorted { lhs, rhs in
+            if lhs.dayIndex != rhs.dayIndex {
+                return lhs.dayIndex < rhs.dayIndex
+            }
+            if lhs.slotOrder != rhs.slotOrder {
+                return lhs.slotOrder < rhs.slotOrder
+            }
+            if lhs.startMinutesFromMidnight != rhs.startMinutesFromMidnight {
+                return lhs.startMinutesFromMidnight < rhs.startMinutesFromMidnight
+            }
+            return lhs.allocation.id.uuidString < rhs.allocation.id.uuidString
+        }.first
+    }
+
+    func effectiveAllocationStartDate(_ allocation: PlanAllocation) -> Date? {
+        let dayStart = DateRules.startOfDay(allocation.day, calendar: calendar)
+        if let startTime = allocation.startTime {
+            let timeComponents = calendar.dateComponents([.hour, .minute, .second], from: startTime)
+            return calendar.date(
+                bySettingHour: timeComponents.hour ?? allocation.slot.startHour,
+                minute: timeComponents.minute ?? 0,
+                second: timeComponents.second ?? 0,
+                of: dayStart
+            )
+        }
+        return calendar.date(bySettingHour: allocation.slot.startHour, minute: 0, second: 0, of: dayStart)
+    }
+
+    func slotSortOrder(_ slot: PlanSlot) -> Int {
+        switch slot {
+        case .am: return 0
+        case .pm: return 1
+        case .eve: return 2
+        }
+    }
 
     func buildProtocolDescriptors(from system: CommitmentSystem, referenceDate: Date) {
         let managed = system.nonNegotiables.filter {
@@ -466,9 +619,11 @@ private extension PlanStore {
 
         for (index, nn) in managed.enumerated() {
             let tone = PlanTone.allCases[index % PlanTone.allCases.count]
-            let completionsThisWeek = nn.completions.filter { $0.weekId == weekId }.count
+            let completionsThisWeek = nn.completions.filter {
+                $0.weekId == weekId && $0.kind == .counted
+            }.count
             let completionsTodayCount = nn.completions.filter {
-                DateRules.startOfDay($0.date, calendar: calendar) == today
+                $0.kind == .counted && DateRules.startOfDay($0.date, calendar: calendar) == today
             }.count
 
             result[nn.id] = PlanProtocolDescriptor(

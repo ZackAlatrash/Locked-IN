@@ -3,6 +3,7 @@ import SwiftUI
 struct CockpitLogsScreen: View {
     @Binding var selectedTab: MainTab
     @EnvironmentObject private var store: CommitmentSystemStore
+    @EnvironmentObject private var appClock: AppClock
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("phase1MotionSessionID") private var motionSessionID = ""
@@ -168,6 +169,15 @@ private extension CockpitLogsScreen {
                                 .foregroundColor(dayNumberColor(for: point))
                                 .padding(.leading, 4)
                                 .padding(.top, 3)
+                        }
+                        .overlay(alignment: .topTrailing) {
+                            if point.completionCount > 0 && point.extraCount > 0 {
+                                Circle()
+                                    .fill(isDarkMode ? Color(hex: "FDE047") : Color(hex: "A16207"))
+                                    .frame(width: 6, height: 6)
+                                    .padding(.trailing, 4)
+                                    .padding(.top, 4)
+                            }
                         }
                         .opacity(revealedMatrixCount > index ? 1 : 0)
                         .scaleEffect(revealedMatrixCount > index ? 1 : 0.92)
@@ -576,6 +586,10 @@ private extension CockpitLogsScreen {
             return matrixViolationFill
         }
 
+        if point.completionCount == 0 && point.extraCount > 0 {
+            return isDarkMode ? Color(hex: "FDE047").opacity(0.8) : Color(hex: "FDE68A")
+        }
+
         if point.completionCount >= 2 {
             return matrixMediumFill
         }
@@ -591,6 +605,9 @@ private extension CockpitLogsScreen {
         if point.violationCount > 0 {
             return Color(hex: "EF4444").opacity(isDarkMode ? 0.9 : 0.7)
         }
+        if point.completionCount == 0 && point.extraCount > 0 {
+            return isDarkMode ? Color(hex: "FDE047").opacity(0.98) : Color(hex: "CA8A04").opacity(0.9)
+        }
         if point.completionCount >= 2 {
             return isDarkMode ? Color(hex: "67E8F9") : Color(hex: "0EA5E9").opacity(0.9)
         }
@@ -603,6 +620,9 @@ private extension CockpitLogsScreen {
     func matrixGlow(for point: MatrixDay) -> Color {
         guard isDarkMode else { return .clear }
         if point.violationCount > 0 { return .clear }
+        if point.completionCount == 0 && point.extraCount > 0 {
+            return Color(hex: "FDE047").opacity(0.72)
+        }
         if point.completionCount >= 2 {
             return Color(hex: "67E8F9").opacity(0.8)
         }
@@ -633,8 +653,8 @@ private extension CockpitLogsScreen {
     }
 
     var deepFocusHours: Double {
-        let weeklyCompletions = store.completionLog.filter {
-            DateRules.weekID(for: $0.date) == DateRules.weekID(for: Date())
+        let weeklyCompletions = store.countedCompletionLog.filter {
+            DateRules.weekID(for: $0.date) == DateRules.weekID(for: appClock.now)
         }.count
         let estimate = max(2.6, 2.0 + (Double(weeklyCompletions) * 0.45))
         return min(9.8, estimate)
@@ -645,7 +665,7 @@ private extension CockpitLogsScreen {
     }
 
     var deepFocusBars: [Double] {
-        let base = Double(max(1, store.currentStreakDays % 7))
+        let base = Double(max(1, store.currentStreakDays(referenceDate: appClock.now) % 7))
         return [
             0.28,
             0.42,
@@ -667,8 +687,11 @@ private extension CockpitLogsScreen {
 
     var matrixDays: [MatrixDay] {
         let calendar = DateRules.isoCalendar
-        let today = DateRules.startOfDay(Date(), calendar: calendar)
-        let completionByDay = Dictionary(grouping: store.completionLog) {
+        let today = DateRules.startOfDay(appClock.now, calendar: calendar)
+        let completionByDay = Dictionary(grouping: store.countedCompletionLog) {
+            DateRules.startOfDay($0.date, calendar: calendar)
+        }
+        let extraByDay = Dictionary(grouping: store.extraCompletionLog) {
             DateRules.startOfDay($0.date, calendar: calendar)
         }
         let violationByDay = Dictionary(grouping: store.violationLog) {
@@ -678,24 +701,40 @@ private extension CockpitLogsScreen {
         return (0..<28).compactMap { offset in
             guard let day = calendar.date(byAdding: .day, value: offset - 27, to: today) else { return nil }
             let completions = completionByDay[day]?.count ?? 0
+            let extras = extraByDay[day]?.count ?? 0
             let violations = violationByDay[day]?.count ?? 0
-            return MatrixDay(day: day, completionCount: completions, violationCount: violations, isToday: day == today)
+            return MatrixDay(
+                day: day,
+                completionCount: completions,
+                extraCount: extras,
+                violationCount: violations,
+                isToday: day == today
+            )
         }
     }
 
     var recentEntries: [LogEntry] {
         let completionEntries = store.completionLog.map { completion in
             let goal = 68 + (abs(Int(completion.date.timeIntervalSince1970 / 60)) % 31)
+            let isExtra = completion.kind == .extra
             return LogEntry(
                 type: .completion,
                 date: completion.date,
                 title: title(for: completion),
-                badge: isDarkMode ? "SYNCED" : "COMPLETED",
-                badgeColor: isDarkMode ? cyanAccent : Color(hex: "15803D"),
-                badgeBackground: isDarkMode ? cyanAccent.opacity(0.1) : Color(hex: "DCFCE7"),
-                badgeStroke: isDarkMode ? cyanAccent.opacity(0.35) : Color(hex: "86EFAC"),
+                badge: isExtra ? "EXTRA" : (isDarkMode ? "SYNCED" : "COMPLETED"),
+                badgeColor: isExtra
+                    ? (isDarkMode ? Color(hex: "FDE047") : Color(hex: "A16207"))
+                    : (isDarkMode ? cyanAccent : Color(hex: "15803D")),
+                badgeBackground: isExtra
+                    ? (isDarkMode ? Color(hex: "FDE047").opacity(0.14) : Color(hex: "FEF3C7"))
+                    : (isDarkMode ? cyanAccent.opacity(0.1) : Color(hex: "DCFCE7")),
+                badgeStroke: isExtra
+                    ? (isDarkMode ? Color(hex: "FDE047").opacity(0.42) : Color(hex: "FCD34D"))
+                    : (isDarkMode ? cyanAccent.opacity(0.35) : Color(hex: "86EFAC")),
                 icon: completionIcon(for: completion),
-                iconTint: isDarkMode ? cyanAccent : Color(hex: "1D4ED8"),
+                iconTint: isExtra
+                    ? (isDarkMode ? Color(hex: "FDE047") : Color(hex: "A16207"))
+                    : (isDarkMode ? cyanAccent : Color(hex: "1D4ED8")),
                 timeLabel: timeLabel(for: completion.date),
                 flow: deterministicFlow(for: completion.date),
                 distractions: deterministicDistractions(for: completion.date),
@@ -782,6 +821,7 @@ private extension CockpitLogsScreen {
 private struct MatrixDay: Identifiable {
     let day: Date
     let completionCount: Int
+    let extraCount: Int
     let violationCount: Int
     let isToday: Bool
 

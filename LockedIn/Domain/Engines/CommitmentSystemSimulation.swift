@@ -139,7 +139,7 @@ func runCommitmentSystemSimulation() {
 
             if let idxA = recoverySystem.nonNegotiables.firstIndex(where: { $0.id == recoveryA.id }) {
                 var nnA = recoverySystem.nonNegotiables[idxA]
-                try nonNegotiableEngine.recordCompletion(&nnA, at: DateRules.date(
+                _ = try nonNegotiableEngine.recordCompletion(&nnA, at: DateRules.date(
                     year: calendar.component(.year, from: day),
                     month: calendar.component(.month, from: day),
                     day: calendar.component(.day, from: day),
@@ -152,7 +152,7 @@ func runCommitmentSystemSimulation() {
             if let idxB = recoverySystem.nonNegotiables.firstIndex(where: { $0.id == recoveryB.id }),
                recoverySystem.nonNegotiables[idxB].state == .active {
                 var nnB = recoverySystem.nonNegotiables[idxB]
-                try nonNegotiableEngine.recordCompletion(&nnB, at: DateRules.date(
+                _ = try nonNegotiableEngine.recordCompletion(&nnB, at: DateRules.date(
                     year: calendar.component(.year, from: day),
                     month: calendar.component(.month, from: day),
                     day: calendar.component(.day, from: day),

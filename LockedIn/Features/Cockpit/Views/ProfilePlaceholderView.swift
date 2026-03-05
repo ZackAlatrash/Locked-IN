@@ -2,8 +2,16 @@ import SwiftUI
 
 struct ProfilePlaceholderView: View {
     @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
+    @AppStorage(DailyCheckInPolicy.Keys.hour) private var dailyCheckInHour = 18
+    @AppStorage(DailyCheckInPolicy.Keys.minute) private var dailyCheckInMinute = 0
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+#if DEBUG
+    @EnvironmentObject private var store: CommitmentSystemStore
+    @EnvironmentObject private var planStore: PlanStore
+    @EnvironmentObject private var appClock: AppClock
+    @EnvironmentObject private var devRuntime: DevRuntimeState
+#endif
 
     private var isDarkMode: Bool { colorScheme == .dark }
     private var pageBackground: Color { isDarkMode ? Color.black : Color(hex: "F2F2F7") }
@@ -18,6 +26,10 @@ struct ProfilePlaceholderView: View {
             VStack(alignment: .leading, spacing: 14) {
                 profileHeader
                 appearanceCard
+                dailyCheckInCard
+#if DEBUG
+                devOptionsRow
+#endif
 
                 settingRow(title: "Account", subtitle: "Profile and identity")
                 settingRow(title: "Notifications", subtitle: "Alerts and reminders")
@@ -97,6 +109,54 @@ private extension ProfilePlaceholderView {
         )
     }
 
+    var dailyCheckInCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Daily Check-In Time")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(textMain)
+
+            Text("Auto prompt appears once daily after this time if check-in is still open.")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(textSecondary)
+
+            DatePicker(
+                "Check-In Time",
+                selection: dailyCheckInTimeBinding,
+                displayedComponents: .hourAndMinute
+            )
+            .datePickerStyle(.compact)
+            .labelsHidden()
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(14)
+        .background(panelBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    var dailyCheckInTimeBinding: Binding<Date> {
+        Binding(
+            get: {
+                let calendar = DateRules.isoCalendar
+                let now = Date()
+                return calendar.date(
+                    bySettingHour: dailyCheckInHour,
+                    minute: dailyCheckInMinute,
+                    second: 0,
+                    of: now
+                ) ?? now
+            },
+            set: { newValue in
+                let components = DateRules.isoCalendar.dateComponents([.hour, .minute], from: newValue)
+                let nextHour = components.hour ?? dailyCheckInHour
+                let nextMinute = components.minute ?? dailyCheckInMinute
+                guard nextHour != dailyCheckInHour || nextMinute != dailyCheckInMinute else { return }
+                Haptics.selection()
+                dailyCheckInHour = nextHour
+                dailyCheckInMinute = nextMinute
+            }
+        )
+    }
+
     func settingRow(title: String, subtitle: String) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
@@ -116,4 +176,38 @@ private extension ProfilePlaceholderView {
         .background(panelBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
+
+#if DEBUG
+    var devOptionsRow: some View {
+        NavigationLink {
+            DevOptionsView(
+                controller: DevOptionsController(
+                    commitmentStore: store,
+                    planStore: planStore,
+                    appClock: appClock,
+                    devRuntime: devRuntime
+                )
+            )
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Dev Options")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(textMain)
+                    Text("Debug tools, test seeds, and data reset")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(textSecondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(textMuted)
+            }
+            .padding(14)
+            .background(panelBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+#endif
 }

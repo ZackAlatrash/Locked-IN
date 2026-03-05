@@ -56,15 +56,24 @@ final class CommitmentSystemStore: ObservableObject {
         persistSystem()
     }
 
+    @discardableResult
+    func recordCompletionDetailed(
+        for id: UUID,
+        at date: Date
+    ) throws -> CompletionWriteOutcome {
+        var updated = system
+        let outcome = try systemEngine.recordCompletion(nnId: id, date: date, in: &updated)
+
+        system = updated
+        persistSystem()
+        return outcome
+    }
+
     func recordCompletion(
         for id: UUID,
         at date: Date
     ) throws {
-        var updated = system
-        try systemEngine.recordCompletion(nnId: id, date: date, in: &updated)
-
-        system = updated
-        persistSystem()
+        _ = try recordCompletionDetailed(for: id, at: date)
     }
 
     func removeNonNegotiable(id: UUID) throws {
@@ -193,6 +202,14 @@ final class CommitmentSystemStore: ObservableObject {
             .sorted { $0.date > $1.date }
     }
 
+    var countedCompletionLog: [CompletionRecord] {
+        completionLog.filter { $0.kind == .counted }
+    }
+
+    var extraCompletionLog: [CompletionRecord] {
+        completionLog.filter { $0.kind == .extra }
+    }
+
     var violationLog: [Violation] {
         system.nonNegotiables
             .flatMap(\.violations)
@@ -204,11 +221,38 @@ final class CommitmentSystemStore: ObservableObject {
     }
 
     var todayCompleted: Bool {
-        streakEngine.completedOnDay(Date(), completions: completionLog)
+        todayCompleted(referenceDate: Date())
     }
 
     var currentStreakDays: Int {
-        streakEngine.currentStreakDays(from: completionLog, referenceDate: Date())
+        currentStreakDays(referenceDate: Date())
+    }
+
+    func todayCompleted(referenceDate: Date) -> Bool {
+        streakEngine.completedOnDay(referenceDate, completions: countedCompletionLog)
+    }
+
+    func currentStreakDays(referenceDate: Date) -> Int {
+        streakEngine.currentStreakDays(from: countedCompletionLog, referenceDate: referenceDate)
+    }
+
+    func countedCompletions(for nnId: UUID, weekId: WeekID) -> Int {
+        guard let nonNegotiable = system.nonNegotiables.first(where: { $0.id == nnId }) else {
+            return 0
+        }
+        return nonNegotiable.completions.reduce(into: 0) { partial, completion in
+            if completion.weekId == weekId && completion.kind == .counted {
+                partial += 1
+            }
+        }
+    }
+
+    func countedCompletedToday(for nnId: UUID, date: Date) -> Bool {
+        completionExists(for: nnId, date: date, kind: .counted)
+    }
+
+    func extraCompletedToday(for nnId: UUID, date: Date) -> Bool {
+        completionExists(for: nnId, date: date, kind: .extra)
     }
 
     func logsGroupedByDay() -> [DailyLogGroup] {
@@ -240,6 +284,16 @@ final class CommitmentSystemStore: ObservableObject {
             print("CommitmentSystemStore save succeeded")
         } catch {
             print("CommitmentSystemStore save failed: \(error)")
+        }
+    }
+
+    private func completionExists(for nnId: UUID, date: Date, kind: CompletionKind) -> Bool {
+        guard let nonNegotiable = system.nonNegotiables.first(where: { $0.id == nnId }) else {
+            return false
+        }
+        let day = DateRules.startOfDay(date, calendar: calendar)
+        return nonNegotiable.completions.contains {
+            $0.kind == kind && DateRules.startOfDay($0.date, calendar: calendar) == day
         }
     }
 }

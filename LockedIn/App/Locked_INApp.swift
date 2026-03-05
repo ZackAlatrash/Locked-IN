@@ -24,6 +24,8 @@ struct LockedInAppRoot: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
     @AppStorage("phase1MotionSessionID") private var phase1MotionSessionID = ""
+    @StateObject private var appClock = AppClock()
+    @StateObject private var devRuntime = DevRuntimeState()
     @StateObject private var commitmentSystemStore: CommitmentSystemStore
     @StateObject private var planStore: PlanStore
     @StateObject private var onboardingCoordinator = OnboardingCoordinator(
@@ -66,6 +68,8 @@ struct LockedInAppRoot: View {
         .animation(reduceMotion ? .none : Theme.Animation.context, value: appAppearanceModeRaw)
         .environmentObject(commitmentSystemStore)
         .environmentObject(planStore)
+        .environmentObject(appClock)
+        .environmentObject(devRuntime)
         .onAppear {
             if didInitializeMotionSession == false {
                 didInitializeMotionSession = true
@@ -84,11 +88,11 @@ struct LockedInAppRoot: View {
                 planStore.clearAllAllocations()
                 UserDefaults.standard.set(true, forKey: protocolResetKey)
             }
-            commitmentSystemStore.runDailyIntegrityTick(referenceDate: Date())
+            commitmentSystemStore.runDailyIntegrityTick(referenceDate: appClock.now)
         }
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .active {
-                commitmentSystemStore.runDailyIntegrityTick(referenceDate: Date())
+                commitmentSystemStore.runDailyIntegrityTick(referenceDate: appClock.now)
             }
         }
     }

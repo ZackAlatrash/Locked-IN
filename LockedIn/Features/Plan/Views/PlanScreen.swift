@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import Combine
 
 private enum PlanBoardMode {
     case focusToday
@@ -11,6 +12,8 @@ struct PlanScreen: View {
 
     @EnvironmentObject private var commitmentStore: CommitmentSystemStore
     @EnvironmentObject private var planStore: PlanStore
+    @EnvironmentObject private var router: AppRouter
+    @EnvironmentObject private var appClock: AppClock
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
@@ -156,12 +159,21 @@ struct PlanScreen: View {
         }
         .onAppear {
             boardMode = .focusToday
+            viewModel.setReferenceDateProvider { appClock.now }
             viewModel.bind(planStore: planStore, commitmentStore: commitmentStore)
+            viewModel.refresh(referenceDate: appClock.now)
+            handleExternalPlanFocus(router.pendingPlanFocusProtocolId)
+        }
+        .onChange(of: router.pendingPlanFocusProtocolId) { protocolId in
+            handleExternalPlanFocus(protocolId)
         }
         .onChange(of: scenePhase) { phase in
             if phase == .active {
-                viewModel.handleDidBecomeActive()
+                viewModel.handleDidBecomeActive(referenceDate: appClock.now)
             }
+        }
+        .onReceive(appClock.objectWillChange) { _ in
+            viewModel.refresh(referenceDate: appClock.now)
         }
         .overlay(alignment: .top) {
             if let warning = viewModel.warningMessage {
@@ -1387,6 +1399,15 @@ private extension PlanScreen {
                 proxy.scrollTo(activeDayId, anchor: .center)
             }
         }
+    }
+
+    func handleExternalPlanFocus(_ protocolId: UUID?) {
+        guard let protocolId else { return }
+        viewModel.focusProtocol(id: protocolId)
+        withAnimation(reduceMotion ? .none : Theme.Animation.context) {
+            boardMode = .expandedWeek
+        }
+        router.consumePlanFocusIntent()
     }
 
     func runColumnEntranceIfNeeded() {

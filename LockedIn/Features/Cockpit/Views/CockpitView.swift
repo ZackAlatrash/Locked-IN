@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 private struct CockpitDetailsSelection: Identifiable {
     let id: UUID
@@ -7,8 +8,12 @@ private struct CockpitDetailsSelection: Identifiable {
 @MainActor
 struct CockpitView: View {
     @Binding var selectedTab: MainTab
+    let onRequestDailyCheckIn: () -> Void
 
     @EnvironmentObject private var store: CommitmentSystemStore
+    @EnvironmentObject private var planStore: PlanStore
+    @EnvironmentObject private var appClock: AppClock
+    @EnvironmentObject private var devRuntime: DevRuntimeState
     @StateObject private var viewModel = CockpitViewModel()
     @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
 
@@ -18,9 +23,14 @@ struct CockpitView: View {
     @State private var detailsSelection: CockpitDetailsSelection?
 
     @State private var actionErrorMessage: String?
+    @State private var completionToastMessage: String?
 
-    init(selectedTab: Binding<MainTab> = .constant(.cockpit)) {
+    init(
+        selectedTab: Binding<MainTab> = .constant(.cockpit),
+        onRequestDailyCheckIn: @escaping () -> Void = {}
+    ) {
         _selectedTab = selectedTab
+        self.onRequestDailyCheckIn = onRequestDailyCheckIn
     }
 
     var body: some View {
@@ -77,10 +87,13 @@ struct CockpitView: View {
             routeDestination(route)
         }
         .onAppear {
-            refreshFromStore()
+            refreshFromStore(referenceDate: appClock.now)
         }
         .onReceive(store.$system) { _ in
-            refreshFromStore()
+            refreshFromStore(referenceDate: appClock.now)
+        }
+        .onReceive(appClock.objectWillChange) { _ in
+            refreshFromStore(referenceDate: appClock.now)
         }
         .sheet(isPresented: $showCreateNonNegotiable) {
             NavigationStack {
@@ -132,6 +145,25 @@ struct CockpitView: View {
                 Text(actionErrorMessage ?? "Unknown error")
             }
         )
+        .overlay(alignment: .top) {
+            if let completionToastMessage {
+                Text(completionToastMessage)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(cockpitStyle == .dark ? .white : Color(hex: "0F172A"))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(cockpitStyle == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.08))
+                    )
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(cockpitStyle == .dark ? Color.white.opacity(0.22) : Color.black.opacity(0.14), lineWidth: 1)
+                    )
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
     }
 }
 
@@ -187,6 +219,10 @@ private extension CockpitView {
             onWeeklyActivityTap: { perform(.openWeeklyActivity) },
             onStreakTap: { perform(.openStreak) },
             onCapacityTap: { perform(.openCapacity) },
+            onCheckInTap: {
+                Haptics.selection()
+                onRequestDailyCheckIn()
+            },
             onProtocolComplete: { nnId in
                 perform(.complete(nnId: nnId))
             },
@@ -201,12 +237,14 @@ private extension CockpitView {
     }
 
     var todayCompletionCount: Int {
-        store.completionLog.filter { DateRules.isoCalendar.isDateInToday($0.date) }.count
+        store.countedCompletionLog.filter {
+            DateRules.isoCalendar.isDate($0.date, inSameDayAs: appClock.now)
+        }.count
     }
 
     var weeklyCompletionCount: Int {
-        let weekId = DateRules.weekID(for: Date())
-        return store.completionLog.filter { $0.weekId == weekId }.count
+        let weekId = DateRules.weekID(for: appClock.now)
+        return store.countedCompletionLog.filter { $0.weekId == weekId }.count
     }
 
     var weeklyTargetCount: Int {
@@ -220,10 +258,10 @@ private extension CockpitView {
 
     var weeklyCompletionByDay: [Int] {
         let calendar = DateRules.isoCalendar
-        let weekStart = DateRules.weekInterval(containing: Date(), calendar: calendar).start
+        let weekStart = DateRules.weekInterval(containing: appClock.now, calendar: calendar).start
         return (0..<7).map { dayOffset in
             let dayStart = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) ?? weekStart
-            return store.completionLog.filter {
+            return store.countedCompletionLog.filter {
                 calendar.isDate($0.date, inSameDayAs: dayStart)
             }.count
         }
@@ -279,12 +317,14 @@ private extension CockpitView {
         }
     }
 
-    func refreshFromStore() {
+    func refreshFromStore(referenceDate: Date) {
         viewModel.refresh(
             system: store.system,
             isStable: store.isSystemStable,
-            currentStreakDays: store.currentStreakDays,
-            todayCompleted: store.todayCompleted
+            reliabilityOverride: devRuntime.reliabilityOverride,
+            currentStreakDays: store.currentStreakDays(referenceDate: referenceDate),
+            todayCompleted: store.todayCompleted(referenceDate: referenceDate),
+            referenceDate: referenceDate
         )
     }
 
@@ -292,8 +332,34 @@ private extension CockpitView {
         switch action {
         case .complete(let nnId):
             do {
-                try store.recordCompletion(for: nnId, at: Date())
-                store.runDailyIntegrityTick(referenceDate: Date())
+                guard let protocolModel = store.system.nonNegotiables.first(where: { $0.id == nnId }) else {
+                    actionErrorMessage = "This protocol is no longer available."
+                    return
+                }
+                let outcome = try store.recordCompletionDetailed(for: nnId, at: appClock.now)
+                let reconciliation = planStore.reconcileAfterCompletion(
+                    protocolId: nnId,
+                    mode: protocolModel.definition.mode,
+                    completionDate: outcome.date,
+                    completionKind: outcome.kind
+                )
+                store.runDailyIntegrityTick(referenceDate: appClock.now)
+                if outcome.kind == .extra {
+                    if protocolModel.definition.mode == .session {
+                        showCompletionToast("Weekly target already met. Logged as EXTRA.")
+                    } else {
+                        showCompletionToast("Logged as EXTRA.")
+                    }
+                } else if case .released(let released) = reconciliation {
+                    showCompletionToast(
+                        releasedToastMessage(
+                            protocolTitle: protocolModel.definition.title,
+                            completionDate: outcome.date,
+                            releasedDay: released.day,
+                            slot: released.slot
+                        )
+                    )
+                }
                 Haptics.success()
             } catch {
                 Haptics.warning()
@@ -334,7 +400,7 @@ private extension CockpitView {
 
         case .retire(let nnId):
             do {
-                store.runDailyIntegrityTick(referenceDate: Date())
+                store.runDailyIntegrityTick(referenceDate: appClock.now)
                 try store.removeNonNegotiable(id: nnId)
                 Haptics.success()
                 detailsSelection = nil
@@ -369,19 +435,49 @@ private extension CockpitView {
                 return "This protocol is already closed."
             case .alreadyCompletedToday:
                 return "Already completed today."
+            case .extraAlreadyLoggedToday:
+                return "EXTRA already logged today for this protocol."
             }
         }
 
         return error.localizedDescription
+    }
+
+    func showCompletionToast(_ message: String) {
+        completionToastMessage = message
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_300_000_000)
+            if completionToastMessage == message {
+                completionToastMessage = nil
+            }
+        }
+    }
+
+    func releasedDaySlotLabel(day: Date, slot: PlanSlot) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.dateFormat = "EEE"
+        return "\(formatter.string(from: day).uppercased()) \(slot.title)"
+    }
+
+    func releasedToastMessage(protocolTitle: String, completionDate: Date, releasedDay: Date, slot: PlanSlot) -> String {
+        let completionDay = DateRules.startOfDay(completionDate)
+        let tomorrow = DateRules.addingDays(1, to: completionDay)
+        let releasedDayStart = DateRules.startOfDay(releasedDay)
+        if releasedDayStart == tomorrow {
+            return "\(protocolTitle) wasn't scheduled today. Tomorrow's \(slot.title) session was removed."
+        }
+        return "\(protocolTitle) wasn't scheduled today. \(releasedDaySlotLabel(day: releasedDayStart, slot: slot)) was removed."
     }
 }
 
 private struct CockpitNonNegotiableDetailsSheet: View {
     let nonNegotiable: NonNegotiable
     let onAction: (CockpitAction) -> Void
+    @EnvironmentObject private var appClock: AppClock
     @Environment(\.colorScheme) private var colorScheme
 
-    private var now: Date { Date() }
+    private var now: Date { appClock.now }
     private var calendar: Calendar { DateRules.isoCalendar }
     private var isDarkMode: Bool { colorScheme == .dark }
     private var pageBackground: Color { isDarkMode ? Color.black : Color(hex: "F2F2F7") }
@@ -404,6 +500,9 @@ private struct CockpitNonNegotiableDetailsSheet: View {
                     detailRow("Lock Remaining", value: lockDaysRemainingText)
                     detailRow("This Week", value: "\(thisWeekCount) / \(nonNegotiable.definition.frequencyPerWeek)")
                     detailRow("Remaining", value: remainingThisWeekText)
+                    if extraLoggedToday {
+                        detailRow("Today", value: "Extra logged")
+                    }
                     if nonNegotiable.state == .suspended {
                         detailRow("Status", value: "Suspended (system stabilizing)")
                     }
@@ -418,7 +517,7 @@ private struct CockpitNonNegotiableDetailsSheet: View {
                 Button {
                     onAction(.complete(nnId: nonNegotiable.id))
                 } label: {
-                    Text("Mark Done")
+                    Text(markDoneTitle)
                         .font(.system(size: 16, weight: .bold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -483,15 +582,50 @@ private struct CockpitNonNegotiableDetailsSheet: View {
     }
 
     private var completedToday: Bool {
-        nonNegotiable.completions.contains { calendar.isDate($0.date, inSameDayAs: now) }
+        nonNegotiable.completions.contains {
+            $0.kind == .counted && calendar.isDate($0.date, inSameDayAs: now)
+        }
+    }
+
+    private var extraLoggedToday: Bool {
+        nonNegotiable.completions.contains {
+            $0.kind == .extra && calendar.isDate($0.date, inSameDayAs: now)
+        }
     }
 
     private var markDoneDisabled: Bool {
-        completedToday || nonNegotiable.state == .suspended || nonNegotiable.state == .completed || nonNegotiable.state == .retired
+        if nonNegotiable.state == .suspended || nonNegotiable.state == .completed || nonNegotiable.state == .retired {
+            return true
+        }
+        if extraLoggedToday {
+            return true
+        }
+        if completedToday {
+            return true
+        }
+        return false
+    }
+
+    private var markDoneTitle: String {
+        if extraLoggedToday {
+            return "Extra Logged"
+        }
+        if completedToday {
+            return "Done"
+        }
+        if nonNegotiable.definition.mode == .session && thisWeekCount >= nonNegotiable.definition.frequencyPerWeek {
+            return "Log Extra"
+        }
+        return "Mark Done"
     }
 
     private var markDoneDisabledMessage: String? {
-        if completedToday { return "Already completed today." }
+        if extraLoggedToday {
+            return "EXTRA already logged today."
+        }
+        if completedToday {
+            return "Already completed today."
+        }
         switch nonNegotiable.state {
         case .suspended:
             return "Suspended while the system stabilizes."
@@ -504,7 +638,9 @@ private struct CockpitNonNegotiableDetailsSheet: View {
 
     private var thisWeekCount: Int {
         let weekId = DateRules.weekID(for: now)
-        return nonNegotiable.completions.filter { $0.weekId == weekId }.count
+        return nonNegotiable.completions.filter {
+            $0.weekId == weekId && $0.kind == .counted
+        }.count
     }
 
     private var remainingThisWeekText: String {

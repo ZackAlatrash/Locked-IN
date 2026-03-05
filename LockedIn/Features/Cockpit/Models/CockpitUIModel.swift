@@ -110,6 +110,12 @@ struct TodayTask: Identifiable, Equatable {
         case session = "SESSION"
     }
 
+    enum CompletionVisual: Equatable {
+        case none
+        case counted
+        case extra
+    }
+
     let id: UUID
     let nnId: UUID
     let title: String
@@ -119,6 +125,9 @@ struct TodayTask: Identifiable, Equatable {
     let recoveryHint: String?
     let modeLabel: ModeLabel
     let isCompleteToday: Bool
+    let isExtraToday: Bool
+    let isRequiredToday: Bool
+    let completionVisual: CompletionVisual
     let ctaTitle: String
     let isCtaEnabled: Bool
 }
