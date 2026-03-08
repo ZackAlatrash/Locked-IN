@@ -191,6 +191,16 @@ final class CommitmentSystemEngine {
     // Capacity is reduced to 2 when any NN is recovering.
     // If active count exceeds this reduced capacity, suspend the most recently created active NN.
     private func enforceCapacityIfNeeded(in system: inout CommitmentSystem) {
+        if system.nonNegotiables.contains(where: { $0.state == .recovery }) &&
+            system.recoveryEntryPendingResolution == false &&
+            system.recoveryPausedProtocolId == nil {
+            return
+        }
+
+        if system.recoveryEntryPendingResolution {
+            return
+        }
+
         let allowed = system.allowedCapacity
 
         while constrainedCount(system) > allowed {
@@ -238,12 +248,129 @@ final class CommitmentSystemEngine {
             return true
         }
 
-        let hasCompletionToday = system.nonNegotiables
+        if hasCountedCompletion(on: day, in: system, calendar: calendar) {
+            return true
+        }
+
+        return requiresCountedCompletionForRecovery(on: day, in: system, calendar: calendar) == false
+    }
+
+    private func hasCountedCompletion(
+        on day: Date,
+        in system: CommitmentSystem,
+        calendar: Calendar
+    ) -> Bool {
+        guard let nextDay = calendar.date(byAdding: .day, value: 1, to: day) else {
+            return false
+        }
+
+        return system.nonNegotiables
             .filter { $0.state == .active || $0.state == .recovery }
             .flatMap(\.completions)
             .contains { $0.kind == .counted && $0.date >= day && $0.date < nextDay }
+    }
 
-        return hasCompletionToday
+    private func requiresCountedCompletionForRecovery(
+        on day: Date,
+        in system: CommitmentSystem,
+        calendar: Calendar
+    ) -> Bool {
+        let dayStart = DateRules.startOfDay(day, calendar: calendar)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+            return false
+        }
+        let week = DateRules.weekInterval(containing: dayStart, calendar: calendar)
+        let weekId = DateRules.weekID(for: dayStart, calendar: calendar)
+
+        return system.nonNegotiables.contains { nonNegotiable in
+            guard nonNegotiable.state == .active || nonNegotiable.state == .recovery else {
+                return false
+            }
+            guard isWithinLockInterval(day: dayStart, lock: nonNegotiable.lock, calendar: calendar) else {
+                return false
+            }
+
+            switch nonNegotiable.definition.mode {
+            case .daily:
+                let hasCountedToday = nonNegotiable.completions.contains { completion in
+                    completion.kind == .counted &&
+                    completion.date >= dayStart &&
+                    completion.date < dayEnd
+                }
+                return hasCountedToday == false
+
+            case .session:
+                let weeklyTarget = NonNegotiableDefinition.normalizedFrequency(
+                    nonNegotiable.definition.frequencyPerWeek,
+                    mode: nonNegotiable.definition.mode
+                )
+                guard weeklyTarget > 0 else { return false }
+
+                let countedSoFarWeek = nonNegotiable.completions.reduce(into: 0) { partial, completion in
+                    guard completion.kind == .counted else { return }
+                    guard completion.weekId == weekId else { return }
+                    guard completion.date >= week.start && completion.date < dayEnd else { return }
+                    guard isWithinLockInterval(moment: completion.date, lock: nonNegotiable.lock, calendar: calendar) else { return }
+                    partial += 1
+                }
+
+                let remainingNeeded = max(0, weeklyTarget - countedSoFarWeek)
+                guard remainingNeeded > 0 else { return false }
+
+                let feasibleFutureDays = feasibleCompletionDays(
+                    for: nonNegotiable.lock,
+                    after: dayStart,
+                    withinWeek: week,
+                    calendar: calendar
+                )
+                return remainingNeeded > feasibleFutureDays
+            }
+        }
+    }
+
+    private func feasibleCompletionDays(
+        for lock: LockConfiguration,
+        after day: Date,
+        withinWeek week: DateInterval,
+        calendar: Calendar
+    ) -> Int {
+        guard let firstCandidate = calendar.date(byAdding: .day, value: 1, to: day) else {
+            return 0
+        }
+
+        var cursor = DateRules.startOfDay(firstCandidate, calendar: calendar)
+        var count = 0
+        while cursor < week.end {
+            if isWithinLockInterval(day: cursor, lock: lock, calendar: calendar) {
+                count += 1
+            }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else {
+                break
+            }
+            cursor = next
+        }
+        return count
+    }
+
+    private func isWithinLockInterval(
+        day: Date,
+        lock: LockConfiguration,
+        calendar: Calendar
+    ) -> Bool {
+        let lockStart = DateRules.startOfDay(lock.startDate, calendar: calendar)
+        let lockEnd = DateRules.addingDays(lock.totalLockDays, to: lockStart, calendar: calendar)
+        let normalizedDay = DateRules.startOfDay(day, calendar: calendar)
+        return normalizedDay >= lockStart && normalizedDay < lockEnd
+    }
+
+    private func isWithinLockInterval(
+        moment: Date,
+        lock: LockConfiguration,
+        calendar: Calendar
+    ) -> Bool {
+        let lockStart = DateRules.startOfDay(lock.startDate, calendar: calendar)
+        let lockEnd = DateRules.addingDays(lock.totalLockDays, to: lockStart, calendar: calendar)
+        return moment >= lockStart && moment < lockEnd
     }
 
     private func resumeSuspendedIfCapacityAllows(in system: inout CommitmentSystem) {

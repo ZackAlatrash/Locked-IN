@@ -35,8 +35,14 @@ struct PlanScreen: View {
     @State private var lockInPulseActive = false
 
     private var isDarkMode: Bool { colorScheme == .dark }
+    private var isRecoveryThemeActive: Bool { commitmentStore.isSystemStable == false }
     private var navItemColor: Color { isDarkMode ? Theme.Colors.textSecondary : Color(hex: "111827") }
-    private var accentColor: Color { isDarkMode ? Color(hex: "#00F2FF") : Color(hex: "#0EA5E9") }
+    private var accentColor: Color {
+        if isRecoveryThemeActive {
+            return isDarkMode ? Color(hex: "#F87171") : Color(hex: "#B91C1C")
+        }
+        return isDarkMode ? Color(hex: "#00F2FF") : Color(hex: "#0EA5E9")
+    }
     private var effectiveMotionSessionID: String { motionSessionID.isEmpty ? "launch-pending" : motionSessionID }
     private var didAnimateColumnsThisSession: Bool {
         didAnimatePlanColumnsSessionID == effectiveMotionSessionID
@@ -140,13 +146,16 @@ struct PlanScreen: View {
             ProtocolSchedulingEditorSheet(
                 editor: editor,
                 errorMessage: viewModel.protocolEditErrorMessage,
-                onSave: { title, preferredSlot, durationMinutes, iconSystemName in
+                onSave: { title, preferredSlot, durationMinutes, iconSystemName, mode, frequencyPerWeek, lockDays in
                     viewModel.saveProtocolEditor(
                         id: editor.id,
                         title: title,
                         preferredSlot: preferredSlot,
                         durationMinutes: durationMinutes,
-                        iconSystemName: iconSystemName
+                        iconSystemName: iconSystemName,
+                        mode: mode,
+                        frequencyPerWeek: frequencyPerWeek,
+                        lockDays: lockDays
                     )
                 },
                 onCancel: {
@@ -163,34 +172,54 @@ struct PlanScreen: View {
             viewModel.bind(planStore: planStore, commitmentStore: commitmentStore)
             viewModel.refresh(referenceDate: appClock.now)
             handleExternalPlanFocus(router.pendingPlanFocusProtocolId)
+            handleExternalPlanEdit(router.pendingPlanEditProtocolId)
         }
         .onChange(of: router.pendingPlanFocusProtocolId) { protocolId in
             handleExternalPlanFocus(protocolId)
+        }
+        .onChange(of: router.pendingPlanEditProtocolId) { protocolId in
+            handleExternalPlanEdit(protocolId)
         }
         .onChange(of: scenePhase) { phase in
             if phase == .active {
                 viewModel.handleDidBecomeActive(referenceDate: appClock.now)
             }
         }
-        .onReceive(appClock.objectWillChange) { _ in
+        .onChange(of: appClock.simulatedNow) { _ in
             viewModel.refresh(referenceDate: appClock.now)
         }
         .overlay(alignment: .top) {
             if let warning = viewModel.warningMessage {
-                Text(warning)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(isDarkMode ? .white : Color(hex: "111827"))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(isDarkMode ? Color.red.opacity(0.22) : Color.yellow.opacity(0.26))
-                    )
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .stroke(isDarkMode ? Color.red.opacity(0.5) : Color.orange.opacity(0.42), lineWidth: 1)
-                    )
-                    .padding(.top, 8)
+                VStack(alignment: .leading, spacing: 3) {
+                    if let copy = viewModel.warningCopy {
+                        Text(copy.title.uppercased())
+                            .font(.system(size: 10, weight: .black, design: .monospaced))
+                            .tracking(1.1)
+                        Text(copy.message)
+                            .font(.system(size: 12, weight: .semibold))
+                        if let hint = copy.hint {
+                            Text(hint)
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor((isDarkMode ? Color.white : Color(hex: "111827")).opacity(0.75))
+                        }
+                    } else {
+                        Text(warning)
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                }
+                .foregroundColor(isDarkMode ? .white : Color(hex: "111827"))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(isDarkMode ? Color.red.opacity(0.22) : Color.yellow.opacity(0.26))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(isDarkMode ? Color.red.opacity(0.5) : Color.orange.opacity(0.42), lineWidth: 1)
+                )
+                .padding(.top, 8)
+                .padding(.horizontal, 14)
             }
         }
         .overlay(alignment: .bottom) {
@@ -358,6 +387,7 @@ private extension PlanScreen {
         }
     }
 
+    //codex TODO move to viewModel
     func handleCalendarButtonTap() {
         switch viewModel.calendarAccessStatus {
         case .authorized, .notDetermined:
@@ -444,7 +474,7 @@ private extension PlanScreen {
                     .lineLimit(1)
 
                 HStack(spacing: 6) {
-                    Text(item.isDisabled ? "SUSPENDED" : "\(item.remainingCount) REMAINING")
+                    Text(item.isDisabled ? "PAUSED" : "\(item.remainingCount) REMAINING")
                         .font(.system(size: 9, weight: .black, design: .monospaced))
                         .foregroundColor(item.isDisabled ? textMuted : tone)
                     Text(item.durationLabel)
@@ -743,7 +773,7 @@ private extension PlanScreen {
 
             if let first = slot.allocations.first {
                 let isRecentlyLocked = isRecentlyLockedAllocation(protocolId: first.protocolId, day: day.date, slot: slot.slot)
-                Button {
+                let baseChip = Button {
                     viewModel.editAllocation(allocationId: first.id)
                 } label: {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -795,16 +825,37 @@ private extension PlanScreen {
                         .padding(6)
                 }
                 .buttonStyle(.plain)
-                .draggable(PlanDropPayload.allocationPayload(for: first.id)) {
-                    allocationDragPreview(allocation: first)
-                        .onAppear {
-                            activeDragPayload = PlanDropPayload.allocationPayload(for: first.id)
-                        }
-                        .onDisappear {
-                            if activeDragPayload == PlanDropPayload.allocationPayload(for: first.id) {
-                                activeDragPayload = nil
+                .disabled(first.status.isInteractive == false)
+                .opacity(first.status.isInteractive ? 1 : 0.6)
+                .overlay(alignment: .bottomLeading) {
+                    if first.status.isInteractive == false {
+                        Text(first.status == .paused ? "PAUSED" : "SKIPPED")
+                            .font(.system(size: 7, weight: .black, design: .monospaced))
+                            .foregroundColor(allocationTextColor.opacity(0.9))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 3)
+                            .background(
+                                Capsule(style: .continuous)
+                                    .fill(Color.black.opacity(isDarkMode ? 0.32 : 0.16))
+                            )
+                            .padding(7)
+                    }
+                }
+
+                if first.status.isInteractive {
+                    baseChip.draggable(PlanDropPayload.allocationPayload(for: first.id)) {
+                        allocationDragPreview(allocation: first)
+                            .onAppear {
+                                activeDragPayload = PlanDropPayload.allocationPayload(for: first.id)
                             }
-                        }
+                            .onDisappear {
+                                if activeDragPayload == PlanDropPayload.allocationPayload(for: first.id) {
+                                    activeDragPayload = nil
+                                }
+                            }
+                    }
+                } else {
+                    baseChip
                 }
             } else if draftItems.first != nil {
                 draftPreviewBadge(title: "DRAFT", tone: toneColor(for: .cyan), icon: "sparkles")
@@ -874,18 +925,22 @@ private extension PlanScreen {
             }
 
             ForEach(slot.allocations) { allocation in
-                allocationChip(allocation, day: day.date, slot: slot.slot)
-                    .draggable(PlanDropPayload.allocationPayload(for: allocation.id)) {
-                        allocationDragPreview(allocation: allocation)
-                            .onAppear {
-                                activeDragPayload = PlanDropPayload.allocationPayload(for: allocation.id)
-                            }
-                            .onDisappear {
-                                if activeDragPayload == PlanDropPayload.allocationPayload(for: allocation.id) {
-                                    activeDragPayload = nil
+                if allocation.status.isInteractive {
+                    allocationChip(allocation, day: day.date, slot: slot.slot)
+                        .draggable(PlanDropPayload.allocationPayload(for: allocation.id)) {
+                            allocationDragPreview(allocation: allocation)
+                                .onAppear {
+                                    activeDragPayload = PlanDropPayload.allocationPayload(for: allocation.id)
                                 }
-                            }
-                    }
+                                .onDisappear {
+                                    if activeDragPayload == PlanDropPayload.allocationPayload(for: allocation.id) {
+                                        activeDragPayload = nil
+                                    }
+                                }
+                        }
+                } else {
+                    allocationChip(allocation, day: day.date, slot: slot.slot)
+                }
             }
 
             ForEach(Array(draftItems.enumerated()), id: \.offset) { _, draft in
@@ -952,6 +1007,7 @@ private extension PlanScreen {
 
     func allocationChip(_ allocation: PlanAllocationDisplay, day: Date, slot: PlanSlot) -> some View {
         let isRecentlyLocked = isRecentlyLockedAllocation(protocolId: allocation.protocolId, day: day, slot: slot)
+        let isInteractive = allocation.status.isInteractive
         return Button {
             viewModel.editAllocation(allocationId: allocation.id)
         } label: {
@@ -1005,8 +1061,24 @@ private extension PlanScreen {
             )
             .scaleEffect(isRecentlyLocked ? (lockInPulseActive ? 1.03 : 1.0) : 1)
             .animation(reduceMotion ? .none : Theme.Animation.snappy, value: lockInPulseActive)
+            .overlay(alignment: .bottomLeading) {
+                if isInteractive == false {
+                    Text(allocation.status == .paused ? "PAUSED" : "SKIPPED")
+                        .font(.system(size: 7, weight: .black, design: .monospaced))
+                        .foregroundColor(allocationTextColor.opacity(0.9))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(Color.black.opacity(isDarkMode ? 0.3 : 0.12))
+                        )
+                        .padding(5)
+                }
+            }
         }
         .buttonStyle(.plain)
+        .disabled(isInteractive == false)
+        .opacity(isInteractive ? 1 : 0.62)
     }
 
     func draftPreviewBadge(title: String, tone: Color, icon: String) -> some View {
@@ -1410,6 +1482,15 @@ private extension PlanScreen {
         router.consumePlanFocusIntent()
     }
 
+    func handleExternalPlanEdit(_ protocolId: UUID?) {
+        guard let protocolId else { return }
+        viewModel.openProtocolEditor(protocolId: protocolId)
+        withAnimation(reduceMotion ? .none : Theme.Animation.context) {
+            boardMode = .expandedWeek
+        }
+        router.consumePlanEditIntent()
+    }
+
     func runColumnEntranceIfNeeded() {
         let dayIds = viewModel.currentWeekDays.map(\.id)
         guard dayIds.isEmpty == false else { return }
@@ -1578,45 +1659,90 @@ private extension PlanScreen {
     @ViewBuilder
     var pageBackground: some View {
         if isDarkMode {
-            LinearGradient(
-                colors: [Color(hex: "1A243D"), Color(hex: "020617")],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            if isRecoveryThemeActive {
+                ZStack {
+                    LinearGradient(
+                        colors: [Color(hex: "15080A"), Color(hex: "020203")],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    RadialGradient(
+                        colors: [Color(hex: "DC2626").opacity(0.34), .clear],
+                        center: UnitPoint(x: 0.5, y: -0.08),
+                        startRadius: 0,
+                        endRadius: 440
+                    )
+                    RadialGradient(
+                        colors: [Color(hex: "7F1D1D").opacity(0.28), .clear],
+                        center: .topLeading,
+                        startRadius: 0,
+                        endRadius: 380
+                    )
+                }
+                .ignoresSafeArea()
+            } else {
+                LinearGradient(
+                    colors: [Color(hex: "1A243D"), Color(hex: "020617")],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+            }
         } else {
             ZStack {
-                Color(hex: "F8F9FB")
+                if isRecoveryThemeActive {
+                    Color(hex: "FCF4F4")
+                    RadialGradient(
+                        colors: [Color(hex: "FCA5A5").opacity(0.44), .clear],
+                        center: UnitPoint(x: 0.5, y: -0.08),
+                        startRadius: 0,
+                        endRadius: 420
+                    )
+                    RadialGradient(
+                        colors: [Color(hex: "FECACA").opacity(0.42), .clear],
+                        center: .topLeading,
+                        startRadius: 0,
+                        endRadius: 420
+                    )
+                    RadialGradient(
+                        colors: [Color(hex: "FCA5A5").opacity(0.3), .clear],
+                        center: .topTrailing,
+                        startRadius: 0,
+                        endRadius: 440
+                    )
+                } else {
+                    Color(hex: "F8F9FB")
 
-                RadialGradient(
-                    colors: [
-                        Color(red: 1.0, green: 245.0 / 255.0, blue: 210.0 / 255.0).opacity(0.6),
-                        .clear
-                    ],
-                    center: UnitPoint(x: 0.5, y: -0.1),
-                    startRadius: 0,
-                    endRadius: 380
-                )
+                    RadialGradient(
+                        colors: [
+                            Color(red: 1.0, green: 245.0 / 255.0, blue: 210.0 / 255.0).opacity(0.6),
+                            .clear
+                        ],
+                        center: UnitPoint(x: 0.5, y: -0.1),
+                        startRadius: 0,
+                        endRadius: 380
+                    )
 
-                RadialGradient(
-                    colors: [
-                        Color(red: 220.0 / 255.0, green: 225.0 / 255.0, blue: 1.0).opacity(0.5),
-                        .clear
-                    ],
-                    center: .topLeading,
-                    startRadius: 0,
-                    endRadius: 450
-                )
+                    RadialGradient(
+                        colors: [
+                            Color(red: 220.0 / 255.0, green: 225.0 / 255.0, blue: 1.0).opacity(0.5),
+                            .clear
+                        ],
+                        center: .topLeading,
+                        startRadius: 0,
+                        endRadius: 450
+                    )
 
-                RadialGradient(
-                    colors: [
-                        Color(red: 230.0 / 255.0, green: 220.0 / 255.0, blue: 1.0).opacity(0.5),
-                        .clear
-                    ],
-                    center: .topTrailing,
-                    startRadius: 0,
-                    endRadius: 450
-                )
+                    RadialGradient(
+                        colors: [
+                            Color(red: 230.0 / 255.0, green: 220.0 / 255.0, blue: 1.0).opacity(0.5),
+                            .clear
+                        ],
+                        center: .topTrailing,
+                        startRadius: 0,
+                        endRadius: 450
+                    )
+                }
             }
             .ignoresSafeArea()
         }
@@ -1625,9 +1751,17 @@ private extension PlanScreen {
     var textMain: Color { isDarkMode ? .white : Color(hex: "0B1220") }
     var textMuted: Color { isDarkMode ? Color.white.opacity(0.52) : Color(hex: "6B7280") }
     var textSubtle: Color { isDarkMode ? Color.white.opacity(0.34) : Color(hex: "9CA3AF") }
-    var todayAccent: Color { isDarkMode ? Color(hex: "00F2FF") : Color(hex: "0F172A") }
+    var todayAccent: Color {
+        if isRecoveryThemeActive {
+            return isDarkMode ? Color(hex: "F87171") : Color(hex: "B91C1C")
+        }
+        return isDarkMode ? Color(hex: "00F2FF") : Color(hex: "0F172A")
+    }
 
     var structureColor: Color {
+        if isRecoveryThemeActive {
+            return isDarkMode ? Color(hex: "F87171") : Color(hex: "B91C1C")
+        }
         switch viewModel.structureStatus {
         case .structural: return isDarkMode ? Color(hex: "00F2FF") : Color(hex: "0EA5E9")
         case .fragile: return Color(hex: "F59E0B")
@@ -1636,31 +1770,63 @@ private extension PlanScreen {
     }
 
     var columnBackground: Color {
-        isDarkMode ? Color(hex: "0F172A").opacity(0.35) : Color.white.opacity(0.52)
+        if isRecoveryThemeActive {
+            return isDarkMode ? Color(hex: "1A0C10").opacity(0.5) : Color.white.opacity(0.72)
+        }
+        return isDarkMode ? Color(hex: "0F172A").opacity(0.35) : Color.white.opacity(0.52)
     }
 
     var columnStroke: Color {
-        isDarkMode ? Color.white.opacity(0.06) : Color.black.opacity(0.05)
+        if isRecoveryThemeActive {
+            return isDarkMode ? Color(hex: "F87171").opacity(0.22) : Color(hex: "FCA5A5").opacity(0.6)
+        }
+        return isDarkMode ? Color.white.opacity(0.06) : Color.black.opacity(0.05)
     }
 
     var todayColumnBackground: Color {
-        isDarkMode ? Color(hex: "001A2A").opacity(0.56) : Color.white.opacity(0.9)
+        if isRecoveryThemeActive {
+            return isDarkMode ? Color(hex: "2A1116").opacity(0.66) : Color.white.opacity(0.94)
+        }
+        return isDarkMode ? Color(hex: "001A2A").opacity(0.56) : Color.white.opacity(0.9)
     }
 
     var availableBackground: Color {
-        isDarkMode ? Color.white.opacity(0.02) : Color.black.opacity(0.015)
+        return isDarkMode ? Color.white.opacity(0.02) : Color.black.opacity(0.015)
     }
 
     func glassCard(cornerRadius: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            .fill(isDarkMode ? Color(hex: "0F172A").opacity(0.4) : Color.white.opacity(0.8))
+        let fillColor: Color
+        let strokeColor: Color
+        if isRecoveryThemeActive {
+            fillColor = isDarkMode ? Color(hex: "1B0A0D").opacity(0.55) : Color.white.opacity(0.86)
+            strokeColor = isDarkMode ? Color(hex: "F87171").opacity(0.28) : Color(hex: "FCA5A5").opacity(0.62)
+        } else {
+            fillColor = isDarkMode ? Color(hex: "0F172A").opacity(0.4) : Color.white.opacity(0.8)
+            strokeColor = isDarkMode ? Color.white.opacity(0.08) : Color.black.opacity(0.05)
+        }
+        return RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(
+                fillColor
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(isDarkMode ? Color.white.opacity(0.08) : Color.black.opacity(0.05), lineWidth: 1)
+                    .stroke(
+                        strokeColor,
+                        lineWidth: 1
+                    )
             )
     }
 
     func toneColor(for tone: PlanTone) -> Color {
+        if isRecoveryThemeActive {
+            switch tone {
+            case .cyan: return isDarkMode ? Color(hex: "F87171") : Color(hex: "DC2626")
+            case .indigo: return isDarkMode ? Color(hex: "FB7185") : Color(hex: "BE123C")
+            case .purple: return isDarkMode ? Color(hex: "FDA4AF") : Color(hex: "B91C1C")
+            case .amber: return isDarkMode ? Color(hex: "FCA5A5") : Color(hex: "991B1B")
+            case .blue: return isDarkMode ? Color(hex: "EF4444") : Color(hex: "B91C1C")
+            }
+        }
         switch (tone, isDarkMode) {
         case (.cyan, true): return Color(hex: "00F2FF")
         case (.cyan, false): return Color(hex: "0EA5E9")
@@ -1902,7 +2068,7 @@ private struct PlanAllocationEditorSheet: View {
 private struct ProtocolSchedulingEditorSheet: View {
     let editor: ProtocolSchedulingEditorState
     let errorMessage: String?
-    let onSave: (String, PreferredExecutionSlot, Int, String) -> Bool
+    let onSave: (String, PreferredExecutionSlot, Int, String, NonNegotiableMode?, Int?, Int?) -> Bool
     let onCancel: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -1911,6 +2077,9 @@ private struct ProtocolSchedulingEditorSheet: View {
     @State private var title: String
     @State private var selectedIconSystemName: String
     @State private var preferredSlot: PreferredExecutionSlot
+    @State private var mode: NonNegotiableMode
+    @State private var frequencyPerWeek: Int
+    @State private var lockDays: Int
     @State private var selectedDurationPreset: Int?
     @State private var customDurationText: String
     @State private var isUsingCustomDuration: Bool
@@ -1918,14 +2087,21 @@ private struct ProtocolSchedulingEditorSheet: View {
     @State private var showingIconPicker = false
 
     private static let durationPresets: [Int] = [15, 30, 45, 60, 90]
+
     private var accent: Color {
         colorScheme == .dark ? Color(hex: "#22D3EE") : Color(hex: "#0369A1")
+    }
+
+    private var coreRulesLocked: Bool {
+        canEdit(.mode) == false &&
+        canEdit(.frequency) == false &&
+        canEdit(.lockDuration) == false
     }
 
     init(
         editor: ProtocolSchedulingEditorState,
         errorMessage: String?,
-        onSave: @escaping (String, PreferredExecutionSlot, Int, String) -> Bool,
+        onSave: @escaping (String, PreferredExecutionSlot, Int, String, NonNegotiableMode?, Int?, Int?) -> Bool,
         onCancel: @escaping () -> Void
     ) {
         self.editor = editor
@@ -1936,10 +2112,13 @@ private struct ProtocolSchedulingEditorSheet: View {
         _selectedIconSystemName = State(
             initialValue: ProtocolIconCatalog.resolvedSymbolName(
                 editor.iconSystemName,
-                fallback: NonNegotiableDefinition.defaultIconSystemName(for: .session, title: editor.title)
+                fallback: NonNegotiableDefinition.defaultIconSystemName(for: editor.mode, title: editor.title)
             )
         )
         _preferredSlot = State(initialValue: editor.preferredExecutionSlot)
+        _mode = State(initialValue: editor.mode)
+        _frequencyPerWeek = State(initialValue: max(1, min(editor.frequencyPerWeek, 7)))
+        _lockDays = State(initialValue: editor.lockDays)
 
         if Self.durationPresets.contains(editor.estimatedDurationMinutes) {
             _selectedDurationPreset = State(initialValue: editor.estimatedDurationMinutes)
@@ -1959,7 +2138,9 @@ private struct ProtocolSchedulingEditorSheet: View {
                     TextField("Title", text: $title)
                         .textInputAutocapitalization(.words)
                         .autocorrectionDisabled()
+                        .disabled(canEdit(.title) == false)
                 }
+                disabledCaption(for: .title)
 
                 Section("Icon") {
                     Button {
@@ -1971,10 +2152,7 @@ private struct ProtocolSchedulingEditorSheet: View {
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(accent)
                                 .frame(width: 30, height: 30)
-                                .background(
-                                    Circle()
-                                        .fill(accent.opacity(0.15))
-                                )
+                                .background(Circle().fill(accent.opacity(0.15)))
                             Text("Change Protocol Icon")
                                 .font(.system(size: 14, weight: .semibold))
                             Spacer()
@@ -1984,7 +2162,55 @@ private struct ProtocolSchedulingEditorSheet: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .disabled(canEdit(.icon) == false)
                 }
+                disabledCaption(for: .icon)
+
+                Section("Core Rules") {
+                    Picker("Mode", selection: $mode) {
+                        Text("Daily").tag(NonNegotiableMode.daily)
+                        Text("Session").tag(NonNegotiableMode.session)
+                    }
+                    .pickerStyle(.segmented)
+                    .tint(coreRulesLocked ? .gray : accent)
+                    .disabled(canEdit(.mode) == false)
+                    .onChange(of: mode) { newMode in
+                        if newMode == .daily {
+                            frequencyPerWeek = 7
+                        }
+                    }
+
+                    Stepper(
+                        "\(frequencyPerWeek) / week",
+                        value: $frequencyPerWeek,
+                        in: 1...7
+                    )
+                    .disabled(mode == .daily || canEdit(.frequency) == false)
+
+                    HStack(spacing: 8) {
+                        ForEach([14, 28], id: \.self) { value in
+                            Button("\(value)d") {
+                                Haptics.selection()
+                                lockDays = value
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(
+                                coreRulesLocked
+                                    ? .gray.opacity(0.35)
+                                    : (lockDays == value ? accent : .gray.opacity(0.3))
+                            )
+                            .disabled(canEdit(.lockDuration) == false)
+                        }
+                    }
+                }
+                .disabled(coreRulesLocked)
+                .opacity(coreRulesLocked ? 0.45 : 1.0)
+                if mode == .daily {
+                    caption("Daily mode is fixed at 7/week.")
+                }
+                disabledCaption(for: .mode)
+                disabledCaption(for: .frequency)
+                disabledCaption(for: .lockDuration)
 
                 Section("Preferred Time") {
                     HStack(spacing: 8) {
@@ -1998,6 +2224,8 @@ private struct ProtocolSchedulingEditorSheet: View {
                         }
                     }
                 }
+                .disabled(canEdit(.preferredTime) == false)
+                disabledCaption(for: .preferredTime)
 
                 Section("Duration") {
                     HStack(spacing: 8) {
@@ -2034,6 +2262,8 @@ private struct ProtocolSchedulingEditorSheet: View {
                             .keyboardType(.numberPad)
                     }
                 }
+                .disabled(canEdit(.estimatedDuration) == false)
+                disabledCaption(for: .estimatedDuration)
 
                 if let localErrorMessage {
                     Section {
@@ -2073,7 +2303,10 @@ private struct ProtocolSchedulingEditorSheet: View {
                             title.trimmingCharacters(in: .whitespacesAndNewlines),
                             preferredSlot,
                             durationMinutes,
-                            selectedIconSystemName
+                            selectedIconSystemName,
+                            canEdit(.mode) ? mode : nil,
+                            canEdit(.frequency) ? (mode == .daily ? 7 : frequencyPerWeek) : nil,
+                            canEdit(.lockDuration) ? lockDays : nil
                         )
                         if didSave {
                             Haptics.success()
@@ -2111,6 +2344,29 @@ private struct ProtocolSchedulingEditorSheet: View {
 
         guard NonNegotiableDefinition.isValidEstimatedDuration(value) else { return nil }
         return value
+    }
+
+    private func canEdit(_ field: ProtocolField) -> Bool {
+        editor.editableFields.contains(field)
+    }
+
+    @ViewBuilder
+    private func disabledCaption(for field: ProtocolField) -> some View {
+        if canEdit(field) == false {
+            caption(
+                PolicyReason.cannotEditFieldDuringLock(
+                    field: field,
+                    daysRemaining: editor.lockDaysRemaining,
+                    endsOn: editor.lockEndsOn
+                ).copy().message
+            )
+        }
+    }
+
+    private func caption(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(.secondary)
     }
 }
 

@@ -94,6 +94,7 @@ struct CockpitNonNegotiableCardModel: Identifiable {
 enum CockpitAction: Equatable {
     case complete(nnId: UUID)
     case openDetails(nnId: UUID)
+    case edit(nnId: UUID)
     case openCreate
     case openLogs
     case openPlan

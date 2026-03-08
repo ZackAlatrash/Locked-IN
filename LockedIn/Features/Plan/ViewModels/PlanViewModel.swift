@@ -10,6 +10,7 @@ final class PlanViewModel: ObservableObject {
     @Published private(set) var structureStatus: PlanStructureStatus = .unstructured
     @Published private(set) var structureMessage: String = ""
     @Published private(set) var warningMessage: String?
+    @Published private(set) var warningCopy: PolicyCopy?
     @Published private(set) var hasTrackableProtocols = false
     @Published private(set) var regulatorSuggestions: [PlanSuggestionUIModel] = []
     @Published private(set) var draftAllocations: [PlanAllocationDraft] = []
@@ -103,6 +104,12 @@ final class PlanViewModel: ObservableObject {
             .sink { [weak self] in self?.warningMessage = $0 }
             .store(in: &cancellables)
 
+        planStore.$warningReason
+            .sink { [weak self] reason in
+                self?.warningCopy = reason?.copy()
+            }
+            .store(in: &cancellables)
+
         planStore.$hasTrackableProtocols
             .sink { [weak self] in self?.hasTrackableProtocols = $0 }
             .store(in: &cancellables)
@@ -158,12 +165,12 @@ final class PlanViewModel: ObservableObject {
 
     func validateProtocolPlacement(protocolId: UUID, day: Date, slot: PlanSlot) -> PlanPlacementValidation {
         planStore?.validateProtocolPlacement(protocolId: protocolId, day: day, slot: slot, context: .manual)
-            ?? .blocked(message: "Plan system unavailable.")
+            ?? .blocked(message: "Plan system unavailable.", reason: .generic(message: "Plan system unavailable."))
     }
 
     func validateMove(allocationId: UUID, day: Date, slot: PlanSlot) -> PlanPlacementValidation {
         planStore?.validateMove(allocationId: allocationId, day: day, slot: slot)
-            ?? .blocked(message: "Plan system unavailable.")
+            ?? .blocked(message: "Plan system unavailable.", reason: .generic(message: "Plan system unavailable."))
     }
 
     func selectProtocol(id: UUID) {
@@ -208,10 +215,11 @@ final class PlanViewModel: ObservableObject {
         guard let planStore, let commitmentStore else { return }
 
         let snapshot = planStore.currentWeekSnapshot()
+        let activeAllocations = snapshot.currentWeekAllocations.filter { $0.status == .active }
         let protocols = buildProtocolPlanItems(
             system: commitmentStore.system,
             weekId: snapshot.weekId,
-            allocations: snapshot.currentWeekAllocations
+            allocations: activeAllocations
         )
         let durationsByProtocolId = Dictionary(uniqueKeysWithValues: protocols.map { ($0.id, $0.durationMinutes) })
         let events = snapshot.calendarEvents.map {
@@ -222,7 +230,7 @@ final class PlanViewModel: ObservableObject {
                 isAllDay: $0.isAllDay
             )
         }
-        let existing = snapshot.currentWeekAllocations.map { allocation in
+        let existing = activeAllocations.map { allocation in
             ExistingAllocationSnapshot(
                 protocolId: allocation.protocolId,
                 day: allocation.day,
@@ -263,7 +271,7 @@ final class PlanViewModel: ObservableObject {
         let freeSlots = countFreeSlots(
             weekStartDate: snapshot.weekStartDate,
             events: snapshot.calendarEvents,
-            allocations: snapshot.currentWeekAllocations
+            allocations: activeAllocations
         )
         let warningsCount = mergedSuggestions.filter { $0.kind == .warning }.count
 
@@ -309,13 +317,34 @@ final class PlanViewModel: ObservableObject {
         guard let nonNegotiable = commitmentStore.system.nonNegotiables.first(where: { $0.id == protocolId }) else {
             return
         }
+        let referenceDate = currentReferenceDate()
+        let editableFields = commitmentStore.allowedEditableFields(for: protocolId, referenceDate: referenceDate)
+        let lockEnd = DateRules.addingDays(
+            nonNegotiable.lock.totalLockDays,
+            to: DateRules.startOfDay(nonNegotiable.lock.startDate, calendar: DateRules.isoCalendar),
+            calendar: DateRules.isoCalendar
+        )
+        let lockDaysRemaining = max(
+            0,
+            DateRules.isoCalendar.dateComponents(
+                [.day],
+                from: DateRules.startOfDay(referenceDate, calendar: DateRules.isoCalendar),
+                to: lockEnd
+            ).day ?? 0
+        )
         protocolEditErrorMessage = nil
         protocolSchedulingEditor = ProtocolSchedulingEditorState(
             id: nonNegotiable.id,
             title: nonNegotiable.definition.title,
             preferredExecutionSlot: nonNegotiable.definition.preferredExecutionSlot,
             estimatedDurationMinutes: nonNegotiable.definition.estimatedDurationMinutes,
-            iconSystemName: nonNegotiable.definition.iconSystemName
+            iconSystemName: nonNegotiable.definition.iconSystemName,
+            mode: nonNegotiable.definition.mode,
+            frequencyPerWeek: nonNegotiable.definition.frequencyPerWeek,
+            lockDays: nonNegotiable.lock.totalLockDays,
+            lockDaysRemaining: lockDaysRemaining,
+            lockEndsOn: lockEnd,
+            editableFields: editableFields
         )
     }
 
@@ -330,16 +359,25 @@ final class PlanViewModel: ObservableObject {
         title: String,
         preferredSlot: PreferredExecutionSlot,
         durationMinutes: Int,
-        iconSystemName: String
+        iconSystemName: String,
+        mode: NonNegotiableMode?,
+        frequencyPerWeek: Int?,
+        lockDays: Int?
     ) -> Bool {
         guard let commitmentStore else { return false }
         do {
-            try commitmentStore.updateNonNegotiableScheduling(
+            try commitmentStore.editNonNegotiable(
                 id: id,
-                preferredSlot: preferredSlot,
-                durationMinutes: durationMinutes,
-                iconSystemName: iconSystemName,
-                title: title
+                patch: NonNegotiablePatch(
+                    newTitle: title,
+                    newIconName: iconSystemName,
+                    newPreferredTime: preferredSlot,
+                    newEstimatedDurationMinutes: durationMinutes,
+                    newMode: mode,
+                    newFrequencyPerWeek: frequencyPerWeek,
+                    newLockDays: lockDays
+                ),
+                referenceDate: currentReferenceDate()
             )
             protocolSchedulingEditor = nil
             protocolEditErrorMessage = nil
@@ -360,7 +398,7 @@ private extension PlanViewModel {
     ) -> [ProtocolPlanItem] {
         system.nonNegotiables
             .filter { nn in
-                nn.state == .active || nn.state == .recovery || nn.state == .suspended
+                nn.state == .active || nn.state == .recovery
             }
             .map { nn in
                 let plannedThisWeek = allocations.filter { $0.protocolId == nn.id }.count
@@ -414,7 +452,9 @@ private extension PlanViewModel {
                     return eventInterval.intersects(slotInterval)
                 }
                 let hasAllocation = allocations.contains {
-                    DateRules.startOfDay($0.day, calendar: DateRules.isoCalendar) == day && $0.slot == slot
+                    DateRules.startOfDay($0.day, calendar: DateRules.isoCalendar) == day &&
+                    $0.slot == slot &&
+                    $0.status == .active
                 }
                 if hasEvent == false && hasAllocation == false {
                     free += 1
@@ -462,6 +502,11 @@ private extension PlanViewModel {
     }
 
     func mapProtocolEditError(_ error: Error) -> String {
+        if let commitmentStore,
+           let copy = commitmentStore.policyCopy(for: error) {
+            return copy.message
+        }
+
         if let engineError = error as? NonNegotiableEngineError,
            case let .invalidDefinition(reason) = engineError {
             switch reason {
@@ -499,6 +544,12 @@ struct ProtocolSchedulingEditorState: Identifiable, Equatable {
     var preferredExecutionSlot: PreferredExecutionSlot
     var estimatedDurationMinutes: Int
     var iconSystemName: String
+    var mode: NonNegotiableMode
+    var frequencyPerWeek: Int
+    var lockDays: Int
+    var lockDaysRemaining: Int
+    var lockEndsOn: Date
+    var editableFields: Set<ProtocolField>
 }
 
 struct PlanSuggestionUIModel: Identifiable, Equatable {

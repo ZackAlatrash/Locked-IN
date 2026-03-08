@@ -12,6 +12,7 @@ struct CockpitView: View {
 
     @EnvironmentObject private var store: CommitmentSystemStore
     @EnvironmentObject private var planStore: PlanStore
+    @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var appClock: AppClock
     @EnvironmentObject private var devRuntime: DevRuntimeState
     @StateObject private var viewModel = CockpitViewModel()
@@ -92,7 +93,7 @@ struct CockpitView: View {
         .onReceive(store.$system) { _ in
             refreshFromStore(referenceDate: appClock.now)
         }
-        .onReceive(appClock.objectWillChange) { _ in
+        .onChange(of: appClock.simulatedNow) { _ in
             refreshFromStore(referenceDate: appClock.now)
         }
         .sheet(isPresented: $showCreateNonNegotiable) {
@@ -174,6 +175,10 @@ private extension CockpitView {
 
     var cockpitStyle: CockpitModernStyle {
         appAppearanceMode.cockpitStyle
+    }
+
+    var isRecoveryThemeActive: Bool {
+        viewModel.uiState.modeText.uppercased() == "RECOVERY"
     }
 
     var navItemColor: Color {
@@ -268,15 +273,24 @@ private extension CockpitView {
     }
 
     var accentColor: Color {
-        appAppearanceMode.primaryAccentColor
+        if isRecoveryThemeActive {
+            return cockpitStyle == .dark ? Color(hex: "#F87171") : Color(hex: "#B91C1C")
+        }
+        return appAppearanceMode.primaryAccentColor
     }
 
     var weeklyAccentColor: Color {
-        cockpitStyle == .dark ? Color(hex: "#38BDF8") : Color(hex: "#0C7AA6")
+        if isRecoveryThemeActive {
+            return cockpitStyle == .dark ? Color(hex: "#EF4444") : Color(hex: "#DC2626")
+        }
+        return cockpitStyle == .dark ? Color(hex: "#38BDF8") : Color(hex: "#0C7AA6")
     }
 
     var streakAccentColor: Color {
-        cockpitStyle == .dark ? Color(hex: "#F59E0B") : Color(hex: "#B45309")
+        if isRecoveryThemeActive {
+            return cockpitStyle == .dark ? Color(hex: "#FB7185") : Color(hex: "#991B1B")
+        }
+        return cockpitStyle == .dark ? Color(hex: "#F59E0B") : Color(hex: "#B45309")
     }
 
     @ViewBuilder
@@ -370,6 +384,11 @@ private extension CockpitView {
             Haptics.selection()
             detailsSelection = CockpitDetailsSelection(id: nnId)
 
+        case .edit(let nnId):
+            Haptics.selection()
+            detailsSelection = nil
+            router.openPlanEditor(protocolId: nnId)
+
         case .openCreate:
             Haptics.selection()
             showCreateNonNegotiable = true
@@ -401,7 +420,7 @@ private extension CockpitView {
         case .retire(let nnId):
             do {
                 store.runDailyIntegrityTick(referenceDate: appClock.now)
-                try store.removeNonNegotiable(id: nnId)
+                try store.retireNonNegotiable(id: nnId, referenceDate: appClock.now)
                 Haptics.success()
                 detailsSelection = nil
             } catch {
@@ -412,6 +431,10 @@ private extension CockpitView {
     }
 
     func actionMessage(for error: Error) -> String {
+        if let copy = store.policyCopy(for: error) {
+            return copy.message
+        }
+
         if let systemError = error as? CommitmentSystemError {
             switch systemError {
             case .capacityExceeded:
@@ -421,7 +444,7 @@ private extension CockpitView {
             case .cannotRemoveDuringLock:
                 return "Locked protocol. Retirement is available after lock end."
             case .systemUnstable:
-                return "System is unstable. Complete active protocols to stabilize."
+                return "System is in recovery. Complete active protocols to stabilize."
             }
         }
 
@@ -474,6 +497,7 @@ private extension CockpitView {
 private struct CockpitNonNegotiableDetailsSheet: View {
     let nonNegotiable: NonNegotiable
     let onAction: (CockpitAction) -> Void
+    @EnvironmentObject private var store: CommitmentSystemStore
     @EnvironmentObject private var appClock: AppClock
     @Environment(\.colorScheme) private var colorScheme
 
@@ -514,6 +538,8 @@ private struct CockpitNonNegotiableDetailsSheet: View {
                 .background(cardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
+                lawSection
+
                 Button {
                     onAction(.complete(nnId: nonNegotiable.id))
                 } label: {
@@ -530,6 +556,16 @@ private struct CockpitNonNegotiableDetailsSheet: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(textSecondary)
                 }
+
+                Button {
+                    onAction(.edit(nnId: nonNegotiable.id))
+                } label: {
+                    Text("Edit")
+                        .font(.system(size: 16, weight: .bold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                }
+                .buttonStyle(.bordered)
 
                 Button(role: .destructive) {
                     onAction(.retire(nnId: nonNegotiable.id))
@@ -621,16 +657,16 @@ private struct CockpitNonNegotiableDetailsSheet: View {
 
     private var markDoneDisabledMessage: String? {
         if extraLoggedToday {
-            return "EXTRA already logged today."
+            return PolicyReason.extraAlreadyLoggedToday.copy().message
         }
         if completedToday {
-            return "Already completed today."
+            return PolicyReason.alreadyCompletedToday.copy().message
         }
         switch nonNegotiable.state {
         case .suspended:
-            return "Suspended while the system stabilizes."
+            return PolicyReason.protocolSuspended.copy().message
         case .completed, .retired:
-            return "This protocol is closed."
+            return PolicyReason.protocolCompletedOrRetired.copy().message
         default:
             return nil
         }
@@ -677,6 +713,40 @@ private struct CockpitNonNegotiableDetailsSheet: View {
             return "Completed"
         case .retired:
             return "Retired"
+        }
+    }
+
+    @ViewBuilder
+    private var lawSection: some View {
+        let reasons = store.lawReasons(for: nonNegotiable.id, referenceDate: now)
+        if reasons.isEmpty == false {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("LAW")
+                    .font(.system(size: 10, weight: .black, design: .monospaced))
+                    .tracking(1.2)
+                    .foregroundColor(textMuted)
+
+                ForEach(Array(reasons.enumerated()), id: \.offset) { entry in
+                    let reason = entry.element
+                    let copy = reason.copy()
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(copy.title.uppercased())
+                            .font(.system(size: 11, weight: .black, design: .monospaced))
+                            .foregroundColor(textPrimary)
+                        Text(copy.message)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(textSecondary)
+                        if let hint = copy.hint {
+                            Text(hint)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(textMuted)
+                        }
+                    }
+                }
+            }
+            .padding(14)
+            .background(cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }
 }

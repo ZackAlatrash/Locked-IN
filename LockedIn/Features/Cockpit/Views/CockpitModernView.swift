@@ -97,14 +97,38 @@ struct CockpitModernView: View {
         self.onProtocolTap = onProtocolTap
     }
 
-    private var primary: Color { style == .dark ? Color(hex: "00F2FF") : Color(hex: "3B82F6") }
-    private var bgTop: Color { Color(hex: "1A243D") }
-    private var bgBottom: Color { Color(hex: "020617") }
+    private var isRecoveryMode: Bool {
+        modeText.uppercased() == "RECOVERY" || capacityStatusText.uppercased() == "RECOVERY"
+    }
+    private var primary: Color {
+        if isRecoveryMode {
+            return style == .dark ? Color(hex: "F87171") : Color(hex: "B91C1C")
+        }
+        return style == .dark ? Color(hex: "00F2FF") : Color(hex: "3B82F6")
+    }
+    private var bgTop: Color {
+        if isRecoveryMode {
+            return style == .dark ? Color(hex: "16080A") : Color(hex: "FDF5F5")
+        }
+        return Color(hex: "1A243D")
+    }
+    private var bgBottom: Color {
+        if isRecoveryMode {
+            return style == .dark ? Color(hex: "020203") : Color(hex: "F9EAEA")
+        }
+        return Color(hex: "020617")
+    }
     private var glassCard: Color {
-        style == .dark ? Color(hex: "0F172A").opacity(0.42) : Color.white.opacity(0.72)
+        if isRecoveryMode {
+            return style == .dark ? Color(hex: "1B0A0D").opacity(0.56) : Color.white.opacity(0.8)
+        }
+        return style == .dark ? Color(hex: "0F172A").opacity(0.42) : Color.white.opacity(0.72)
     }
     private var glassStroke: Color {
-        style == .dark ? Color.white.opacity(0.09) : Color(hex: "B9C7D7").opacity(0.78)
+        if isRecoveryMode {
+            return style == .dark ? Color(hex: "F87171").opacity(0.32) : Color(hex: "FCA5A5").opacity(0.72)
+        }
+        return style == .dark ? Color.white.opacity(0.09) : Color(hex: "B9C7D7").opacity(0.78)
     }
     private var textMain: Color { style == .dark ? .white : Color(hex: "0B1220") }
     private var textSecondary: Color { style == .dark ? Color.white.opacity(0.45) : Color(hex: "5B6778") }
@@ -125,6 +149,9 @@ struct CockpitModernView: View {
         return max(1, Int(chunks.last ?? "1") ?? 1)
     }
     private var directiveTitle: String {
+        if isRecoveryMode {
+            return "RECOVERY PROTOCOL ACTIVE. REDUCE LOAD AND EXECUTE CRITICAL TASKS"
+        }
         let protocols = max(dueCount, pendingCount)
         if protocols <= 0 {
             return "SYSTEM STABLE. MAINTAIN PROTOCOL DISCIPLINE"
@@ -133,10 +160,10 @@ struct CockpitModernView: View {
         return "EXECUTE \(protocols) \(label) TO STABILIZE SYSTEM"
     }
     private var systemStateText: String {
-        capacityStatusText.uppercased() == "STABLE" ? "SYSTEM STATE: STABLE" : "SYSTEM STATE: UNSTABLE"
+        capacityStatusText.uppercased() == "STABLE" ? "SYSTEM STATE: STABLE" : "SYSTEM STATE: RECOVERY"
     }
     private var systemStateColor: Color {
-        capacityStatusText.uppercased() == "STABLE" ? primary : Color(hex: "FBBF24")
+        capacityStatusText.uppercased() == "STABLE" ? primary : Color(hex: "F87171")
     }
     private var effectiveMotionSessionID: String {
         motionSessionID.isEmpty ? "launch-pending" : motionSessionID
@@ -199,37 +226,59 @@ private extension CockpitModernView {
     var screenBackground: some View {
         if style == .light {
             ZStack {
-                Color(hex: "F8F9FB")
+                if isRecoveryMode {
+                    Color(hex: "FCF4F4")
+                    RadialGradient(
+                        colors: [Color(hex: "FCA5A5").opacity(0.42), .clear],
+                        center: UnitPoint(x: 0.5, y: -0.1),
+                        startRadius: 0,
+                        endRadius: 420
+                    )
+                    RadialGradient(
+                        colors: [Color(hex: "FECACA").opacity(0.45), .clear],
+                        center: .topLeading,
+                        startRadius: 0,
+                        endRadius: 420
+                    )
+                    RadialGradient(
+                        colors: [Color(hex: "FCA5A5").opacity(0.34), .clear],
+                        center: .topTrailing,
+                        startRadius: 0,
+                        endRadius: 440
+                    )
+                } else {
+                    Color(hex: "F8F9FB")
 
-                RadialGradient(
-                    colors: [
-                        Color(red: 1.0, green: 245.0 / 255.0, blue: 210.0 / 255.0).opacity(0.6),
-                        .clear
-                    ],
-                    center: UnitPoint(x: 0.5, y: -0.1),
-                    startRadius: 0,
-                    endRadius: 380
-                )
+                    RadialGradient(
+                        colors: [
+                            Color(red: 1.0, green: 245.0 / 255.0, blue: 210.0 / 255.0).opacity(0.6),
+                            .clear
+                        ],
+                        center: UnitPoint(x: 0.5, y: -0.1),
+                        startRadius: 0,
+                        endRadius: 380
+                    )
 
-                RadialGradient(
-                    colors: [
-                        Color(red: 220.0 / 255.0, green: 225.0 / 255.0, blue: 1.0).opacity(0.5),
-                        .clear
-                    ],
-                    center: .topLeading,
-                    startRadius: 0,
-                    endRadius: 450
-                )
+                    RadialGradient(
+                        colors: [
+                            Color(red: 220.0 / 255.0, green: 225.0 / 255.0, blue: 1.0).opacity(0.5),
+                            .clear
+                        ],
+                        center: .topLeading,
+                        startRadius: 0,
+                        endRadius: 450
+                    )
 
-                RadialGradient(
-                    colors: [
-                        Color(red: 230.0 / 255.0, green: 220.0 / 255.0, blue: 1.0).opacity(0.5),
-                        .clear
-                    ],
-                    center: .topTrailing,
-                    startRadius: 0,
-                    endRadius: 450
-                )
+                    RadialGradient(
+                        colors: [
+                            Color(red: 230.0 / 255.0, green: 220.0 / 255.0, blue: 1.0).opacity(0.5),
+                            .clear
+                        ],
+                        center: .topTrailing,
+                        startRadius: 0,
+                        endRadius: 450
+                    )
+                }
             }
             .ignoresSafeArea()
         } else {

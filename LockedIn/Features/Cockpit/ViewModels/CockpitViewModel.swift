@@ -30,7 +30,7 @@ final class CockpitViewModel: ObservableObject {
             reliabilityScore: reliabilityScore,
             currentStreakDays: currentStreakDays,
             todayCompleted: todayCompleted,
-            capacityStatusText: isStable ? "STABLE" : "UNSTABLE",
+            capacityStatusText: isStable ? "STABLE" : "RECOVERY",
             activeCount: activeCount,
             allowedCapacity: allowedCapacity,
             capacityCountText: "\(activeCount) / \(allowedCapacity)",
@@ -50,7 +50,7 @@ private extension CockpitViewModel {
         if system.nonNegotiables.contains(where: { $0.state == .recovery }) {
             return "RECOVERY"
         }
-        return isStable ? "NORMAL" : "UNSTABLE"
+        return isStable ? "NORMAL" : "RECOVERY"
     }
 
     func capacityDots(system: CommitmentSystem, isStable: Bool) -> [CockpitCapacityDot] {
@@ -96,7 +96,7 @@ private extension CockpitViewModel {
                         let day = min(max(system.recoveryCleanDayStreak, 0), 7)
                         return "Recovery day \(day) / 7"
                     case .suspended:
-                        return "Suspended (system stabilizing)"
+                        return "Paused during recovery"
                     default:
                         return nil
                     }
@@ -242,8 +242,8 @@ private extension CockpitViewModel {
                     let completionVisual: TodayTask.CompletionVisual
 
                     if isSuspended {
-                        subtitle = "Suspended (system stabilizing)"
-                        statusText = "Suspended (system stabilizing)"
+                        subtitle = "Paused during recovery"
+                        statusText = "Paused during recovery"
                         ctaEnabled = false
                         ctaTitle = "Unavailable"
                         isRequiredToday = false
@@ -297,8 +297,8 @@ private extension CockpitViewModel {
                     let completionVisual: TodayTask.CompletionVisual
 
                     if isSuspended {
-                        subtitle = "Suspended (system stabilizing)"
-                        statusText = "Suspended (system stabilizing)"
+                        subtitle = "Paused during recovery"
+                        statusText = "Paused during recovery"
                         ctaEnabled = false
                         ctaTitle = "Unavailable"
                         isRequiredToday = false

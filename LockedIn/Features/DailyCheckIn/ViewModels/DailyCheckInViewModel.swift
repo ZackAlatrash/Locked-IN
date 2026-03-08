@@ -58,7 +58,9 @@ final class DailyCheckInViewModel: ObservableObject {
             let completionsThisWeek = protocolModel.completions.filter {
                 $0.weekId == weekId && $0.kind == .counted
             }.count
-            let plannedThisWeek = snapshot.currentWeekAllocations.filter { $0.protocolId == protocolModel.id }.count
+            let plannedThisWeek = snapshot.currentWeekAllocations.filter {
+                $0.protocolId == protocolModel.id && $0.status == .active
+            }.count
             let completedToday = protocolModel.completions.contains {
                 $0.kind == .counted && DateRules.startOfDay($0.date, calendar: calendar) == today
             }
@@ -97,9 +99,9 @@ final class DailyCheckInViewModel: ObservableObject {
             let actionTitle: String
             let actionDisabledReason: String?
             if isSuspended {
-                statusText = "Suspended (system stabilizing)"
+                statusText = "Paused during recovery"
                 actionTitle = "Unavailable"
-                actionDisabledReason = "Suspended protocols cannot be completed."
+                actionDisabledReason = "Paused protocols cannot be completed."
             } else if completedToday {
                 statusText = "Completed today"
                 actionTitle = "Done"
@@ -217,16 +219,11 @@ final class DailyCheckInViewModel: ObservableObject {
             }
             refresh()
         } catch {
-            if let engineError = error as? NonNegotiableEngineError {
-                switch engineError {
-                case .extraAlreadyLoggedToday:
-                    warningMessage = "EXTRA already logged today for this protocol."
-                default:
-                    warningMessage = "Unable to mark protocol done right now."
-                }
-                return
+            if let copy = commitmentStore.policyCopy(for: error) {
+                warningMessage = copy.message
+            } else {
+                warningMessage = "Unable to mark protocol done right now."
             }
-            warningMessage = "Unable to mark protocol done right now."
         }
     }
 
@@ -235,7 +232,7 @@ final class DailyCheckInViewModel: ObservableObject {
         recommendation = nil
         guard let item = protocolItems.first(where: { $0.protocolId == protocolId }) else { return }
         if item.isSuspended {
-            warningMessage = "Suspended protocol cannot be resolved right now."
+            warningMessage = "Paused protocol cannot be resolved right now."
             return
         }
         step = .resolve(protocolId: protocolId)
@@ -255,12 +252,14 @@ final class DailyCheckInViewModel: ObservableObject {
             return
         }
         if nonNegotiable.state == .suspended {
-            warningMessage = "Suspended protocol cannot be auto-placed."
+            warningMessage = "Paused protocol cannot be auto-placed."
             return
         }
 
         let snapshot = planStore.currentWeekSnapshot()
-        let plannedThisWeek = snapshot.currentWeekAllocations.filter { $0.protocolId == nonNegotiable.id }.count
+        let plannedThisWeek = snapshot.currentWeekAllocations.filter {
+            $0.protocolId == nonNegotiable.id && $0.status == .active
+        }.count
         let completionsThisWeek = nonNegotiable.completions.filter {
             $0.weekId == snapshot.weekId && $0.kind == .counted
         }.count
@@ -289,7 +288,9 @@ final class DailyCheckInViewModel: ObservableObject {
         let modeByProtocolId = Dictionary(
             uniqueKeysWithValues: commitmentStore.system.nonNegotiables.map { ($0.id, $0.definition.mode) }
         )
-        let existingAllocations = snapshot.currentWeekAllocations.map { allocation in
+        let existingAllocations = snapshot.currentWeekAllocations
+            .filter { $0.status == .active }
+            .map { allocation in
             ExistingAllocationSnapshot(
                 protocolId: allocation.protocolId,
                 day: allocation.day,
@@ -427,7 +428,7 @@ private extension DailyCheckInViewModel {
         if commitmentStore.system.nonNegotiables.contains(where: { $0.state == .recovery }) {
             return "RECOVERY"
         }
-        return commitmentStore.isSystemStable ? "NORMAL" : "UNSTABLE"
+        return commitmentStore.isSystemStable ? "NORMAL" : "RECOVERY"
     }
 
     func reliabilityScore(referenceDate: Date) -> Int {

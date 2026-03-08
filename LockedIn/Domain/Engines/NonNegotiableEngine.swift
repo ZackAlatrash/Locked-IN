@@ -4,7 +4,7 @@ import Foundation
  MVP scope for Non-Negotiables Engine:
  - Per-NN definition validation, completion recording, weekly evaluation, and 14-day window tracking.
  - Daily compliance checks for daily mode (idempotent, one missed-day violation at most once per day).
- - Recovery trigger when a single 14-day window accumulates 3 violations.
+ - Recovery trigger when the current 14-day window reaches mode-specific violation threshold.
 
  Intentionally not implemented in this engine:
  - Persistence, scheduling/rescheduling, reliability score, upgrades, AI integration,
@@ -85,38 +85,50 @@ struct NonNegotiableEngine {
             return
         }
 
-        guard yesterday >= nn.lock.startDate else {
-            nn.lastDailyComplianceCheckedDay = yesterday
-            return
-        }
-
+        let lockStart = DateRules.startOfDay(nn.lock.startDate, calendar: calendar)
         let lockEnd = lockEndDate(for: nn)
-        guard yesterday < lockEnd else {
+        guard let lastLockDay = calendar.date(byAdding: .day, value: -1, to: lockEnd) else {
             nn.lastDailyComplianceCheckedDay = yesterday
             return
         }
 
-        advanceWindowIfNeeded(&nn, currentDate: currentDate)
-        guard let windowIndex = windowIndex(for: nn, date: yesterday) else {
+        let rawStart = (nn.lastDailyComplianceCheckedDay
+            .flatMap { calendar.date(byAdding: .day, value: 1, to: $0) })
+            ?? lockStart
+        let evaluationStart = max(DateRules.startOfDay(rawStart, calendar: calendar), lockStart)
+        let evaluationEnd = min(yesterday, lastLockDay)
+
+        guard evaluationStart <= evaluationEnd else {
             nn.lastDailyComplianceCheckedDay = yesterday
             return
         }
 
-        let didCompleteYesterday = nn.completions.contains { completion in
-            completion.kind == .counted && calendar.isDate(completion.date, inSameDayAs: yesterday)
-        }
+        var dayCursor = evaluationStart
+        while dayCursor <= evaluationEnd {
+            advanceWindowIfNeeded(&nn, currentDate: dayCursor)
+            if let windowIndex = windowIndex(for: nn, date: dayCursor) {
+                let didCompleteOnDay = nn.completions.contains { completion in
+                    completion.kind == .counted && calendar.isDate(completion.date, inSameDayAs: dayCursor)
+                }
 
-        if !didCompleteYesterday {
-            nn.windows[windowIndex].weeklyViolationCount += 1
-            nn.violations.append(
-                Violation(
-                    date: yesterday,
-                    kind: .missedDailyCompliance,
-                    windowIndex: windowIndex,
-                    weekId: DateRules.weekID(for: yesterday, calendar: calendar)
-                )
-            )
-            updateRecoveryState(&nn, windowIndex: windowIndex)
+                if !didCompleteOnDay {
+                    nn.windows[windowIndex].weeklyViolationCount += 1
+                    nn.violations.append(
+                        Violation(
+                            date: dayCursor,
+                            kind: .missedDailyCompliance,
+                            windowIndex: windowIndex,
+                            weekId: DateRules.weekID(for: dayCursor, calendar: calendar)
+                        )
+                    )
+                    updateRecoveryState(&nn, windowIndex: windowIndex)
+                }
+            }
+
+            guard let next = calendar.date(byAdding: .day, value: 1, to: dayCursor) else {
+                break
+            }
+            dayCursor = next
         }
 
         nn.lastDailyComplianceCheckedDay = yesterday
@@ -163,7 +175,10 @@ struct NonNegotiableEngine {
 
         let lockEnd = lockEndDate(for: nn)
         if currentDate >= lockEnd {
-            nn.state = .completed
+            // Recovery must persist once entered; auto-completion would hide recovery state.
+            if nn.state != .recovery {
+                nn.state = .completed
+            }
             return
         }
 
@@ -304,8 +319,20 @@ struct NonNegotiableEngine {
     }
 
     private func updateRecoveryState(_ nn: inout NonNegotiable, windowIndex: Int) {
-        if nn.windows[windowIndex].weeklyViolationCount >= 3 {
+        guard nn.state != .recovery else { return }
+
+        let threshold = recoveryViolationThreshold(for: nn.definition.mode)
+        if nn.windows[windowIndex].weeklyViolationCount >= threshold {
             nn.state = .recovery
+        }
+    }
+
+    private func recoveryViolationThreshold(for mode: NonNegotiableMode) -> Int {
+        switch mode {
+        case .daily:
+            return 3
+        case .session:
+            return 2
         }
     }
 }

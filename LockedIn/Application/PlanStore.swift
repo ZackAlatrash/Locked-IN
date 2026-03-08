@@ -14,6 +14,17 @@ enum PlanValidationContext {
     case regulator
 }
 
+private extension PlanValidationContext {
+    var policyContext: PlanPlacementContext {
+        switch self {
+        case .manual:
+            return .manual
+        case .regulator:
+            return .regulator
+        }
+    }
+}
+
 enum PlanDraftApplyError: Error, LocalizedError {
     case message(String)
 
@@ -45,11 +56,13 @@ final class PlanStore: ObservableObject {
     @Published private(set) var structureStatus: PlanStructureStatus = .unstructured
     @Published private(set) var structureMessage: String = "No plan allocations for this week."
     @Published private(set) var warningMessage: String?
+    @Published private(set) var warningReason: PolicyReason?
     @Published private(set) var hasTrackableProtocols = false
     @Published private(set) var planSignal: PlanStructureStatus = .unstructured
     @Published private(set) var planSignalMessage: String = "No plan allocations for this week."
 
     private let repository: PlanAllocationRepository
+    private let policy: CommitmentPolicyEngine
     private let calendar: Calendar
 
     private var allAllocations: [PlanAllocation] = []
@@ -64,9 +77,11 @@ final class PlanStore: ObservableObject {
 
     init(
         repository: PlanAllocationRepository = JSONFilePlanAllocationRepository(),
+        policy: CommitmentPolicyEngine = CommitmentPolicyEngine(),
         calendar: Calendar = DateRules.isoCalendar
     ) {
         self.repository = repository
+        self.policy = policy
         self.calendar = calendar
 
         do {
@@ -105,7 +120,7 @@ final class PlanStore: ObservableObject {
         context: PlanValidationContext = .manual
     ) -> PlanPlacementValidation {
         guard let descriptor = protocolsById[protocolId] else {
-            return .blocked(message: "Protocol is no longer available.")
+            return .blocked(message: "Protocol is no longer available.", reason: .generic(message: "Protocol is no longer available."))
         }
 
         return validatePlacement(
@@ -123,11 +138,11 @@ final class PlanStore: ObservableObject {
 
     func validateMove(allocationId: UUID, day: Date, slot: PlanSlot) -> PlanPlacementValidation {
         guard let allocation = allAllocations.first(where: { $0.id == allocationId }) else {
-            return .blocked(message: "Allocation no longer exists.")
+            return .blocked(message: "Allocation no longer exists.", reason: .generic(message: "Allocation no longer exists."))
         }
 
         guard let descriptor = protocolsById[allocation.protocolId] else {
-            return .blocked(message: "Protocol is no longer available.")
+            return .blocked(message: "Protocol is no longer available.", reason: .generic(message: "Protocol is no longer available."))
         }
 
         let duration = allocation.durationMinutes ?? descriptor.estimatedDurationMinutes
@@ -167,6 +182,7 @@ final class PlanStore: ObservableObject {
 
     func clearWarning() {
         warningMessage = nil
+        warningReason = nil
     }
 
     func refresh(system: CommitmentSystem, calendarEvents: [PlanCalendarEvent], referenceDate: Date = Date()) {
@@ -220,8 +236,8 @@ final class PlanStore: ObservableObject {
             context: .manual,
             candidateAllocations: weekAllocations
         )
-        if case .blocked(let message) = validation {
-            setWarning(message)
+        if case .blocked(let message, _) = validation {
+            setWarning(message, reason: validation.reason)
             return nil
         }
 
@@ -271,8 +287,8 @@ final class PlanStore: ObservableObject {
             context: .manual,
             candidateAllocations: weekAllocations
         )
-        if case .blocked(let message) = validation {
-            setWarning(message)
+        if case .blocked(let message, _) = validation {
+            setWarning(message, reason: validation.reason)
             return nil
         }
 
@@ -287,7 +303,8 @@ final class PlanStore: ObservableObject {
             startTime: allocation.startTime,
             durationMinutes: duration,
             createdAt: allocation.createdAt,
-            updatedAt: Date()
+            updatedAt: Date(),
+            status: allocation.status
         )
 
         saveAndRefresh()
@@ -303,6 +320,45 @@ final class PlanStore: ObservableObject {
 
     func removeAllocation(id: UUID) {
         allAllocations.removeAll(where: { $0.id == id })
+        saveAndRefresh()
+    }
+
+    func pauseAllocations(for protocolId: UUID, referenceDate: Date = Date()) {
+        let now = referenceDate
+        var didMutate = false
+
+        for index in allAllocations.indices {
+            guard allAllocations[index].protocolId == protocolId else { continue }
+            guard allAllocations[index].status == .active else { continue }
+            guard let effectiveStart = effectiveAllocationStartDate(allAllocations[index]) else { continue }
+            guard effectiveStart > now else { continue }
+
+            allAllocations[index].status = .paused
+            allAllocations[index].updatedAt = Date()
+            didMutate = true
+        }
+
+        guard didMutate else { return }
+        saveAndRefresh()
+    }
+
+    func finalizeRecoveryAllocationStatuses(referenceDate: Date = Date()) {
+        let now = referenceDate
+        var didMutate = false
+
+        for index in allAllocations.indices {
+            guard allAllocations[index].status == .paused else { continue }
+            guard let effectiveStart = effectiveAllocationStartDate(allAllocations[index]) else { continue }
+
+            let nextStatus: PlanAllocationStatus = effectiveStart >= now ? .active : .skippedDueToRecovery
+            guard allAllocations[index].status != nextStatus else { continue }
+
+            allAllocations[index].status = nextStatus
+            allAllocations[index].updatedAt = Date()
+            didMutate = true
+        }
+
+        guard didMutate else { return }
         saveAndRefresh()
     }
 
@@ -322,6 +378,7 @@ final class PlanStore: ObservableObject {
         let hasAllocationOnCompletionDay = allAllocations.contains { allocation in
             allocation.protocolId == protocolId &&
             allocation.weekId == completionWeekId &&
+            allocation.status == .active &&
             DateRules.startOfDay(allocation.day, calendar: calendar) == completionDayStart
         }
         if hasAllocationOnCompletionDay {
@@ -400,7 +457,7 @@ final class PlanStore: ObservableObject {
                 candidateAllocations: simulated
             )
 
-            if case .blocked(let reason) = validation {
+            if case .blocked(let reason, _) = validation {
                 warnings.append(
                     PlanSuggestion(
                         id: UUID(),
@@ -410,7 +467,7 @@ final class PlanStore: ObservableObject {
                         startTimeMinutesFromMidnight: nil,
                         durationMinutes: item.durationMinutes,
                         confidence: 0.15,
-                        reason: reason,
+                        reason: validation.reason?.copy().message ?? reason,
                         kind: .warning
                     )
                 )
@@ -469,9 +526,10 @@ final class PlanStore: ObservableObject {
                 candidateAllocations: simulated
             )
 
-            if case .blocked(let reason) = validation {
-                setWarning(reason)
-                return .failure(.message(reason))
+            if case .blocked(let reason, _) = validation {
+                let blockedMessage = validation.reason?.copy().message ?? reason
+                setWarning(blockedMessage, reason: validation.reason)
+                return .failure(.message(blockedMessage))
             }
 
             let allocation = PlanAllocation(
@@ -532,8 +590,6 @@ private extension PlanStore {
         let startMinutesFromMidnight: Int
     }
 
-    var dailyPlacementsPerDayTarget: Int { 1 }
-
     func nearestFutureAllocationCandidate(
         protocolId: UUID,
         completionDate: Date,
@@ -544,6 +600,9 @@ private extension PlanStore {
 
         let candidates = allAllocations.compactMap { allocation -> FutureAllocationCandidate? in
             guard allocation.protocolId == protocolId, allocation.weekId == completionWeekId else {
+                return nil
+            }
+            guard allocation.status == .active else {
                 return nil
             }
             guard let effectiveStart = effectiveAllocationStartDate(allocation) else {
@@ -683,7 +742,8 @@ private extension PlanStore {
                         startTime: allocation.startTime,
                         durationMinutes: allocation.durationMinutes,
                         createdAt: allocation.createdAt,
-                        updatedAt: allocation.updatedAt
+                        updatedAt: allocation.updatedAt,
+                        status: allocation.status
                     )
                 )
             } else {
@@ -702,18 +762,16 @@ private extension PlanStore {
     }
 
     func buildQueue(referenceDate: Date) {
-        let today = DateRules.startOfDay(referenceDate, calendar: calendar)
-
+        _ = referenceDate
         queueItems = protocolsById.values.compactMap { descriptor in
-            let plannedThisWeek = weekAllocations.filter { $0.protocolId == descriptor.id }.count
-            let plannedToday = weekAllocations.filter {
-                $0.protocolId == descriptor.id && DateRules.startOfDay($0.day, calendar: calendar) == today
+            let plannedThisWeek = weekAllocations.filter {
+                $0.protocolId == descriptor.id && $0.status == .active
             }.count
 
             let remaining: Int
             switch descriptor.mode {
             case .daily:
-                remaining = max(0, dailyPlacementsPerDayTarget - descriptor.completionsTodayCount - plannedToday)
+                remaining = max(0, 7 - descriptor.completionsThisWeek - plannedThisWeek)
             case .session:
                 remaining = max(0, descriptor.frequencyPerWeek - descriptor.completionsThisWeek - plannedThisWeek)
             }
@@ -745,8 +803,8 @@ private extension PlanStore {
         let weekStart = DateRules.startOfDay(weekInterval.start, calendar: calendar)
         let today = DateRules.startOfDay(referenceDate, calendar: calendar)
 
-        currentWeekDays = (0..<7).compactMap { dayOffset in
-            guard let day = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) else { return nil }
+        currentWeekDays = (0..<7).map { dayOffset in
+            let day = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) ?? weekStart
             let dayStart = DateRules.startOfDay(day, calendar: calendar)
 
             let slots = PlanSlot.allCases.map { slot -> PlanSlotModel in
@@ -764,11 +822,14 @@ private extension PlanStore {
                         tone: descriptor.tone,
                         icon: descriptor.icon,
                         durationLabel: "\(minutes)m",
-                        durationMinutes: minutes
+                        durationMinutes: minutes,
+                        status: allocation.status
                     )
                 }
 
-                let plannedMinutes = displays.reduce(0) { $0 + $1.durationMinutes }
+                let plannedMinutes = displays
+                    .filter { $0.status == .active }
+                    .reduce(0) { $0 + $1.durationMinutes }
                 let freeBeforePlanning = max(0, slot.durationMinutes - busyMinutes)
                 let freeMinutes = max(0, freeBeforePlanning - plannedMinutes)
 
@@ -804,7 +865,9 @@ private extension PlanStore {
                 slots: slots,
                 busyMinutesTotal: slots.reduce(0) { $0 + $1.busyMinutes },
                 freeMinutesTotal: slots.reduce(0) { $0 + $1.freeMinutes },
-                plannedCount: slots.reduce(0) { $0 + $1.allocations.count }
+                plannedCount: slots.reduce(0) { partial, slotModel in
+                    partial + slotModel.allocations.filter { $0.status == .active }.count
+                }
             )
         }
     }
@@ -833,14 +896,15 @@ private extension PlanStore {
 
     func buildStructureStatus() {
         let remainingSessions = queueItems.reduce(0) { $0 + $1.remainingCount }
-        let plannedCount = weekAllocations.count
+        let activeWeekAllocations = weekAllocations.filter { $0.status == .active }
+        let plannedCount = activeWeekAllocations.count
 
         if remainingSessions > 0 && plannedCount == 0 {
             setStructure(.unstructured, message: "Sessions remain but no plan exists.")
             return
         }
 
-        let dayCounts = Dictionary(grouping: weekAllocations) {
+        let dayCounts = Dictionary(grouping: activeWeekAllocations) {
             DateRules.startOfDay($0.day, calendar: calendar)
         }
         let maxDayCount = dayCounts.values.map(\.count).max() ?? 0
@@ -958,13 +1022,20 @@ private extension PlanStore {
     }
 
     func allocationsFor(day: Date, slot: PlanSlot) -> [PlanAllocation] {
-        allocationsFor(day: day, slot: slot, in: weekAllocations)
+        allocationsFor(day: day, slot: slot, in: weekAllocations, includeInactive: true)
     }
 
-    func allocationsFor(day: Date, slot: PlanSlot, in allocations: [PlanAllocation]) -> [PlanAllocation] {
+    func allocationsFor(
+        day: Date,
+        slot: PlanSlot,
+        in allocations: [PlanAllocation],
+        includeInactive: Bool = false
+    ) -> [PlanAllocation] {
         allocations
             .filter {
-                DateRules.startOfDay($0.day, calendar: calendar) == day && $0.slot == slot
+                DateRules.startOfDay($0.day, calendar: calendar) == day &&
+                $0.slot == slot &&
+                (includeInactive || $0.status == .active)
             }
             .sorted { $0.createdAt < $1.createdAt }
     }
@@ -1002,6 +1073,7 @@ private extension PlanStore {
         let dayStart = DateRules.startOfDay(day, calendar: calendar)
         return allocations.filter {
             DateRules.startOfDay($0.day, calendar: calendar) == dayStart && $0.id != allocationId
+                && $0.status == .active
         }.count
     }
 
@@ -1014,7 +1086,8 @@ private extension PlanStore {
         return allocations.filter {
             $0.protocolId == protocolId &&
             DateRules.startOfDay($0.day, calendar: calendar) == dayStart &&
-            $0.id != allocationId
+            $0.id != allocationId &&
+            $0.status == .active
         }.count
     }
 
@@ -1029,16 +1102,16 @@ private extension PlanStore {
         context: PlanValidationContext,
         candidateAllocations: [PlanAllocation]
     ) -> PlanPlacementValidation {
-        if descriptor.state == .suspended {
-            return .blocked(message: "Suspended protocol cannot be planned right now.")
+        guard let nonNegotiable = lastSystem?.nonNegotiables.first(where: { $0.id == protocolId }) else {
+            return .blocked(message: "Protocol is no longer available.", reason: .generic(message: "Protocol is no longer available."))
         }
 
         if requiresQueueAvailability {
             guard let queueItem = queueItems.first(where: { $0.protocolId == protocolId }) else {
-                return .blocked(message: "No remaining sessions for this protocol this week.")
+                return .blocked(message: "No remaining sessions for this protocol this week.", reason: .weeklyCapReached(cap: descriptor.frequencyPerWeek))
             }
             if queueItem.isDisabled {
-                return .blocked(message: "Suspended protocol cannot be planned right now.")
+                return .blocked(message: PolicyReason.protocolSuspended.copy().message, reason: .protocolSuspended)
             }
         }
 
@@ -1050,44 +1123,44 @@ private extension PlanStore {
             weeklyTarget = descriptor.frequencyPerWeek
         }
         let plannedThisWeek = candidateAllocations.filter {
-            $0.protocolId == protocolId && $0.id != excludingAllocationId
+            $0.protocolId == protocolId &&
+            $0.id != excludingAllocationId &&
+            $0.status == .active
         }.count
         if descriptor.completionsThisWeek + plannedThisWeek >= weeklyTarget {
-            return .blocked(message: "No remaining sessions for this protocol this week.")
+            return .blocked(
+                message: PolicyReason.weeklyCapReached(cap: weeklyTarget).copy().message,
+                reason: .weeklyCapReached(cap: weeklyTarget)
+            )
         }
 
         let dayStart = DateRules.startOfDay(day, calendar: calendar)
-        let todayStart = DateRules.startOfDay(lastReferenceDate, calendar: calendar)
-        if dayStart < todayStart {
-            return .blocked(message: "Cannot schedule protocols in past days.")
-        }
-
-        if dailyPlannedCount(
+        let alreadyScheduledThatDay = dailyPlannedCount(
             protocolId: protocolId,
             day: dayStart,
             excluding: excludingAllocationId,
             in: candidateAllocations
-        ) >= 1 {
-            return .blocked(message: "Protocol already planned for this day.")
-        }
-
-        if descriptor.mode == .daily {
-            if context == .manual {
-                let tomorrowStart = DateRules.addingDays(1, to: todayStart, calendar: calendar)
-                if dayStart != todayStart && dayStart != tomorrowStart {
-                    return .blocked(message: "Daily protocols can only be planned for today or tomorrow.")
-                }
-            }
-        }
+        ) >= 1
 
         let snapshot = slotSnapshot(day: dayStart, slot: slot, excluding: excludingAllocationId, in: candidateAllocations)
-        if snapshot.freeMinutes < requiredMinutes {
-            return .blocked(message: "Insufficient free minutes in this slot.")
+        let placementPolicy = policy.canPlaceAllocation(
+            nn: nonNegotiable,
+            day: dayStart,
+            requiredMinutes: requiredMinutes,
+            availableMinutes: snapshot.freeMinutes,
+            at: lastReferenceDate,
+            alreadyScheduledThatDay: alreadyScheduledThatDay,
+            context: context.policyContext
+        )
+        if placementPolicy.allowed == false {
+            let reason = placementPolicy.reason ?? .generic(message: "Placement blocked.")
+            return .blocked(message: reason.copy().message, reason: reason)
         }
 
         if shouldApplyRecoveryStrictness(for: descriptor),
            plannedCount(on: dayStart, excluding: excludingAllocationId, in: candidateAllocations) >= 2 {
-            return .blocked(message: "Recovery capacity reached for this day.")
+            let reason = PolicyReason.generic(message: "Recovery capacity reached for this day.")
+            return .blocked(message: reason.copy().message, reason: reason)
         }
 
         return .allowed
@@ -1140,12 +1213,14 @@ private extension PlanStore {
         }
     }
 
-    func setWarning(_ message: String) {
+    func setWarning(_ message: String, reason: PolicyReason? = nil) {
         warningMessage = message
+        warningReason = reason
         Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 2_200_000_000)
             if self?.warningMessage == message {
                 self?.warningMessage = nil
+                self?.warningReason = nil
             }
         }
     }

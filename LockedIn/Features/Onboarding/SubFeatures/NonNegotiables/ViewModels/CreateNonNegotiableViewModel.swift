@@ -237,6 +237,15 @@ final class CreateNonNegotiableViewModel: ObservableObject {
     }
 
     private func map(error: Error) -> SubmissionError {
+        if let storeError = error as? CommitmentStoreError {
+            switch storeError {
+            case .policyDenied(let reason):
+                return .unknown(reason.copy().message)
+            case .domain(let wrapped):
+                return map(error: wrapped)
+            }
+        }
+
         if let systemError = error as? CommitmentSystemError {
             switch systemError {
             case .capacityExceeded:

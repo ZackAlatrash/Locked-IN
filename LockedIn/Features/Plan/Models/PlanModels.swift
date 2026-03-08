@@ -98,6 +98,58 @@ struct PlanAllocation: Codable, Equatable, Identifiable {
     let durationMinutes: Int?
     let createdAt: Date
     var updatedAt: Date
+    var status: PlanAllocationStatus
+
+    init(
+        id: UUID,
+        protocolId: UUID,
+        weekId: WeekID,
+        day: Date,
+        slot: PlanSlot,
+        startTime: Date?,
+        durationMinutes: Int?,
+        createdAt: Date,
+        updatedAt: Date,
+        status: PlanAllocationStatus = .active
+    ) {
+        self.id = id
+        self.protocolId = protocolId
+        self.weekId = weekId
+        self.day = day
+        self.slot = slot
+        self.startTime = startTime
+        self.durationMinutes = durationMinutes
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.status = status
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case protocolId
+        case weekId
+        case day
+        case slot
+        case startTime
+        case durationMinutes
+        case createdAt
+        case updatedAt
+        case status
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        protocolId = try container.decode(UUID.self, forKey: .protocolId)
+        weekId = try container.decode(WeekID.self, forKey: .weekId)
+        day = try container.decode(Date.self, forKey: .day)
+        slot = try container.decode(PlanSlot.self, forKey: .slot)
+        startTime = try container.decodeIfPresent(Date.self, forKey: .startTime)
+        durationMinutes = try container.decodeIfPresent(Int.self, forKey: .durationMinutes)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        status = try container.decodeIfPresent(PlanAllocationStatus.self, forKey: .status) ?? .active
+    }
 }
 
 struct PlanQueueItem: Identifiable {
@@ -121,6 +173,17 @@ struct PlanAllocationDisplay: Identifiable {
     let icon: String
     let durationLabel: String
     let durationMinutes: Int
+    let status: PlanAllocationStatus
+}
+
+enum PlanAllocationStatus: String, Codable, Equatable {
+    case active
+    case paused
+    case skippedDueToRecovery
+
+    var isInteractive: Bool {
+        self == .active
+    }
 }
 
 struct PlanSlotModel: Identifiable {
@@ -163,7 +226,7 @@ struct PlanTodaySummary {
 
 enum PlanPlacementValidation: Equatable {
     case allowed
-    case blocked(message: String)
+    case blocked(message: String, reason: PolicyReason?)
 
     var isAllowed: Bool {
         if case .allowed = self { return true }
@@ -174,8 +237,17 @@ enum PlanPlacementValidation: Equatable {
         switch self {
         case .allowed:
             return nil
-        case .blocked(let message):
+        case .blocked(let message, _):
             return message
+        }
+    }
+
+    var reason: PolicyReason? {
+        switch self {
+        case .allowed:
+            return nil
+        case .blocked(_, let reason):
+            return reason
         }
     }
 }

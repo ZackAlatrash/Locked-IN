@@ -38,16 +38,21 @@ struct LockedInAppRoot: View {
         let repository = JSONFileCommitmentSystemRepository()
         let nonNegotiableEngine = NonNegotiableEngine()
         let systemEngine = CommitmentSystemEngine(nonNegotiableEngine: nonNegotiableEngine)
+        let policyEngine = CommitmentPolicyEngine()
 
         _commitmentSystemStore = StateObject(
             wrappedValue: CommitmentSystemStore(
                 repository: repository,
                 systemEngine: systemEngine,
-                nonNegotiableEngine: nonNegotiableEngine
+                nonNegotiableEngine: nonNegotiableEngine,
+                policy: policyEngine
             )
         )
         _planStore = StateObject(
-            wrappedValue: PlanStore(repository: JSONFilePlanAllocationRepository())
+            wrappedValue: PlanStore(
+                repository: JSONFilePlanAllocationRepository(),
+                policy: policyEngine
+            )
         )
     }
 
@@ -94,6 +99,9 @@ struct LockedInAppRoot: View {
             if newPhase == .active {
                 commitmentSystemStore.runDailyIntegrityTick(referenceDate: appClock.now)
             }
+        }
+        .onChange(of: appClock.simulatedNow) { _ in
+            commitmentSystemStore.runDailyIntegrityTick(referenceDate: appClock.now)
         }
     }
 

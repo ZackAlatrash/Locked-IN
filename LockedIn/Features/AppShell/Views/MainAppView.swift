@@ -51,13 +51,29 @@ struct MainAppView: View {
     @AppStorage(DailyCheckInPolicy.Keys.deferredUntilTimestamp) private var dailyCheckInDeferredUntilTimestamp: Double = 0
     @AppStorage(DailyCheckInPolicy.Keys.hour) private var dailyCheckInHour = 18
     @AppStorage(DailyCheckInPolicy.Keys.minute) private var dailyCheckInMinute = 0
+    @State private var wasRecoveryActive = false
 
     private var appAppearanceMode: AppAppearanceMode {
         get { AppAppearanceMode(rawValue: appAppearanceModeRaw) ?? .dark }
         set { appAppearanceModeRaw = newValue.rawValue }
     }
 
+    private var isRecoveryThemeActive: Bool {
+        store.isSystemStable == false
+    }
+
+    private var appAccentColor: Color {
+        if isRecoveryThemeActive {
+            return appAppearanceMode == .dark ? Color(hex: "#EF4444") : Color(hex: "#B91C1C")
+        }
+        return appAppearanceMode.primaryAccentColor
+    }
+
     var body: some View {
+        let isRecoveryPopupPresented = router.presentRecoveryEntry
+        let isDailyCheckInPresented = router.presentDailyCheckIn && isRecoveryPopupPresented == false
+        let isBlockingPopupPresented = isRecoveryPopupPresented || isDailyCheckInPresented
+
         ZStack {
             TabView(selection: $router.selectedTab) {
                 NavigationStack {
@@ -90,13 +106,22 @@ struct MainAppView: View {
                 }
                 .tag(MainTab.logs)
             }
-            .blur(radius: router.presentDailyCheckIn ? 9 : 0)
-            .scaleEffect(router.presentDailyCheckIn ? 0.985 : 1)
-            .allowsHitTesting(router.presentDailyCheckIn == false)
-            .accessibilityHidden(router.presentDailyCheckIn)
+            .blur(radius: isBlockingPopupPresented ? 9 : 0)
+            .scaleEffect(isBlockingPopupPresented ? 0.985 : 1)
+            .allowsHitTesting(isBlockingPopupPresented == false)
+            .accessibilityHidden(isBlockingPopupPresented)
 
-            if router.presentDailyCheckIn {
-                popupOverlay
+            if isRecoveryPopupPresented {
+                recoveryPopupOverlay
+                    .transition(
+                        .asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.94)),
+                            removal: .opacity.combined(with: .scale(scale: 0.97))
+                        )
+                    )
+                    .zIndex(2)
+            } else if isDailyCheckInPresented {
+                dailyCheckInPopupOverlay
                     .transition(
                         .asymmetric(
                             insertion: .opacity.combined(with: .scale(scale: 0.94)),
@@ -107,38 +132,56 @@ struct MainAppView: View {
             }
         }
         .environmentObject(router)
-        .tint(appAppearanceMode.primaryAccentColor)
+        .tint(appAccentColor)
         .preferredColorScheme(appAppearanceMode.colorScheme)
         .animation(reduceMotion ? .none : Theme.Animation.context, value: appAppearanceModeRaw)
         .animation(
             reduceMotion ? .none : .spring(response: 0.42, dampingFraction: 0.86, blendDuration: 0.08),
-            value: router.presentDailyCheckIn
+            value: isBlockingPopupPresented
         )
         .onAppear {
+            wasRecoveryActive = store.system.nonNegotiables.contains(where: { $0.state == .recovery })
+            evaluateRecoveryEntryPresentation(now: appClock.now)
             evaluateDailyCheckInAutoPresentation(now: appClock.now)
         }
         .onChange(of: scenePhase) { phase in
             if phase == .active {
+                evaluateRecoveryEntryPresentation(now: appClock.now)
                 evaluateDailyCheckInAutoPresentation(now: appClock.now)
             }
         }
         .onChange(of: router.selectedTab) { _ in
             Haptics.selection()
+            evaluateRecoveryEntryPresentation(now: appClock.now)
             evaluateDailyCheckInAutoPresentation(now: appClock.now)
         }
-        .onReceive(appClock.objectWillChange) { _ in
+        .onChange(of: appClock.simulatedNow) { _ in
+            evaluateRecoveryEntryPresentation(now: appClock.now)
             evaluateDailyCheckInAutoPresentation(now: appClock.now)
         }
         .onChange(of: devRuntime.forceShowDailyCheckInToken) { token in
             guard token != nil else { return }
-            router.requestDailyCheckInPresentation()
+            if router.presentRecoveryEntry == false {
+                router.requestDailyCheckInPresentation()
+            }
             devRuntime.consumeDailyCheckInPresentationRequest()
+        }
+        .onChange(of: store.system) { system in
+            let isRecoveryActive = system.nonNegotiables.contains(where: { $0.state == .recovery })
+            if wasRecoveryActive && isRecoveryActive == false {
+                planStore.finalizeRecoveryAllocationStatuses(referenceDate: appClock.now)
+            }
+            wasRecoveryActive = isRecoveryActive
+            evaluateRecoveryEntryPresentation(now: appClock.now)
+            if isRecoveryActive {
+                router.dismissDailyCheckIn()
+            }
         }
     }
 }
 
 private extension MainAppView {
-    var popupOverlay: some View {
+    var dailyCheckInPopupOverlay: some View {
         ZStack {
             Rectangle()
                 .fill(Color.black.opacity(0.2))
@@ -174,7 +217,58 @@ private extension MainAppView {
         }
     }
 
+    var recoveryPopupOverlay: some View {
+        ZStack {
+            Rectangle()
+                .fill(Color.black.opacity(0.24))
+                .ignoresSafeArea()
+
+            RecoveryModePopup(
+                commitmentStore: store,
+                planStore: planStore,
+                referenceDateProvider: { appClock.now }
+            ) {
+                router.dismissRecoveryEntry()
+                evaluateDailyCheckInAutoPresentation(now: appClock.now)
+            }
+            .frame(maxWidth: 640)
+            .frame(maxHeight: 760)
+            .background(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(.ultraThinMaterial)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(
+                        appAppearanceMode == .dark
+                            ? Color(hex: "#F87171").opacity(0.36)
+                            : Color(hex: "#B91C1C").opacity(0.26),
+                        lineWidth: 1
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.34), radius: 28, x: 0, y: 12)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 22)
+        }
+    }
+
+    func evaluateRecoveryEntryPresentation(now: Date = Date()) {
+        if store.recoveryEntryContext(referenceDate: now) != nil {
+            router.requestRecoveryEntryPresentation()
+            router.dismissDailyCheckIn()
+        } else {
+            if store.system.nonNegotiables.contains(where: { $0.state == .recovery }) == false {
+                planStore.finalizeRecoveryAllocationStatuses(referenceDate: now)
+            }
+            router.dismissRecoveryEntry()
+        }
+    }
+
     func evaluateDailyCheckInAutoPresentation(now: Date = Date()) {
+        if router.presentRecoveryEntry || store.recoveryEntryContext(referenceDate: now) != nil {
+            return
+        }
+
         if router.presentDailyCheckIn {
             return
         }

@@ -171,9 +171,9 @@ private extension CockpitLogsScreen {
                                 .padding(.top, 3)
                         }
                         .overlay(alignment: .topTrailing) {
-                            if point.completionCount > 0 && point.extraCount > 0 {
+                            if let indicatorColor = cornerIndicatorColor(for: point) {
                                 Circle()
-                                    .fill(isDarkMode ? Color(hex: "FDE047") : Color(hex: "A16207"))
+                                    .fill(indicatorColor)
                                     .frame(width: 6, height: 6)
                                     .padding(.trailing, 4)
                                     .padding(.top, 4)
@@ -184,9 +184,39 @@ private extension CockpitLogsScreen {
                         .aspectRatio(1, contentMode: .fit)
                 }
             }
+
+            matrixLegend
         }
         .padding(16)
         .background(glassCard(cornerRadius: 26))
+    }
+
+    var matrixLegend: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                legendItem(label: "Soft Red", description: "Unproductive day", color: matrixUnproductiveFill)
+                legendItem(label: "Strong Red", description: "Violation / Inevitable miss", color: matrixViolationFill)
+            }
+            HStack(spacing: 10) {
+                legendItem(label: "Blue", description: "Counted or no work required", color: matrixHighFill)
+                legendItem(label: "Yellow", description: "Extra only", color: isDarkMode ? Color(hex: "FDE047") : Color(hex: "FDE68A"))
+            }
+        }
+        .padding(.top, 6)
+    }
+
+    func legendItem(label: String, description: String, color: Color) -> some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(color)
+                .frame(width: 6, height: 6)
+            Text(label)
+                .font(.custom("Inter", size: 9).weight(.bold))
+                .foregroundColor(textMuted)
+            Text("= \(description)")
+                .font(.custom("Inter", size: 9).weight(.medium))
+                .foregroundColor(textSubtle)
+        }
     }
 
     var performanceCards: some View {
@@ -464,8 +494,14 @@ private extension CockpitLogsScreen {
     }
 
     var isDarkMode: Bool { colorScheme == .dark }
+    var isRecoveryThemeActive: Bool { store.isSystemStable == false }
 
-    var activeAccent: Color { isDarkMode ? cyanAccent : Color(hex: "2563EB") }
+    var activeAccent: Color {
+        if isRecoveryThemeActive {
+            return isDarkMode ? Color(hex: "F87171") : Color(hex: "B91C1C")
+        }
+        return isDarkMode ? cyanAccent : Color(hex: "2563EB")
+    }
     var cyanAccent: Color { Color(hex: "00F2FF") }
     var magentaAccent: Color { Color(hex: "FF00E5") }
 
@@ -474,45 +510,90 @@ private extension CockpitLogsScreen {
     @ViewBuilder
     var pageBackground: some View {
         if isDarkMode {
-            LinearGradient(
-                colors: [Color(hex: "1A243D"), Color(hex: "020617")],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            if isRecoveryThemeActive {
+                ZStack {
+                    LinearGradient(
+                        colors: [Color(hex: "15080A"), Color(hex: "020203")],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    RadialGradient(
+                        colors: [Color(hex: "DC2626").opacity(0.32), .clear],
+                        center: UnitPoint(x: 0.5, y: -0.08),
+                        startRadius: 0,
+                        endRadius: 420
+                    )
+                    RadialGradient(
+                        colors: [Color(hex: "7F1D1D").opacity(0.28), .clear],
+                        center: .topLeading,
+                        startRadius: 0,
+                        endRadius: 380
+                    )
+                }
+                .ignoresSafeArea()
+            } else {
+                LinearGradient(
+                    colors: [Color(hex: "1A243D"), Color(hex: "020617")],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+            }
         } else {
             ZStack {
-                Color(hex: "F8F9FB")
+                if isRecoveryThemeActive {
+                    Color(hex: "FCF4F4")
+                    RadialGradient(
+                        colors: [Color(hex: "FCA5A5").opacity(0.44), .clear],
+                        center: UnitPoint(x: 0.5, y: -0.08),
+                        startRadius: 0,
+                        endRadius: 420
+                    )
+                    RadialGradient(
+                        colors: [Color(hex: "FECACA").opacity(0.42), .clear],
+                        center: .topLeading,
+                        startRadius: 0,
+                        endRadius: 420
+                    )
+                    RadialGradient(
+                        colors: [Color(hex: "FCA5A5").opacity(0.3), .clear],
+                        center: .topTrailing,
+                        startRadius: 0,
+                        endRadius: 440
+                    )
+                } else {
+                    Color(hex: "F8F9FB")
 
-                RadialGradient(
-                    colors: [
-                        Color(red: 1.0, green: 245.0 / 255.0, blue: 210.0 / 255.0).opacity(0.6),
-                        .clear
-                    ],
-                    center: UnitPoint(x: 0.5, y: -0.1),
-                    startRadius: 0,
-                    endRadius: 380
-                )
+                    RadialGradient(
+                        colors: [
+                            Color(red: 1.0, green: 245.0 / 255.0, blue: 210.0 / 255.0).opacity(0.6),
+                            .clear
+                        ],
+                        center: UnitPoint(x: 0.5, y: -0.1),
+                        startRadius: 0,
+                        endRadius: 380
+                    )
 
-                RadialGradient(
-                    colors: [
-                        Color(red: 220.0 / 255.0, green: 225.0 / 255.0, blue: 1.0).opacity(0.5),
-                        .clear
-                    ],
-                    center: .topLeading,
-                    startRadius: 0,
-                    endRadius: 450
-                )
+                    RadialGradient(
+                        colors: [
+                            Color(red: 220.0 / 255.0, green: 225.0 / 255.0, blue: 1.0).opacity(0.5),
+                            .clear
+                        ],
+                        center: .topLeading,
+                        startRadius: 0,
+                        endRadius: 450
+                    )
 
-                RadialGradient(
-                    colors: [
-                        Color(red: 230.0 / 255.0, green: 220.0 / 255.0, blue: 1.0).opacity(0.5),
-                        .clear
-                    ],
-                    center: .topTrailing,
-                    startRadius: 0,
-                    endRadius: 450
-                )
+                    RadialGradient(
+                        colors: [
+                            Color(red: 230.0 / 255.0, green: 220.0 / 255.0, blue: 1.0).opacity(0.5),
+                            .clear
+                        ],
+                        center: .topTrailing,
+                        startRadius: 0,
+                        endRadius: 450
+                    )
+                }
             }
             .ignoresSafeArea()
         }
@@ -520,13 +601,24 @@ private extension CockpitLogsScreen {
 
     func glassCard(cornerRadius: CGFloat, muted: Bool = false) -> some View {
         let fill: Color = {
+            if isRecoveryThemeActive {
+                if isDarkMode {
+                    return Color(hex: "1B0A0D").opacity(muted ? 0.38 : 0.56)
+                }
+                return Color.white.opacity(muted ? 0.68 : 0.84)
+            }
             if isDarkMode {
                 return Color(hex: "0F172A").opacity(muted ? 0.3 : 0.42)
             }
             return Color.white.opacity(muted ? 0.58 : 0.72)
         }()
 
-        let stroke: Color = isDarkMode ? Color.white.opacity(0.1) : Color(hex: "B9C7D7").opacity(0.72)
+        let stroke: Color = {
+            if isRecoveryThemeActive {
+                return isDarkMode ? Color(hex: "F87171").opacity(0.32) : Color(hex: "FCA5A5").opacity(0.72)
+            }
+            return isDarkMode ? Color.white.opacity(0.1) : Color(hex: "B9C7D7").opacity(0.72)
+        }()
 
         return RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
             .fill(fill)
@@ -543,22 +635,34 @@ private extension CockpitLogsScreen {
     var weekdayHeaders: [String] { ["M", "T", "W", "T", "F", "S", "S"] }
 
     var adherencePillBackground: Color {
+        if isRecoveryThemeActive {
+            return isDarkMode ? Color(hex: "EF4444").opacity(0.16) : Color(hex: "FEE2E2")
+        }
         if isDarkMode { return cyanAccent.opacity(0.12) }
         return Color(hex: "D9F99D")
     }
 
     var adherencePillStroke: Color {
+        if isRecoveryThemeActive {
+            return isDarkMode ? Color(hex: "F87171").opacity(0.35) : Color(hex: "FCA5A5")
+        }
         if isDarkMode { return cyanAccent.opacity(0.35) }
         return Color(hex: "B7E269")
     }
 
     var adherenceTextColor: Color {
+        if isRecoveryThemeActive {
+            return isDarkMode ? Color(hex: "FCA5A5") : Color(hex: "B91C1C")
+        }
         if isDarkMode { return cyanAccent }
         return Color(hex: "1F2937")
     }
 
     var metricPillBackground: Color {
-        isDarkMode ? Color.white.opacity(0.05) : Color.black.opacity(0.04)
+        if isRecoveryThemeActive {
+            return isDarkMode ? Color(hex: "2A1116").opacity(0.5) : Color(hex: "FEE2E2").opacity(0.72)
+        }
+        return isDarkMode ? Color.white.opacity(0.05) : Color.black.opacity(0.04)
     }
 
     var matrixIdleFill: Color {
@@ -577,13 +681,23 @@ private extension CockpitLogsScreen {
         isDarkMode ? Color(hex: "EF4444").opacity(0.36) : Color(hex: "FCA5A5")
     }
 
+    var matrixUnproductiveFill: Color {
+        isDarkMode ? Color(hex: "DC2626").opacity(0.22) : Color(hex: "FECACA")
+    }
+
     var todayOutlineColor: Color {
-        isDarkMode ? cyanAccent : Color(hex: "60A5FA")
+        if isRecoveryThemeActive {
+            return isDarkMode ? Color(hex: "F87171") : Color(hex: "B91C1C")
+        }
+        return isDarkMode ? cyanAccent : Color(hex: "60A5FA")
     }
 
     func matrixFill(for point: MatrixDay) -> Color {
-        if point.violationCount > 0 {
+        if point.isStrongRed {
             return matrixViolationFill
+        }
+        if point.unproductive {
+            return matrixUnproductiveFill
         }
 
         if point.completionCount == 0 && point.extraCount > 0 {
@@ -594,7 +708,7 @@ private extension CockpitLogsScreen {
             return matrixMediumFill
         }
 
-        if point.completionCount > 0 {
+        if point.isBlueDay {
             return matrixHighFill
         }
 
@@ -602,8 +716,11 @@ private extension CockpitLogsScreen {
     }
 
     func matrixStroke(for point: MatrixDay) -> Color {
-        if point.violationCount > 0 {
+        if point.isStrongRed {
             return Color(hex: "EF4444").opacity(isDarkMode ? 0.9 : 0.7)
+        }
+        if point.unproductive {
+            return isDarkMode ? Color(hex: "FCA5A5").opacity(0.72) : Color(hex: "DC2626").opacity(0.52)
         }
         if point.completionCount == 0 && point.extraCount > 0 {
             return isDarkMode ? Color(hex: "FDE047").opacity(0.98) : Color(hex: "CA8A04").opacity(0.9)
@@ -611,7 +728,7 @@ private extension CockpitLogsScreen {
         if point.completionCount >= 2 {
             return isDarkMode ? Color(hex: "67E8F9") : Color(hex: "0EA5E9").opacity(0.9)
         }
-        if point.completionCount > 0 {
+        if point.isBlueDay {
             return isDarkMode ? Color(hex: "22D3EE").opacity(0.98) : Color(hex: "0284C7").opacity(0.9)
         }
         return isDarkMode ? Color.white.opacity(0.08) : Color(hex: "60A5FA").opacity(0.16)
@@ -619,14 +736,15 @@ private extension CockpitLogsScreen {
 
     func matrixGlow(for point: MatrixDay) -> Color {
         guard isDarkMode else { return .clear }
-        if point.violationCount > 0 { return .clear }
+        if point.isStrongRed { return .clear }
+        if point.unproductive { return Color(hex: "FCA5A5").opacity(0.22) }
         if point.completionCount == 0 && point.extraCount > 0 {
             return Color(hex: "FDE047").opacity(0.72)
         }
         if point.completionCount >= 2 {
             return Color(hex: "67E8F9").opacity(0.8)
         }
-        if point.completionCount > 0 {
+        if point.isBlueDay {
             return Color(hex: "22D3EE").opacity(0.65)
         }
         return .clear
@@ -640,20 +758,40 @@ private extension CockpitLogsScreen {
         if point.isToday {
             return isDarkMode ? Color.white : Color(hex: "0F172A")
         }
-        if point.violationCount > 0 {
+        if point.isStrongRed {
             return isDarkMode ? Color.red.opacity(0.88) : Color(hex: "B91C1C")
+        }
+        if point.unproductive {
+            return isDarkMode ? Color(hex: "FCA5A5") : Color(hex: "991B1B")
         }
         return isDarkMode ? Color.white.opacity(0.72) : Color(hex: "334155")
     }
 
+    func cornerIndicatorColor(for point: MatrixDay) -> Color? {
+        if point.isStrongRed {
+            if point.completionCount > 0 {
+                return isDarkMode ? cyanAccent : Color(hex: "1D4ED8")
+            }
+            if point.extraCount > 0 {
+                return isDarkMode ? Color(hex: "FDE047") : Color(hex: "A16207")
+            }
+            return nil
+        }
+
+        if point.completionCount > 0 && point.extraCount > 0 {
+            return isDarkMode ? Color(hex: "FDE047") : Color(hex: "A16207")
+        }
+        return nil
+    }
+
     var adherence: Int {
         guard !matrixDays.isEmpty else { return 0 }
-        let completedDays = matrixDays.filter { $0.completionCount > 0 }.count
+        let completedDays = matrixDays.filter { $0.isBlueDay }.count
         return Int((Double(completedDays) / Double(matrixDays.count) * 100).rounded())
     }
 
     var deepFocusHours: Double {
-        let weeklyCompletions = store.countedCompletionLog.filter {
+        let weeklyCompletions = visibleCountedCompletions.filter {
             DateRules.weekID(for: $0.date) == DateRules.weekID(for: appClock.now)
         }.count
         let estimate = max(2.6, 2.0 + (Double(weeklyCompletions) * 0.45))
@@ -686,35 +824,22 @@ private extension CockpitLogsScreen {
     }
 
     var matrixDays: [MatrixDay] {
-        let calendar = DateRules.isoCalendar
-        let today = DateRules.startOfDay(appClock.now, calendar: calendar)
-        let completionByDay = Dictionary(grouping: store.countedCompletionLog) {
-            DateRules.startOfDay($0.date, calendar: calendar)
-        }
-        let extraByDay = Dictionary(grouping: store.extraCompletionLog) {
-            DateRules.startOfDay($0.date, calendar: calendar)
-        }
-        let violationByDay = Dictionary(grouping: store.violationLog) {
-            DateRules.startOfDay($0.date, calendar: calendar)
-        }
-
-        return (0..<28).compactMap { offset in
-            guard let day = calendar.date(byAdding: .day, value: offset - 27, to: today) else { return nil }
-            let completions = completionByDay[day]?.count ?? 0
-            let extras = extraByDay[day]?.count ?? 0
-            let violations = violationByDay[day]?.count ?? 0
-            return MatrixDay(
-                day: day,
-                completionCount: completions,
-                extraCount: extras,
-                violationCount: violations,
-                isToday: day == today
+        store.logsCalendarSignals(lastDays: 28, referenceDate: appClock.now).map { signal in
+            MatrixDay(
+                day: signal.day,
+                completionCount: signal.completionCount,
+                extraCount: signal.extraCount,
+                violationCount: signal.violationCount,
+                unproductive: signal.unproductive,
+                noWorkRequiredSatisfied: signal.noWorkRequiredSatisfied,
+                inevitableWeeklyMiss: signal.inevitableWeeklyMiss,
+                isToday: signal.isToday
             )
         }
     }
 
     var recentEntries: [LogEntry] {
-        let completionEntries = store.completionLog.map { completion in
+        let completionEntries = visibleCompletions.map { completion in
             let goal = 68 + (abs(Int(completion.date.timeIntervalSince1970 / 60)) % 31)
             let isExtra = completion.kind == .extra
             return LogEntry(
@@ -744,7 +869,7 @@ private extension CockpitLogsScreen {
             )
         }
 
-        let violationEntries = store.violationLog.map { violation in
+        let violationEntries = visibleViolations.map { violation in
             LogEntry(
                 type: .violation,
                 date: violation.date,
@@ -766,6 +891,24 @@ private extension CockpitLogsScreen {
 
         return (completionEntries + violationEntries)
             .sorted { $0.date > $1.date }
+    }
+
+    // Keep Logs aligned with "today" by hiding future-dated records.
+    // Future records can exist in debug sessions when simulated time was advanced.
+    var visibleCompletions: [CompletionRecord] {
+        store.completionLog.filter { $0.date <= appClock.now }
+    }
+
+    var visibleCountedCompletions: [CompletionRecord] {
+        visibleCompletions.filter { $0.kind == .counted }
+    }
+
+    var visibleExtraCompletions: [CompletionRecord] {
+        visibleCompletions.filter { $0.kind == .extra }
+    }
+
+    var visibleViolations: [Violation] {
+        store.violationLog.filter { $0.date <= appClock.now }
     }
 
     func completionIcon(for completion: CompletionRecord) -> String {
@@ -823,9 +966,14 @@ private struct MatrixDay: Identifiable {
     let completionCount: Int
     let extraCount: Int
     let violationCount: Int
+    let unproductive: Bool
+    let noWorkRequiredSatisfied: Bool
+    let inevitableWeeklyMiss: Bool
     let isToday: Bool
 
     var id: Date { day }
+    var isStrongRed: Bool { violationCount > 0 || inevitableWeeklyMiss }
+    var isBlueDay: Bool { completionCount > 0 || noWorkRequiredSatisfied }
 }
 
 private struct LogEntry: Identifiable {

@@ -120,6 +120,128 @@ func runNonNegotiableEngineSimulation() {
         )
         print("Current streak days with extra-only day: \(streak) (expected 0)")
 
+        // Recovery trigger formalization checks.
+        let dailyRecoveryDefinition = NonNegotiableDefinition(
+            title: "Daily Recovery",
+            frequencyPerWeek: 7,
+            mode: .daily,
+            goalId: UUID()
+        )
+        var dailyRecoveryNN = try engine.create(
+            definition: dailyRecoveryDefinition,
+            startDate: mondayStart,
+            totalLockDays: 28
+        )
+        engine.evaluateDailyComplianceIfNeeded(
+            &dailyRecoveryNN,
+            at: DateRules.date(year: 2026, month: 1, day: 8, hour: 8, calendar: calendar)
+        )
+        print("Daily recovery state: \(dailyRecoveryNN.state.rawValue) (expected recovery at 3)")
+
+        let sessionRecoveryDefinition = NonNegotiableDefinition(
+            title: "Session Recovery",
+            frequencyPerWeek: 3,
+            mode: .session,
+            goalId: UUID()
+        )
+        var sessionRecoveryNN = try engine.create(
+            definition: sessionRecoveryDefinition,
+            startDate: mondayStart,
+            totalLockDays: 28
+        )
+        engine.evaluateWeekIfNeeded(
+            &sessionRecoveryNN,
+            weekEnding: DateRules.date(year: 2026, month: 1, day: 11, hour: 23, minute: 59, calendar: calendar)
+        )
+        engine.evaluateWeekIfNeeded(
+            &sessionRecoveryNN,
+            weekEnding: DateRules.date(year: 2026, month: 1, day: 18, hour: 23, minute: 59, calendar: calendar)
+        )
+        print("Session recovery state: \(sessionRecoveryNN.state.rawValue) (expected recovery at 2)")
+
+        let sessionBelowThresholdDefinition = NonNegotiableDefinition(
+            title: "Session Below Threshold",
+            frequencyPerWeek: 3,
+            mode: .session,
+            goalId: UUID()
+        )
+        var sessionBelowThresholdNN = try engine.create(
+            definition: sessionBelowThresholdDefinition,
+            startDate: mondayStart,
+            totalLockDays: 28
+        )
+        engine.evaluateWeekIfNeeded(
+            &sessionBelowThresholdNN,
+            weekEnding: DateRules.date(year: 2026, month: 1, day: 11, hour: 23, minute: 59, calendar: calendar)
+        )
+        print("Session below threshold state: \(sessionBelowThresholdNN.state.rawValue) (expected active at 1)")
+
+        // Old-window isolation: one violation in window 0 and one in window 1 should not trigger recovery.
+        let oldWindowDefinition = NonNegotiableDefinition(
+            title: "Old Window Isolation",
+            frequencyPerWeek: 1,
+            mode: .session,
+            goalId: UUID()
+        )
+        var oldWindowNN = try engine.create(
+            definition: oldWindowDefinition,
+            startDate: mondayStart,
+            totalLockDays: 28
+        )
+        // Week 1 miss -> violation in first window.
+        engine.evaluateWeekIfNeeded(
+            &oldWindowNN,
+            weekEnding: DateRules.date(year: 2026, month: 1, day: 11, hour: 23, minute: 59, calendar: calendar)
+        )
+        // Week 2 satisfied to avoid second violation in first window.
+        _ = try engine.recordCompletion(
+            &oldWindowNN,
+            at: DateRules.date(year: 2026, month: 1, day: 12, hour: 9, calendar: calendar)
+        )
+        engine.evaluateWeekIfNeeded(
+            &oldWindowNN,
+            weekEnding: DateRules.date(year: 2026, month: 1, day: 18, hour: 23, minute: 59, calendar: calendar)
+        )
+        // Week 3 miss -> violation in second window.
+        engine.evaluateWeekIfNeeded(
+            &oldWindowNN,
+            weekEnding: DateRules.date(year: 2026, month: 1, day: 25, hour: 23, minute: 59, calendar: calendar)
+        )
+        print("Old-window-only violations recovery: \(oldWindowNN.state == .recovery) (expected false)")
+
+        let recoveryStateBefore = sessionRecoveryNN.state
+        let recoveryViolationCountBefore = sessionRecoveryNN.violations.count
+        engine.evaluateWeekIfNeeded(
+            &sessionRecoveryNN,
+            weekEnding: DateRules.date(year: 2026, month: 1, day: 18, hour: 23, minute: 59, calendar: calendar)
+        )
+        let recoveryStateAfter = sessionRecoveryNN.state
+        let recoveryViolationCountAfter = sessionRecoveryNN.violations.count
+        let idempotentRecovery = recoveryStateBefore == .recovery
+            && recoveryStateAfter == .recovery
+            && recoveryViolationCountBefore == recoveryViolationCountAfter
+        print("Idempotent recovery transition: \(idempotentRecovery) (expected true)")
+
+        // Recovery should not be overwritten to completed at lock end.
+        var lockEndRecoveryNN = try engine.create(
+            definition: sessionRecoveryDefinition,
+            startDate: mondayStart,
+            totalLockDays: 14
+        )
+        engine.evaluateWeekIfNeeded(
+            &lockEndRecoveryNN,
+            weekEnding: DateRules.date(year: 2026, month: 1, day: 11, hour: 23, minute: 59, calendar: calendar)
+        )
+        engine.evaluateWeekIfNeeded(
+            &lockEndRecoveryNN,
+            weekEnding: DateRules.date(year: 2026, month: 1, day: 18, hour: 23, minute: 59, calendar: calendar)
+        )
+        engine.advanceWindowIfNeeded(
+            &lockEndRecoveryNN,
+            currentDate: DateRules.date(year: 2026, month: 1, day: 19, hour: 0, minute: 0, calendar: calendar)
+        )
+        print("Recovery persists at lock end: \(lockEndRecoveryNN.state == .recovery) (expected true)")
+
         let legacyJSON = """
         {
           "title":"Legacy NN",

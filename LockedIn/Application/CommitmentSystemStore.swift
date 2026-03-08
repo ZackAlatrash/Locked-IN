@@ -1,12 +1,35 @@
 import Foundation
 import Combine
 
+enum CommitmentStoreError: Error {
+    case policyDenied(PolicyReason)
+    case domain(Error)
+}
+
 @MainActor
 final class CommitmentSystemStore: ObservableObject {
+    struct RecoveryEntryContext: Equatable {
+        let triggerProtocolId: UUID?
+        let pausedProtocolId: UUID?
+        let requiresPauseSelection: Bool
+        let candidateProtocolIds: [UUID]
+    }
+
     struct DailyLogGroup: Equatable {
         let day: Date
         let completions: [CompletionRecord]
         let violations: [Violation]
+    }
+
+    struct LogsCalendarDaySignal: Equatable {
+        let day: Date
+        let completionCount: Int
+        let extraCount: Int
+        let violationCount: Int
+        let unproductive: Bool
+        let noWorkRequiredSatisfied: Bool
+        let inevitableWeeklyMiss: Bool
+        let isToday: Bool
     }
 
     @Published private(set) var system: CommitmentSystem
@@ -15,18 +38,21 @@ final class CommitmentSystemStore: ObservableObject {
     private let systemEngine: CommitmentSystemEngine
     private let nonNegotiableEngine: NonNegotiableEngine
     private let streakEngine: StreakEngine
+    private let policy: CommitmentPolicyEngine
     private let calendar: Calendar
 
     init(
         repository: CommitmentSystemRepository,
         systemEngine: CommitmentSystemEngine,
         nonNegotiableEngine: NonNegotiableEngine,
+        policy: CommitmentPolicyEngine = CommitmentPolicyEngine(),
         streakEngine: StreakEngine = StreakEngine(),
         calendar: Calendar = DateRules.isoCalendar
     ) {
         self.repository = repository
         self.systemEngine = systemEngine
         self.nonNegotiableEngine = nonNegotiableEngine
+        self.policy = policy
         self.streakEngine = streakEngine
         self.calendar = calendar
 
@@ -43,14 +69,23 @@ final class CommitmentSystemStore: ObservableObject {
         definition: NonNegotiableDefinition,
         totalLockDays: Int
     ) throws {
+        let decision = policy.canCreate(definition: definition, in: system, at: Date())
+        guard decision.allowed else {
+            throw CommitmentStoreError.policyDenied(decision.reason ?? .generic(message: "Create action blocked."))
+        }
+
         var updated = system
 
-        let nonNegotiable = try nonNegotiableEngine.create(
-            definition: definition,
-            startDate: Date(),
-            totalLockDays: totalLockDays
-        )
-        try systemEngine.add(nonNegotiable, to: &updated)
+        do {
+            let nonNegotiable = try nonNegotiableEngine.create(
+                definition: definition,
+                startDate: Date(),
+                totalLockDays: totalLockDays
+            )
+            try systemEngine.add(nonNegotiable, to: &updated)
+        } catch {
+            throw CommitmentStoreError.domain(error)
+        }
 
         system = updated
         persistSystem()
@@ -61,8 +96,26 @@ final class CommitmentSystemStore: ObservableObject {
         for id: UUID,
         at date: Date
     ) throws -> CompletionWriteOutcome {
+        guard let target = system.nonNegotiables.first(where: { $0.id == id }) else {
+            throw CommitmentStoreError.domain(CommitmentSystemError.nonNegotiableNotFound)
+        }
+
+        let policyDecision = policy.canRecordCompletion(nn: target, in: system, at: date)
+        guard policyDecision.allowed else {
+            throw CommitmentStoreError.policyDenied(policyDecision.reason ?? .generic(message: "Completion blocked."))
+        }
+
         var updated = system
-        let outcome = try systemEngine.recordCompletion(nnId: id, date: date, in: &updated)
+        let outcome: CompletionWriteOutcome
+        do {
+            outcome = try systemEngine.recordCompletion(nnId: id, date: date, in: &updated)
+        } catch NonNegotiableEngineError.alreadyCompletedToday {
+            throw CommitmentStoreError.policyDenied(.alreadyCompletedToday)
+        } catch NonNegotiableEngineError.extraAlreadyLoggedToday {
+            throw CommitmentStoreError.policyDenied(.extraAlreadyLoggedToday)
+        } catch {
+            throw CommitmentStoreError.domain(error)
+        }
 
         system = updated
         persistSystem()
@@ -73,12 +126,144 @@ final class CommitmentSystemStore: ObservableObject {
         for id: UUID,
         at date: Date
     ) throws {
-        _ = try recordCompletionDetailed(for: id, at: date)
+        do {
+            _ = try recordCompletionDetailed(for: id, at: date)
+        } catch let error as CommitmentStoreError {
+            switch error {
+            case .policyDenied:
+                throw error
+            case .domain(let domainError):
+                throw domainError
+            }
+        }
+    }
+
+    func retireNonNegotiable(id: UUID, referenceDate: Date = Date()) throws {
+        guard let index = system.nonNegotiables.firstIndex(where: { $0.id == id }) else {
+            throw CommitmentStoreError.domain(CommitmentSystemError.nonNegotiableNotFound)
+        }
+
+        let target = system.nonNegotiables[index]
+        let decision = policy.canRetire(nn: target, at: referenceDate)
+        guard decision.allowed else {
+            throw CommitmentStoreError.policyDenied(decision.reason ?? .generic(message: "Retire action blocked."))
+        }
+
+        var updated = system
+        updated.nonNegotiables[index].state = .retired
+        system = updated
+        persistSystem()
     }
 
     func removeNonNegotiable(id: UUID) throws {
+        guard let target = system.nonNegotiables.first(where: { $0.id == id }) else {
+            throw CommitmentStoreError.domain(CommitmentSystemError.nonNegotiableNotFound)
+        }
+
+        let decision = policy.canRemove(nn: target)
+        guard decision.allowed else {
+            throw CommitmentStoreError.policyDenied(decision.reason ?? .generic(message: "Remove action blocked."))
+        }
+
         var updated = system
-        try systemEngine.remove(id, from: &updated)
+        do {
+            try systemEngine.remove(id, from: &updated)
+        } catch {
+            throw CommitmentStoreError.domain(error)
+        }
+
+        system = updated
+        persistSystem()
+    }
+
+    func editNonNegotiable(
+        id: UUID,
+        patch: NonNegotiablePatch,
+        referenceDate: Date = Date()
+    ) throws {
+        guard let index = system.nonNegotiables.firstIndex(where: { $0.id == id }) else {
+            throw CommitmentStoreError.domain(CommitmentSystemError.nonNegotiableNotFound)
+        }
+
+        let current = system.nonNegotiables[index]
+        let decision = policy.canEdit(nn: current, patch: patch, at: referenceDate)
+        guard decision.allowed else {
+            throw CommitmentStoreError.policyDenied(decision.reason ?? .generic(message: "Edit action blocked."))
+        }
+
+        let allowedFields = policy.allowedEditableFields(for: current, at: referenceDate)
+
+        var nextTitle = current.definition.title
+        if let newTitle = patch.newTitle, allowedFields.contains(.title) {
+            let trimmed = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty == false {
+                nextTitle = trimmed
+            }
+        }
+
+        var nextMode = current.definition.mode
+        if let newMode = patch.newMode, allowedFields.contains(.mode) {
+            nextMode = newMode
+        }
+
+        var nextFrequency = current.definition.frequencyPerWeek
+        if let newFrequency = patch.newFrequencyPerWeek, allowedFields.contains(.frequency) {
+            nextFrequency = newFrequency
+        }
+
+        var nextPreferred = current.definition.preferredExecutionSlot
+        if let newPreferred = patch.newPreferredTime, allowedFields.contains(.preferredTime) {
+            nextPreferred = newPreferred
+        }
+
+        var nextDuration = current.definition.estimatedDurationMinutes
+        if let newDuration = patch.newEstimatedDurationMinutes, allowedFields.contains(.estimatedDuration) {
+            nextDuration = newDuration
+        }
+
+        var nextIcon = current.definition.iconSystemName
+        if let newIcon = patch.newIconName, allowedFields.contains(.icon) {
+            nextIcon = newIcon
+        }
+
+        var nextLock = current.lock
+        if let newLockDays = patch.newLockDays, allowedFields.contains(.lockDuration) {
+            nextLock = LockConfiguration(
+                startDate: current.lock.startDate,
+                totalLockDays: newLockDays,
+                windowLengthDays: current.lock.windowLengthDays
+            )
+        }
+
+        let updatedDefinition = NonNegotiableDefinition(
+            title: nextTitle,
+            frequencyPerWeek: nextFrequency,
+            mode: nextMode,
+            goalId: current.definition.goalId,
+            preferredExecutionSlot: nextPreferred,
+            estimatedDurationMinutes: nextDuration,
+            iconSystemName: nextIcon
+        )
+        do {
+            try nonNegotiableEngine.validateDefinition(updatedDefinition, totalLockDays: nextLock.totalLockDays)
+        } catch {
+            throw CommitmentStoreError.domain(error)
+        }
+
+        var updated = system
+
+        updated.nonNegotiables[index] = NonNegotiable(
+            id: current.id,
+            goalId: current.goalId,
+            definition: updatedDefinition,
+            state: current.state,
+            lock: nextLock,
+            createdAt: current.createdAt,
+            windows: current.windows,
+            completions: current.completions,
+            violations: current.violations,
+            lastDailyComplianceCheckedDay: current.lastDailyComplianceCheckedDay
+        )
 
         system = updated
         persistSystem()
@@ -91,95 +276,110 @@ final class CommitmentSystemStore: ObservableObject {
         iconSystemName: String,
         title: String?
     ) throws {
-        guard let index = system.nonNegotiables.firstIndex(where: { $0.id == id }) else {
-            throw CommitmentSystemError.nonNegotiableNotFound
+        do {
+            try editNonNegotiable(
+                id: id,
+                patch: NonNegotiablePatch(
+                    newTitle: title,
+                    newIconName: iconSystemName,
+                    newPreferredTime: preferredSlot,
+                    newEstimatedDurationMinutes: durationMinutes,
+                    newMode: nil,
+                    newFrequencyPerWeek: nil,
+                    newLockDays: nil
+                )
+            )
+        } catch let error as CommitmentStoreError {
+            switch error {
+            case .policyDenied:
+                throw error
+            case .domain(let domainError):
+                throw domainError
+            }
         }
-
-        var updated = system
-        let current = updated.nonNegotiables[index]
-        let trimmedTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let nextTitle = (trimmedTitle?.isEmpty == false ? trimmedTitle : current.definition.title) ?? current.definition.title
-
-        let updatedDefinition = NonNegotiableDefinition(
-            title: nextTitle,
-            frequencyPerWeek: current.definition.frequencyPerWeek,
-            mode: current.definition.mode,
-            goalId: current.definition.goalId,
-            preferredExecutionSlot: preferredSlot,
-            estimatedDurationMinutes: durationMinutes,
-            iconSystemName: iconSystemName
-        )
-        try nonNegotiableEngine.validateDefinition(updatedDefinition, totalLockDays: current.lock.totalLockDays)
-
-        updated.nonNegotiables[index] = NonNegotiable(
-            id: current.id,
-            goalId: current.goalId,
-            definition: updatedDefinition,
-            state: current.state,
-            lock: current.lock,
-            createdAt: current.createdAt,
-            windows: current.windows,
-            completions: current.completions,
-            violations: current.violations,
-            lastDailyComplianceCheckedDay: current.lastDailyComplianceCheckedDay
-        )
-
-        system = updated
-        persistSystem()
     }
 
     func evaluateWeek(at date: Date) {
-        let previous = system
         var updated = system
         systemEngine.evaluateWeek(for: date, in: &updated)
-
-        guard updated != previous else { return }
-        system = updated
-        persistSystem()
+        applySystemUpdate(updated, referenceDate: date)
     }
 
     func advanceWindows(at date: Date) {
-        let previous = system
         var updated = system
         systemEngine.advanceWindows(currentDate: date, in: &updated)
-
-        guard updated != previous else { return }
-        system = updated
-        persistSystem()
+        applySystemUpdate(updated, referenceDate: date)
     }
 
     func runSystemIntegrityCheck(currentDate: Date) {
-        let previous = system
         var updated = system
 
         systemEngine.evaluateDailyCompliance(currentDate: currentDate, in: &updated)
         systemEngine.evaluateWeekCatchUp(referenceDate: currentDate, in: &updated, calendar: calendar)
         systemEngine.advanceWindows(currentDate: currentDate, in: &updated)
-
-        guard updated != previous else { return }
-        system = updated
-        persistSystem()
+        applySystemUpdate(updated, referenceDate: currentDate)
     }
 
     func runDailyIntegrityTick(referenceDate: Date) {
-        runSystemIntegrityCheck(currentDate: referenceDate)
-
-        let previous = system
         var updated = system
+        systemEngine.evaluateDailyCompliance(currentDate: referenceDate, in: &updated)
+        systemEngine.evaluateWeekCatchUp(referenceDate: referenceDate, in: &updated, calendar: calendar)
+        systemEngine.advanceWindows(currentDate: referenceDate, in: &updated)
         systemEngine.evaluateRecoveryDay(referenceDate: referenceDate, in: &updated, calendar: calendar)
+        applySystemUpdate(updated, referenceDate: referenceDate)
+    }
 
-        guard updated != previous else { return }
+    func runDailyComplianceCheck(currentDate: Date) {
+        var updated = system
+
+        systemEngine.evaluateDailyCompliance(currentDate: currentDate, in: &updated)
+        applySystemUpdate(updated, referenceDate: currentDate)
+    }
+
+    func recoveryEntryContext(referenceDate: Date = Date()) -> RecoveryEntryContext? {
+        _ = referenceDate
+        guard system.recoveryEntryPendingResolution else { return nil }
+        guard system.nonNegotiables.contains(where: { $0.state == .recovery }) else { return nil }
+
+        let candidateIds = system.nonNegotiables
+            .filter { $0.state == .active || $0.state == .recovery }
+            .map(\.id)
+
+        return RecoveryEntryContext(
+            triggerProtocolId: system.recoveryEntryTriggerProtocolId,
+            pausedProtocolId: system.recoveryPausedProtocolId,
+            requiresPauseSelection: system.recoveryEntryRequiresPauseSelection,
+            candidateProtocolIds: candidateIds
+        )
+    }
+
+    func pauseProtocolForRecovery(protocolId: UUID, referenceDate: Date = Date()) throws {
+        _ = referenceDate
+        guard system.recoveryEntryPendingResolution else { return }
+        guard let index = system.nonNegotiables.firstIndex(where: { $0.id == protocolId }) else {
+            throw CommitmentStoreError.domain(CommitmentSystemError.nonNegotiableNotFound)
+        }
+
+        let currentState = system.nonNegotiables[index].state
+        guard currentState == .active || currentState == .recovery else {
+            throw CommitmentStoreError.policyDenied(.protocolSuspended)
+        }
+
+        var updated = system
+        updated.nonNegotiables[index].state = .suspended
+        updated.recoveryPausedProtocolId = protocolId
+        updated.recoveryEntryRequiresPauseSelection = false
+
         system = updated
         persistSystem()
     }
 
-    func runDailyComplianceCheck(currentDate: Date) {
-        let previous = system
+    func completeRecoveryEntryResolution() {
+        guard system.recoveryEntryPendingResolution else { return }
         var updated = system
-
-        systemEngine.evaluateDailyCompliance(currentDate: currentDate, in: &updated)
-
-        guard updated != previous else { return }
+        updated.recoveryEntryPendingResolution = false
+        updated.recoveryEntryRequiresPauseSelection = false
+        updated.recoveryEntryTriggerProtocolId = nil
         system = updated
         persistSystem()
     }
@@ -273,9 +473,156 @@ final class CommitmentSystemStore: ObservableObject {
         }
     }
 
+    func logsCalendarSignals(lastDays: Int, referenceDate: Date) -> [LogsCalendarDaySignal] {
+        guard lastDays > 0 else { return [] }
+
+        let today = DateRules.startOfDay(referenceDate, calendar: calendar)
+        guard let startDay = calendar.date(byAdding: .day, value: -(lastDays - 1), to: today) else {
+            return []
+        }
+
+        let countedCompletions = countedCompletionLog.filter { $0.date <= referenceDate }
+        let extras = extraCompletionLog.filter { $0.date <= referenceDate }
+        let violations = violationLog.filter { $0.date <= referenceDate }
+
+        return (0..<lastDays).compactMap { offset in
+            guard let rawDay = calendar.date(byAdding: .day, value: offset, to: startDay) else {
+                return nil
+            }
+            let day = DateRules.startOfDay(rawDay, calendar: calendar)
+            guard let nextDay = calendar.date(byAdding: .day, value: 1, to: day) else {
+                return nil
+            }
+
+            let completionCount = countedCompletions.reduce(into: 0) { partial, completion in
+                if completion.date >= day && completion.date < nextDay {
+                    partial += 1
+                }
+            }
+            let extraCount = extras.reduce(into: 0) { partial, completion in
+                if completion.date >= day && completion.date < nextDay {
+                    partial += 1
+                }
+            }
+            let violationCount = violations.reduce(into: 0) { partial, violation in
+                if violation.date >= day && violation.date < nextDay {
+                    partial += 1
+                }
+            }
+
+            let isClosedDay = day < today
+            let hasRelevantProtocol = isClosedDay && hasRelevantProtocol(on: day)
+            let requiresCountedCompletion = hasRelevantProtocol && requiresCountedCompletion(on: day)
+            let unproductive = hasRelevantProtocol && requiresCountedCompletion && completionCount == 0
+            let noWorkRequiredSatisfied = hasRelevantProtocol &&
+                requiresCountedCompletion == false &&
+                completionCount == 0 &&
+                violationCount == 0
+            let inevitableWeeklyMiss = isClosedDay && hasInevitableWeeklyMiss(on: day)
+
+            return LogsCalendarDaySignal(
+                day: day,
+                completionCount: completionCount,
+                extraCount: extraCount,
+                violationCount: violationCount,
+                unproductive: unproductive,
+                noWorkRequiredSatisfied: noWorkRequiredSatisfied,
+                inevitableWeeklyMiss: inevitableWeeklyMiss,
+                isToday: day == today
+            )
+        }
+    }
+
     func clearAllNonNegotiables() {
         system = CommitmentSystem(nonNegotiables: [], createdAt: Date())
         persistSystem()
+    }
+
+    func nonNegotiable(id: UUID) -> NonNegotiable? {
+        system.nonNegotiables.first(where: { $0.id == id })
+    }
+
+    func allowedEditableFields(for id: UUID, referenceDate: Date = Date()) -> Set<ProtocolField> {
+        guard let nonNegotiable = nonNegotiable(id: id) else {
+            return []
+        }
+        return policy.allowedEditableFields(for: nonNegotiable, at: referenceDate)
+    }
+
+    func lawReasons(for id: UUID, referenceDate: Date = Date()) -> [PolicyReason] {
+        guard let nonNegotiable = nonNegotiable(id: id) else { return [] }
+        var reasons: [PolicyReason] = []
+
+        if nonNegotiable.state == .suspended {
+            reasons.append(.protocolSuspended)
+        }
+
+        if nonNegotiable.state == .recovery {
+            let cleanDaysRemaining = max(0, 7 - max(system.recoveryCleanDayStreak, 0))
+            reasons.append(
+                .recoveryActive(
+                    maxProtocols: system.allowedCapacity,
+                    cleanDaysRemaining: cleanDaysRemaining
+                )
+            )
+        }
+
+        let lockEnd = DateRules.addingDays(
+            nonNegotiable.lock.totalLockDays,
+            to: DateRules.startOfDay(nonNegotiable.lock.startDate, calendar: calendar),
+            calendar: calendar
+        )
+        let dayNow = DateRules.startOfDay(referenceDate, calendar: calendar)
+        if dayNow < lockEnd {
+            let daysRemaining = max(0, calendar.dateComponents([.day], from: dayNow, to: lockEnd).day ?? 0)
+            reasons.append(.locked(daysRemaining: daysRemaining, endsOn: lockEnd))
+        }
+
+        return reasons
+    }
+
+    func policyCopy(for error: Error) -> PolicyCopy? {
+        if let storeError = error as? CommitmentStoreError {
+            switch storeError {
+            case .policyDenied(let reason):
+                return reason.copy()
+            case .domain(let domainError):
+                return policyCopy(for: domainError)
+            }
+        }
+
+        if let systemError = error as? CommitmentSystemError {
+            switch systemError {
+            case .capacityExceeded:
+                let activeCount = system.nonNegotiables.filter {
+                    $0.state == .active || $0.state == .recovery
+                }.count
+                return PolicyReason.capacityExceeded(active: activeCount, allowed: system.allowedCapacity).copy()
+            case .systemUnstable:
+                return PolicyReason.systemUnstable.copy()
+            case .cannotRemoveDuringLock:
+                return PolicyReason.cannotRemoveUnlessCompletedOrRetired.copy()
+            case .nonNegotiableNotFound:
+                return PolicyReason.generic(message: "Protocol is no longer available.").copy()
+            }
+        }
+
+        if let engineError = error as? NonNegotiableEngineError {
+            switch engineError {
+            case .alreadyCompletedToday:
+                return PolicyReason.alreadyCompletedToday.copy()
+            case .extraAlreadyLoggedToday:
+                return PolicyReason.extraAlreadyLoggedToday.copy()
+            case .alreadyRetiredOrCompleted:
+                return PolicyReason.protocolCompletedOrRetired.copy()
+            case .outsideLockPeriod:
+                return PolicyReason.generic(message: "Completion is available only during the lock period.").copy()
+            case .invalidDefinition:
+                return nil
+            }
+        }
+
+        return nil
     }
 
     private func persistSystem() {
@@ -295,5 +642,206 @@ final class CommitmentSystemStore: ObservableObject {
         return nonNegotiable.completions.contains {
             $0.kind == kind && DateRules.startOfDay($0.date, calendar: calendar) == day
         }
+    }
+
+    private func applySystemUpdate(_ updatedSystem: CommitmentSystem, referenceDate: Date) {
+        var next = updatedSystem
+        handleRecoveryTransition(from: system, to: &next, referenceDate: referenceDate)
+
+        guard next != system else { return }
+        system = next
+        persistSystem()
+    }
+
+    private func handleRecoveryTransition(
+        from previous: CommitmentSystem,
+        to updated: inout CommitmentSystem,
+        referenceDate: Date
+    ) {
+        _ = referenceDate
+        let wasInRecovery = previous.nonNegotiables.contains(where: { $0.state == .recovery })
+        let isInRecovery = updated.nonNegotiables.contains(where: { $0.state == .recovery })
+
+        if wasInRecovery == false && isInRecovery {
+            let previousRecoveryIds = Set(previous.nonNegotiables.filter { $0.state == .recovery }.map(\.id))
+            let enteredRecovery = updated.nonNegotiables
+                .filter { $0.state == .recovery && previousRecoveryIds.contains($0.id) == false }
+                .sorted { lhs, rhs in
+                    if lhs.createdAt != rhs.createdAt {
+                        return lhs.createdAt < rhs.createdAt
+                    }
+                    return lhs.id.uuidString < rhs.id.uuidString
+                }
+
+            let activeOrRecoveryCount = updated.nonNegotiables.filter {
+                $0.state == .active || $0.state == .recovery
+            }.count
+
+            updated.recoveryEntryPendingResolution = true
+            updated.recoveryEntryRequiresPauseSelection = activeOrRecoveryCount > 1
+            updated.recoveryEntryTriggerProtocolId = enteredRecovery.first?.id
+            updated.recoveryPausedProtocolId = nil
+            return
+        }
+
+        if wasInRecovery && isInRecovery == false {
+            updated.recoveryEntryPendingResolution = false
+            updated.recoveryEntryRequiresPauseSelection = false
+            updated.recoveryEntryTriggerProtocolId = nil
+            updated.recoveryPausedProtocolId = nil
+        }
+    }
+
+    private func hasRelevantProtocol(on day: Date) -> Bool {
+        system.nonNegotiables.contains { nonNegotiable in
+            switch nonNegotiable.state {
+            case .retired, .completed:
+                return false
+            case .draft, .active, .recovery, .suspended:
+                return isWithinLockInterval(day: day, lock: nonNegotiable.lock)
+            }
+        }
+    }
+
+    private func hasInevitableWeeklyMiss(on day: Date) -> Bool {
+        let week = DateRules.weekInterval(containing: day, calendar: calendar)
+        let weekId = DateRules.weekID(for: day, calendar: calendar)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: day) else {
+            return false
+        }
+
+        return system.nonNegotiables.contains { nonNegotiable in
+            guard nonNegotiable.definition.mode == .session else { return false }
+            switch nonNegotiable.state {
+            case .retired, .completed, .suspended:
+                return false
+            case .draft, .active, .recovery:
+                break
+            }
+
+            guard isWithinLockInterval(day: day, lock: nonNegotiable.lock) else { return false }
+            guard lockIntervalIntersectsWeek(nonNegotiable.lock, week: week) else { return false }
+
+            let weeklyTarget = NonNegotiableDefinition.normalizedFrequency(
+                nonNegotiable.definition.frequencyPerWeek,
+                mode: nonNegotiable.definition.mode
+            )
+            guard weeklyTarget > 0 else { return false }
+
+            let countedSoFar = nonNegotiable.completions.reduce(into: 0) { partial, completion in
+                guard completion.kind == .counted else { return }
+                guard completion.weekId == weekId else { return }
+                guard completion.date >= week.start && completion.date < dayEnd else { return }
+                if isWithinLockInterval(moment: completion.date, lock: nonNegotiable.lock) {
+                    partial += 1
+                }
+            }
+
+            let remainingNeeded = max(0, weeklyTarget - countedSoFar)
+            guard remainingNeeded > 0 else { return false }
+
+            let feasibleFutureDays = feasibleCompletionDays(
+                for: nonNegotiable.lock,
+                after: day,
+                withinWeek: week
+            )
+
+            return remainingNeeded > feasibleFutureDays
+        }
+    }
+
+    private func requiresCountedCompletion(on day: Date) -> Bool {
+        let dayStart = DateRules.startOfDay(day, calendar: calendar)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+            return false
+        }
+        let week = DateRules.weekInterval(containing: dayStart, calendar: calendar)
+        let weekId = DateRules.weekID(for: dayStart, calendar: calendar)
+
+        return system.nonNegotiables.contains { nonNegotiable in
+            guard nonNegotiable.state == .active || nonNegotiable.state == .recovery else {
+                return false
+            }
+            guard isWithinLockInterval(day: dayStart, lock: nonNegotiable.lock) else {
+                return false
+            }
+
+            switch nonNegotiable.definition.mode {
+            case .daily:
+                let hasCountedToday = nonNegotiable.completions.contains { completion in
+                    completion.kind == .counted &&
+                    completion.date >= dayStart &&
+                    completion.date < dayEnd
+                }
+                return hasCountedToday == false
+
+            case .session:
+                let weeklyTarget = NonNegotiableDefinition.normalizedFrequency(
+                    nonNegotiable.definition.frequencyPerWeek,
+                    mode: nonNegotiable.definition.mode
+                )
+                guard weeklyTarget > 0 else { return false }
+
+                let countedSoFarWeek = nonNegotiable.completions.reduce(into: 0) { partial, completion in
+                    guard completion.kind == .counted else { return }
+                    guard completion.weekId == weekId else { return }
+                    guard completion.date >= week.start && completion.date < dayEnd else { return }
+                    guard isWithinLockInterval(moment: completion.date, lock: nonNegotiable.lock) else { return }
+                    partial += 1
+                }
+
+                let remainingNeeded = max(0, weeklyTarget - countedSoFarWeek)
+                guard remainingNeeded > 0 else { return false }
+
+                let feasibleFutureDays = feasibleCompletionDays(
+                    for: nonNegotiable.lock,
+                    after: dayStart,
+                    withinWeek: week
+                )
+                return remainingNeeded > feasibleFutureDays
+            }
+        }
+    }
+
+    private func feasibleCompletionDays(
+        for lock: LockConfiguration,
+        after day: Date,
+        withinWeek week: DateInterval
+    ) -> Int {
+        guard let firstCandidate = calendar.date(byAdding: .day, value: 1, to: day) else {
+            return 0
+        }
+
+        var cursor = DateRules.startOfDay(firstCandidate, calendar: calendar)
+        var count = 0
+        while cursor < week.end {
+            if isWithinLockInterval(day: cursor, lock: lock) {
+                count += 1
+            }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else {
+                break
+            }
+            cursor = next
+        }
+        return count
+    }
+
+    private func lockIntervalIntersectsWeek(_ lock: LockConfiguration, week: DateInterval) -> Bool {
+        let lockStart = DateRules.startOfDay(lock.startDate, calendar: calendar)
+        let lockEnd = DateRules.addingDays(lock.totalLockDays, to: lockStart, calendar: calendar)
+        return lockStart < week.end && lockEnd > week.start
+    }
+
+    private func isWithinLockInterval(day: Date, lock: LockConfiguration) -> Bool {
+        let lockStart = DateRules.startOfDay(lock.startDate, calendar: calendar)
+        let lockEnd = DateRules.addingDays(lock.totalLockDays, to: lockStart, calendar: calendar)
+        let normalizedDay = DateRules.startOfDay(day, calendar: calendar)
+        return normalizedDay >= lockStart && normalizedDay < lockEnd
+    }
+
+    private func isWithinLockInterval(moment: Date, lock: LockConfiguration) -> Bool {
+        let lockStart = DateRules.startOfDay(lock.startDate, calendar: calendar)
+        let lockEnd = DateRules.addingDays(lock.totalLockDays, to: lockStart, calendar: calendar)
+        return moment >= lockStart && moment < lockEnd
     }
 }
