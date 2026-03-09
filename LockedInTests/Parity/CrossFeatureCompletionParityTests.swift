@@ -172,6 +172,14 @@ private extension CrossFeatureCompletionParityTests {
         }
     }
 
+    enum CockpitViewModelParityTestRetainer {
+        static var viewModels: [CockpitViewModel] = []
+
+        static func retain(_ viewModel: CockpitViewModel) {
+            viewModels.append(viewModel)
+        }
+    }
+
     struct CompletionHarness {
         let commitmentStore: CommitmentSystemStore
         let commitmentRepository: RecordingCommitmentSystemRepository
@@ -280,14 +288,15 @@ private extension CrossFeatureCompletionParityTests {
             )
         }
 
-        let executor = CockpitCompletionExecutor(
-            commitmentStore: harness.commitmentStore,
-            planStore: harness.planStore,
+        let viewModel = CockpitViewModel(
+            commitmentService: LegacyCommitmentWrapper(store: harness.commitmentStore),
+            planService: LegacyPlanWrapper(store: harness.planStore),
             nowProvider: { referenceDate }
         )
+        CockpitViewModelParityTestRetainer.retain(viewModel)
 
         do {
-            let result = try executor.complete(protocolModel: protocolModel)
+            let result = try viewModel.complete(protocolModel: protocolModel)
             return CompletionFeedbackObservation(
                 warningMessage: nil,
                 toastMessage: result.toastMessage

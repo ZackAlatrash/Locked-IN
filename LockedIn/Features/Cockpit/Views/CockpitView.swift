@@ -15,7 +15,7 @@ struct CockpitView: View {
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var appClock: AppClock
     @EnvironmentObject private var devRuntime: DevRuntimeState
-    @StateObject private var viewModel = CockpitViewModel()
+    @StateObject private var viewModel: CockpitViewModel
     @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
 
     @State private var activeRoute: CockpitRoute?
@@ -27,11 +27,21 @@ struct CockpitView: View {
     @State private var completionToastMessage: String?
 
     init(
+        commitmentStore: CommitmentSystemStore,
+        planStore: PlanStore,
         selectedTab: Binding<MainTab> = .constant(.cockpit),
-        onRequestDailyCheckIn: @escaping () -> Void = {}
+        onRequestDailyCheckIn: @escaping () -> Void = {},
+        nowProvider: @escaping () -> Date = { Date() }
     ) {
         _selectedTab = selectedTab
         self.onRequestDailyCheckIn = onRequestDailyCheckIn
+        _viewModel = StateObject(
+            wrappedValue: CockpitViewModel(
+                commitmentService: LegacyCommitmentWrapper(store: commitmentStore),
+                planService: LegacyPlanWrapper(store: planStore),
+                nowProvider: nowProvider
+            )
+        )
     }
 
     var body: some View {
@@ -146,25 +156,7 @@ struct CockpitView: View {
                 Text(actionErrorMessage ?? "Unknown error")
             }
         )
-        .overlay(alignment: .top) {
-            if let completionToastMessage {
-                Text(completionToastMessage)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(cockpitStyle == .dark ? .white : Color(hex: "0F172A"))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(cockpitStyle == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.08))
-                    )
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .stroke(cockpitStyle == .dark ? Color.white.opacity(0.22) : Color.black.opacity(0.14), lineWidth: 1)
-                    )
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-        }
+        .toast(message: $completionToastMessage, style: appAppearanceMode)
     }
 }
 
@@ -331,6 +323,9 @@ private extension CockpitView {
         }
     }
 
+
+
+
     func refreshFromStore(referenceDate: Date) {
         viewModel.refresh(
             system: store.system,
@@ -350,14 +345,9 @@ private extension CockpitView {
                     actionErrorMessage = "This protocol is no longer available."
                     return
                 }
-                let executor = CockpitCompletionExecutor(
-                    commitmentStore: store,
-                    planStore: planStore,
-                    nowProvider: { appClock.now }
-                )
-                let execution = try executor.complete(protocolModel: protocolModel)
+                let execution = try viewModel.complete(protocolModel: protocolModel)
                 if let toastMessage = execution.toastMessage {
-                    showCompletionToast(toastMessage)
+                    completionToastMessage = toastMessage
                 }
                 Haptics.success()
             } catch {
@@ -449,16 +439,6 @@ private extension CockpitView {
         }
 
         return error.localizedDescription
-    }
-
-    func showCompletionToast(_ message: String) {
-        completionToastMessage = message
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 2_300_000_000)
-            if completionToastMessage == message {
-                completionToastMessage = nil
-            }
-        }
     }
 
 }
@@ -722,14 +702,19 @@ private struct CockpitNonNegotiableDetailsSheet: View {
 
 struct CockpitView_Previews: PreviewProvider {
     static var previews: some View {
-        CockpitView(selectedTab: .constant(.cockpit))
-            .environmentObject(
-                CommitmentSystemStore(
-                    repository: InMemoryCommitmentSystemRepository(),
-                    systemEngine: CommitmentSystemEngine(nonNegotiableEngine: NonNegotiableEngine()),
-                    nonNegotiableEngine: NonNegotiableEngine()
-                )
-            )
-            .preferredColorScheme(.dark)
+        let store = CommitmentSystemStore(
+            repository: InMemoryCommitmentSystemRepository(),
+            systemEngine: CommitmentSystemEngine(nonNegotiableEngine: NonNegotiableEngine()),
+            nonNegotiableEngine: NonNegotiableEngine()
+        )
+        let planStore = PlanStore()
+        CockpitView(
+            commitmentStore: store,
+            planStore: planStore,
+            selectedTab: .constant(.cockpit)
+        )
+        .environmentObject(store)
+        .environmentObject(planStore)
+        .preferredColorScheme(.dark)
     }
 }

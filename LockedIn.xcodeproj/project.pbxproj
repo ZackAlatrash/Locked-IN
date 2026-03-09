@@ -112,7 +112,6 @@
 		A10000000000000000000050 /* RecoveryProtocolSelectionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000050 /* RecoveryProtocolSelectionCard.swift */; };
 		A10000000000000000000051 /* ProfileSheetContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000051 /* ProfileSheetContainer.swift */; };
 		A10000000000000000000052 /* LogsProfileToolbarActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000052 /* LogsProfileToolbarActions.swift */; };
-		A10000000000000000000053 /* CockpitCompletionExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000053 /* CockpitCompletionExecutor.swift */; };
 		B10000000000000000000001 /* LockedInSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* LockedInSmokeTests.swift */; };
 		B10000000000000000000002 /* TestCalendarSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* TestCalendarSupport.swift */; };
 		B10000000000000000000003 /* PlanStoreBehaviorLockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* PlanStoreBehaviorLockTests.swift */; };
@@ -121,6 +120,7 @@
 		B10000000000000000000006 /* CommitmentSystemStoreTestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000007 /* CommitmentSystemStoreTestFixtures.swift */; };
 		B10000000000000000000007 /* CrossFeatureCompletionParityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000008 /* CrossFeatureCompletionParityTests.swift */; };
 		B4248C383A6F23ABC4974479 /* CommitmentActionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABBB99CB718E66A24A5F1238 /* CommitmentActionService.swift */; };
+		C129045ED27F906BFE4762E0 /* ToastPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C52D4DC1119FB59F797997A5 /* ToastPresenter.swift */; };
 		C4DD740C4F7166880C2B3EFF /* LegacyPlanWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61960B7AC0C54DC2B4B09BE3 /* LegacyPlanWrapper.swift */; };
 		D6DE727F4F8ED11D0F299854 /* ReliabilityCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88E65A0BB27AED421A9F984 /* ReliabilityCalculatorTests.swift */; };
 		E55D82FC6DEF1FBBDD649022 /* ReliabilityCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF3757369CC715A9D06CD6E /* ReliabilityCalculator.swift */; };
@@ -243,7 +243,6 @@
 		A20000000000000000000050 /* RecoveryProtocolSelectionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecoveryProtocolSelectionCard.swift; path = LockedIn/Features/Recovery/Components/RecoveryProtocolSelectionCard.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000051 /* ProfileSheetContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProfileSheetContainer.swift; path = LockedIn/CoreUI/Components/ProfileSheetContainer.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000052 /* LogsProfileToolbarActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LogsProfileToolbarActions.swift; path = LockedIn/CoreUI/Components/LogsProfileToolbarActions.swift; sourceTree = SOURCE_ROOT; };
-		A20000000000000000000053 /* CockpitCompletionExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CockpitCompletionExecutor.swift; path = LockedIn/Features/Cockpit/Models/CockpitCompletionExecutor.swift; sourceTree = SOURCE_ROOT; };
 		ABBB99CB718E66A24A5F1238 /* CommitmentActionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CommitmentActionService.swift; sourceTree = "<group>"; };
 		B20000000000000000000001 /* LockedInSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LockedInSmokeTests.swift; path = LockedInTests/Smoke/LockedInSmokeTests.swift; sourceTree = SOURCE_ROOT; };
 		B20000000000000000000002 /* TestCalendarSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TestCalendarSupport.swift; path = LockedInTests/TestSupport/TestCalendarSupport.swift; sourceTree = SOURCE_ROOT; };
@@ -255,6 +254,7 @@
 		B20000000000000000000008 /* CrossFeatureCompletionParityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CrossFeatureCompletionParityTests.swift; path = LockedInTests/Parity/CrossFeatureCompletionParityTests.swift; sourceTree = SOURCE_ROOT; };
 		B27F50918C79535C7710FB38 /* WeeklyAllowanceCalculator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeeklyAllowanceCalculator.swift; sourceTree = "<group>"; };
 		BA99939535303F628DEFAB3F /* PlanService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlanService.swift; sourceTree = "<group>"; };
+		C52D4DC1119FB59F797997A5 /* ToastPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ToastPresenter.swift; path = ToastPresenter.swift; sourceTree = "<group>"; };
 		DA6A1467F25898471104EB05 /* DailyCheckInReliabilityCalculatorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DailyCheckInReliabilityCalculatorTests.swift; sourceTree = "<group>"; };
 		F88E65A0BB27AED421A9F984 /* ReliabilityCalculatorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReliabilityCalculatorTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -327,7 +327,6 @@
 				A20000000000000000000035 /* MotionRuntime.swift */,
 				A20000000000000000000008 /* CockpitViewModel.swift */,
 				A20000000000000000000009 /* CockpitUIModel.swift */,
-				A20000000000000000000053 /* CockpitCompletionExecutor.swift */,
 				A2000000000000000000000A /* CockpitNonNegotiableCard.swift */,
 				A2000000000000000000000B /* CockpitKpiCard.swift */,
 				A2000000000000000000000C /* FitnessLiquidGlassNavDemoView.swift */,
@@ -635,6 +634,7 @@
 				40A77A382F3CD39800BC4E39 /* GlassCard.swift */,
 				A20000000000000000000005 /* LiquidGlassNavBar.swift */,
 				A20000000000000000000006 /* FitnessLiquidGlassNavStyle.swift */,
+				C52D4DC1119FB59F797997A5 /* ToastPresenter.swift */,
 			);
 			name = UI;
 			path = UI;
@@ -838,7 +838,6 @@
 				40A77A4C2F3CD39800BC4E39 /* PrimaryButton.swift in Sources */,
 				A10000000000000000000051 /* ProfileSheetContainer.swift in Sources */,
 				A10000000000000000000052 /* LogsProfileToolbarActions.swift in Sources */,
-				A10000000000000000000053 /* CockpitCompletionExecutor.swift in Sources */,
 				40A77A542F3CD49800BC4E39 /* Locked_INApp.swift in Sources */,
 				40A77A612F3CF00000BC4E39 /* OnboardingShellView.swift in Sources */,
 				40A77A632F3CF00000BC4E39 /* OnboardingShellViewModel.swift in Sources */,
@@ -866,6 +865,7 @@
 				3097951345E4980B2A68471B /* PlanService.swift in Sources */,
 				37AAD9A0F479C74B1E182B3A /* LegacyCommitmentWrapper.swift in Sources */,
 				C4DD740C4F7166880C2B3EFF /* LegacyPlanWrapper.swift in Sources */,
+				C129045ED27F906BFE4762E0 /* ToastPresenter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

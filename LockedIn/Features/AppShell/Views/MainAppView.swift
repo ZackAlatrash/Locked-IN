@@ -78,10 +78,13 @@ struct MainAppView: View {
             TabView(selection: $router.selectedTab) {
                 NavigationStack {
                     CockpitView(
+                        commitmentStore: store,
+                        planStore: planStore,
                         selectedTab: $router.selectedTab,
                         onRequestDailyCheckIn: {
                             router.requestDailyCheckInPresentation()
-                        }
+                        },
+                        nowProvider: { [weak appClock] in appClock?.now ?? Date() }
                     )
                 }
                 .tabItem {
