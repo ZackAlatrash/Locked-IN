@@ -434,7 +434,7 @@ private extension DailyCheckInViewModel {
         let tracked = commitmentStore.system.nonNegotiables.filter {
             $0.state == .active || $0.state == .recovery || $0.state == .suspended
         }
-        return ReliabilityCalculator.calculate(for: tracked, referenceDate: referenceDate, calendar: calendar)
+        return ReliabilityCalculator.calculateDailyCheckInScore(for: tracked, referenceDate: referenceDate, calendar: calendar)
     }
 
     func defaultDurationMinutes(for mode: NonNegotiableMode) -> Int {

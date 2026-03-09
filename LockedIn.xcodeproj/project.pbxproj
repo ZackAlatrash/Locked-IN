@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1750B674EC17AE76D77E47A1 /* DailyCheckInReliabilityCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA6A1467F25898471104EB05 /* DailyCheckInReliabilityCalculatorTests.swift */; };
 		3C8DFC4C5AD39F37E066B7FD /* WeeklyAllowanceCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B27F50918C79535C7710FB38 /* WeeklyAllowanceCalculator.swift */; };
 		40A77A482F3CD39800BC4E39 /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A382F3CD39800BC4E39 /* GlassCard.swift */; };
 		40A77A492F3CD39800BC4E39 /* ProgressIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */; };
@@ -246,6 +247,7 @@
 		B20000000000000000000007 /* CommitmentSystemStoreTestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommitmentSystemStoreTestFixtures.swift; path = LockedInTests/TestSupport/CommitmentSystemStoreTestFixtures.swift; sourceTree = SOURCE_ROOT; };
 		B20000000000000000000008 /* CrossFeatureCompletionParityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CrossFeatureCompletionParityTests.swift; path = LockedInTests/Parity/CrossFeatureCompletionParityTests.swift; sourceTree = SOURCE_ROOT; };
 		B27F50918C79535C7710FB38 /* WeeklyAllowanceCalculator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeeklyAllowanceCalculator.swift; sourceTree = "<group>"; };
+		DA6A1467F25898471104EB05 /* DailyCheckInReliabilityCalculatorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DailyCheckInReliabilityCalculatorTests.swift; sourceTree = "<group>"; };
 		F88E65A0BB27AED421A9F984 /* ReliabilityCalculatorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReliabilityCalculatorTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -640,6 +642,7 @@
 			children = (
 				F88E65A0BB27AED421A9F984 /* ReliabilityCalculatorTests.swift */,
 				0E7A28512D6CCAC34B0C7429 /* WeeklyAllowanceCalculatorTests.swift */,
+				DA6A1467F25898471104EB05 /* DailyCheckInReliabilityCalculatorTests.swift */,
 			);
 			name = Domain;
 			path = Domain;
@@ -863,6 +866,7 @@
 				B10000000000000000000007 /* CrossFeatureCompletionParityTests.swift in Sources */,
 				D6DE727F4F8ED11D0F299854 /* ReliabilityCalculatorTests.swift in Sources */,
 				6AB04F6995E57A81979B0906 /* WeeklyAllowanceCalculatorTests.swift in Sources */,
+				1750B674EC17AE76D77E47A1 /* DailyCheckInReliabilityCalculatorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

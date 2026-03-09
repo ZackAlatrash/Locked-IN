@@ -163,7 +163,7 @@ private extension CockpitViewModel {
         let tracked = system.nonNegotiables.filter {
             $0.state == .active || $0.state == .recovery || $0.state == .suspended
         }
-        return ReliabilityCalculator.calculate(for: tracked, referenceDate: referenceDate)
+        return ReliabilityCalculator.calculateCockpitScore(for: tracked, referenceDate: referenceDate)
     }
 
     func currentWindow(for nn: NonNegotiable, referenceDate: Date) -> Window? {
