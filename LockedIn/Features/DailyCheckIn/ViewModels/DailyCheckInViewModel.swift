@@ -13,6 +13,8 @@ final class DailyCheckInViewModel: ObservableObject {
 
     private let commitmentStore: CommitmentSystemStore
     private let planStore: PlanStore
+    private let commitmentService: CommitmentActionService
+    private let planService: PlanService
     private let regulatorEngine: PlanRegulatorEngine
     private let router: AppRouter
     private let referenceDateProvider: () -> Date
@@ -21,6 +23,8 @@ final class DailyCheckInViewModel: ObservableObject {
     init(
         commitmentStore: CommitmentSystemStore,
         planStore: PlanStore,
+        commitmentService: CommitmentActionService,
+        planService: PlanService,
         regulatorEngine: PlanRegulatorEngine = PlanRegulatorEngine(),
         router: AppRouter,
         referenceDateProvider: @escaping () -> Date = { Date() },
@@ -28,6 +32,8 @@ final class DailyCheckInViewModel: ObservableObject {
     ) {
         self.commitmentStore = commitmentStore
         self.planStore = planStore
+        self.commitmentService = commitmentService
+        self.planService = planService
         self.regulatorEngine = regulatorEngine
         self.router = router
         self.referenceDateProvider = referenceDateProvider
@@ -192,14 +198,14 @@ final class DailyCheckInViewModel: ObservableObject {
                 return
             }
             let now = referenceDateProvider()
-            let outcome = try commitmentStore.recordCompletionDetailed(for: protocolId, at: now)
-            let reconciliation = planStore.reconcileAfterCompletion(
+            let outcome = try commitmentService.recordCompletionDetailed(for: protocolId, at: now)
+            let reconciliation = planService.reconcileAfterCompletion(
                 protocolId: protocolId,
                 mode: protocolModel.definition.mode,
                 completionDate: now,
                 completionKind: outcome.kind
             )
-            commitmentStore.runDailyIntegrityTick(referenceDate: referenceDateProvider())
+            commitmentService.runDailyIntegrityTick(referenceDate: referenceDateProvider())
             if outcome.kind == .extra {
                 if protocolModel.definition.mode == .session {
                     toastMessage = "Weekly target already met. Logged as EXTRA."
@@ -218,7 +224,7 @@ final class DailyCheckInViewModel: ObservableObject {
             }
             refresh()
         } catch {
-            if let copy = commitmentStore.policyCopy(for: error) {
+            if let copy = commitmentService.policyCopy(for: error) {
                 warningMessage = copy.message
             } else {
                 warningMessage = "Unable to mark protocol done right now."

@@ -21,6 +21,8 @@ struct DailyCheckInFlowView: View {
             wrappedValue: DailyCheckInViewModel(
                 commitmentStore: commitmentStore,
                 planStore: planStore,
+                commitmentService: LegacyCommitmentWrapper(store: commitmentStore),
+                planService: LegacyPlanWrapper(store: planStore),
                 router: router,
                 referenceDateProvider: referenceDateProvider
             )
@@ -41,54 +43,36 @@ struct DailyCheckInFlowView: View {
             }
         }
         .overlay(alignment: .top) {
-            VStack(spacing: 8) {
-                if let toast = viewModel.toastMessage {
-                    Text(toast)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#111827"))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule(style: .continuous)
-                                .fill(colorScheme == .dark ? Color.white.opacity(0.14) : Color.black.opacity(0.08))
-                        )
-                        .overlay(
-                            Capsule(style: .continuous)
-                                .stroke(colorScheme == .dark ? Color.white.opacity(0.24) : Color.black.opacity(0.14), lineWidth: 1)
-                        )
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
-
-                if let warning = viewModel.warningMessage {
-                    Text(warning)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#111827"))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule(style: .continuous)
-                                .fill(colorScheme == .dark ? Color.red.opacity(0.22) : Color.orange.opacity(0.22))
-                        )
-                        .overlay(
-                            Capsule(style: .continuous)
-                                .stroke(colorScheme == .dark ? Color.red.opacity(0.45) : Color.orange.opacity(0.35), lineWidth: 1)
-                        )
-                        .transition(.move(edge: .top).combined(with: .opacity))
+            if let warning = viewModel.warningMessage {
+                Text(warning)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#111827"))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(colorScheme == .dark ? Color.red.opacity(0.22) : Color.orange.opacity(0.22))
+                    )
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(colorScheme == .dark ? Color.red.opacity(0.45) : Color.orange.opacity(0.35), lineWidth: 1)
+                    )
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .padding(.top, 6)
+            }
+        }
+        .toast(message: Binding(
+            get: { viewModel.toastMessage },
+            set: { newValue in
+                if newValue == nil, let current = viewModel.toastMessage {
+                    viewModel.consumeToastMessage(current)
                 }
             }
-            .padding(.top, 6)
-        }
+        ), style: colorScheme == .dark ? .dark : .light)
         .onAppear {
             viewModel.refresh()
             MotionRuntime.runMotion(reduceMotion, animation: Theme.Animation.content) {
                 didAppear = true
-            }
-        }
-        .onChange(of: viewModel.toastMessage) { message in
-            guard let message else { return }
-            Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 2_200_000_000)
-                viewModel.consumeToastMessage(message)
             }
         }
     }

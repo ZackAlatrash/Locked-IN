@@ -214,6 +214,8 @@ private extension CrossFeatureCompletionParityTests {
         let viewModel = DailyCheckInViewModel(
             commitmentStore: harness.commitmentStore,
             planStore: harness.planStore,
+            commitmentService: LegacyCommitmentWrapper(store: harness.commitmentStore),
+            planService: LegacyPlanWrapper(store: harness.planStore),
             router: makeRetainedRouter(),
             referenceDateProvider: { referenceDate },
             calendar: calendar
