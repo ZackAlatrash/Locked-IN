@@ -160,32 +160,10 @@ private extension CockpitViewModel {
     }
 
     func reliabilityScore(for system: CommitmentSystem, referenceDate: Date) -> Int {
-        guard !system.nonNegotiables.isEmpty else { return 92 }
-
-        let weekId = DateRules.weekID(for: referenceDate)
-        var score = 92
-
-        for nn in system.nonNegotiables {
-            let currentWindow = currentWindow(for: nn, referenceDate: referenceDate)
-            let thisWeekCompletions = countedCompletionsThisWeek(nn, weekId: weekId)
-            let currentWindowViolations = nn.violations.filter { violation in
-                violation.windowIndex == currentWindow?.index
-            }.count
-
-            score -= currentWindowViolations * 16
-
-            if nn.state == .suspended {
-                score -= 14
-            }
-            if nn.state == .recovery {
-                score -= 22
-            }
-
-            let rewardCap = nn.definition.frequencyPerWeek
-            score += min(thisWeekCompletions, rewardCap) * 2
+        let tracked = system.nonNegotiables.filter {
+            $0.state == .active || $0.state == .recovery || $0.state == .suspended
         }
-
-        return min(max(score, 0), 100)
+        return ReliabilityCalculator.calculate(for: tracked, referenceDate: referenceDate)
     }
 
     func currentWindow(for nn: NonNegotiable, referenceDate: Date) -> Window? {
@@ -288,7 +266,12 @@ private extension CockpitViewModel {
                         isCtaEnabled: ctaEnabled
                     )
                 case .session:
-                    let remaining = max(nn.definition.frequencyPerWeek - thisWeekCount, 0)
+                    let remaining = WeeklyAllowanceCalculator.remainingThisWeek(
+                        mode: nn.definition.mode,
+                        frequencyPerWeek: nn.definition.frequencyPerWeek,
+                        completionsThisWeek: thisWeekCount,
+                        plannedThisWeek: 0
+                    )
                     let subtitle: String
                     let statusText: String
                     let ctaEnabled: Bool

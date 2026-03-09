@@ -68,13 +68,12 @@ final class DailyCheckInViewModel: ObservableObject {
                 $0.kind == .extra && DateRules.startOfDay($0.date, calendar: calendar) == today
             }
 
-            let remainingWeek: Int
-            switch protocolModel.definition.mode {
-            case .daily:
-                remainingWeek = max(0, 7 - completionsThisWeek - plannedThisWeek)
-            case .session:
-                remainingWeek = max(0, protocolModel.definition.frequencyPerWeek - completionsThisWeek - plannedThisWeek)
-            }
+            let remainingWeek = WeeklyAllowanceCalculator.remainingThisWeek(
+                mode: protocolModel.definition.mode,
+                frequencyPerWeek: protocolModel.definition.frequencyPerWeek,
+                completionsThisWeek: completionsThisWeek,
+                plannedThisWeek: plannedThisWeek
+            )
 
             let needsAttention: Bool
             switch protocolModel.definition.mode {
@@ -435,24 +434,7 @@ private extension DailyCheckInViewModel {
         let tracked = commitmentStore.system.nonNegotiables.filter {
             $0.state == .active || $0.state == .recovery || $0.state == .suspended
         }
-        guard tracked.isEmpty == false else { return 92 }
-
-        let weekId = DateRules.weekID(for: referenceDate, calendar: calendar)
-        let target = max(1, tracked.reduce(0) { $0 + $1.definition.frequencyPerWeek })
-        let completions = tracked.reduce(0) { partial, item in
-            partial + item.completions.filter {
-                $0.weekId == weekId && $0.kind == .counted
-            }.count
-        }
-        let completionRate = min(1.0, Double(completions) / Double(target))
-        var score = Int((completionRate * 40.0) + 58.0)
-
-        let suspendedCount = tracked.filter { $0.state == .suspended }.count
-        let recoveryCount = tracked.filter { $0.state == .recovery }.count
-        score -= suspendedCount * 8
-        score -= recoveryCount * 12
-
-        return max(0, min(100, score))
+        return ReliabilityCalculator.calculate(for: tracked, referenceDate: referenceDate, calendar: calendar)
     }
 
     func defaultDurationMinutes(for mode: NonNegotiableMode) -> Int {
