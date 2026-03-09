@@ -8,4 +8,7 @@ protocol PlanService {
         completionDate: Date,
         completionKind: CompletionKind
     ) -> PlanCompletionReconciliationOutcome
+    
+    func pauseAllocations(for protocolId: UUID, referenceDate: Date)
+    func currentWeekSnapshot() -> PlanWeekSnapshot
 }

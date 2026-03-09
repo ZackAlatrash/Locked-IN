@@ -9,15 +9,15 @@ struct RecoveryModePopup: View {
     @State private var didAppear = false
 
     init(
-        commitmentStore: CommitmentSystemStore,
-        planStore: PlanStore,
+        commitmentService: CommitmentActionService,
+        planService: PlanService,
         referenceDateProvider: @escaping () -> Date = { Date() },
         onResolved: @escaping () -> Void
     ) {
         _viewModel = StateObject(
             wrappedValue: RecoveryModeViewModel(
-                commitmentStore: commitmentStore,
-                planStore: planStore,
+                commitmentService: commitmentService,
+                planService: planService,
                 referenceDateProvider: referenceDateProvider
             )
         )

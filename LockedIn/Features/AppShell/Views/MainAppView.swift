@@ -227,8 +227,8 @@ private extension MainAppView {
                 .ignoresSafeArea()
 
             RecoveryModePopup(
-                commitmentStore: store,
-                planStore: planStore,
+                commitmentService: LegacyCommitmentWrapper(store: store),
+                planService: LegacyPlanWrapper(store: planStore),
                 referenceDateProvider: { appClock.now }
             ) {
                 router.dismissRecoveryEntry()

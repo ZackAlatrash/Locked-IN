@@ -21,4 +21,12 @@ final class LegacyPlanWrapper: PlanService {
             completionKind: completionKind
         )
     }
+    
+    func pauseAllocations(for protocolId: UUID, referenceDate: Date) {
+        store.pauseAllocations(for: protocolId, referenceDate: referenceDate)
+    }
+    
+    func currentWeekSnapshot() -> PlanWeekSnapshot {
+        store.currentWeekSnapshot()
+    }
 }

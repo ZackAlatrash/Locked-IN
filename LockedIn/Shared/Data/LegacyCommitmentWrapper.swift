@@ -23,4 +23,20 @@ final class LegacyCommitmentWrapper: CommitmentActionService {
     func policyCopy(for error: Error) -> PolicyCopy? {
         store.policyCopy(for: error)
     }
+    
+    func recoveryEntryContext(referenceDate: Date) -> CommitmentSystemStore.RecoveryEntryContext? {
+        store.recoveryEntryContext(referenceDate: referenceDate)
+    }
+    
+    func nonNegotiable(id: UUID) -> NonNegotiable? {
+        store.nonNegotiable(id: id)
+    }
+    
+    func pauseProtocolForRecovery(protocolId: UUID, referenceDate: Date) throws {
+        try store.pauseProtocolForRecovery(protocolId: protocolId, referenceDate: referenceDate)
+    }
+    
+    func completeRecoveryEntryResolution() {
+        store.completeRecoveryEntryResolution()
+    }
 }

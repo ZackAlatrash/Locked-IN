@@ -12,17 +12,17 @@ final class RecoveryModeViewModel: ObservableObject {
     @Published private(set) var isPendingResolution = false
     @Published private(set) var warningMessage: String?
 
-    private let commitmentStore: CommitmentSystemStore
-    private let planStore: PlanStore
+    private let commitmentService: CommitmentActionService
+    private let planService: PlanService
     private let referenceDateProvider: () -> Date
 
     init(
-        commitmentStore: CommitmentSystemStore,
-        planStore: PlanStore,
+        commitmentService: CommitmentActionService,
+        planService: PlanService,
         referenceDateProvider: @escaping () -> Date = { Date() }
     ) {
-        self.commitmentStore = commitmentStore
-        self.planStore = planStore
+        self.commitmentService = commitmentService
+        self.planService = planService
         self.referenceDateProvider = referenceDateProvider
     }
 
@@ -38,19 +38,19 @@ final class RecoveryModeViewModel: ObservableObject {
         warningMessage = nil
         let now = referenceDateProvider()
 
-        guard let context = commitmentStore.recoveryEntryContext(referenceDate: now) else {
+        guard let context = commitmentService.recoveryEntryContext(referenceDate: now) else {
             isPendingResolution = false
             return
         }
 
         isPendingResolution = true
         requiresPauseSelection = context.requiresPauseSelection
-        triggerProtocolTitle = context.triggerProtocolId.flatMap { commitmentStore.nonNegotiable(id: $0)?.definition.title }
-        pausedProtocolTitle = context.pausedProtocolId.flatMap { commitmentStore.nonNegotiable(id: $0)?.definition.title }
+        triggerProtocolTitle = context.triggerProtocolId.flatMap { commitmentService.nonNegotiable(id: $0)?.definition.title }
+        pausedProtocolTitle = context.pausedProtocolId.flatMap { commitmentService.nonNegotiable(id: $0)?.definition.title }
 
         let plannedLoads = activePlannedLoadsThisWeek()
         let options = context.candidateProtocolIds.compactMap { id -> RecoveryProtocolOption? in
-            guard let nonNegotiable = commitmentStore.nonNegotiable(id: id) else { return nil }
+            guard let nonNegotiable = commitmentService.nonNegotiable(id: id) else { return nil }
             let weeklyLoad = NonNegotiableDefinition.normalizedFrequency(
                 nonNegotiable.definition.frequencyPerWeek,
                 mode: nonNegotiable.definition.mode
@@ -136,13 +136,13 @@ final class RecoveryModeViewModel: ObservableObject {
 
         do {
             let now = referenceDateProvider()
-            try commitmentStore.pauseProtocolForRecovery(protocolId: selectedProtocolId, referenceDate: now)
-            planStore.pauseAllocations(for: selectedProtocolId, referenceDate: now)
-            pausedProtocolTitle = commitmentStore.nonNegotiable(id: selectedProtocolId)?.definition.title
+            try commitmentService.pauseProtocolForRecovery(protocolId: selectedProtocolId, referenceDate: now)
+            planService.pauseAllocations(for: selectedProtocolId, referenceDate: now)
+            pausedProtocolTitle = commitmentService.nonNegotiable(id: selectedProtocolId)?.definition.title
             step = .confirmed
             return true
         } catch {
-            if let copy = commitmentStore.policyCopy(for: error) {
+            if let copy = commitmentService.policyCopy(for: error) {
                 warningMessage = copy.message
             } else {
                 warningMessage = "Unable to pause selected protocol right now."
@@ -152,7 +152,7 @@ final class RecoveryModeViewModel: ObservableObject {
     }
 
     func completeFlow() {
-        commitmentStore.completeRecoveryEntryResolution()
+        commitmentService.completeRecoveryEntryResolution()
     }
 
     func dismissWarning() {
@@ -171,7 +171,7 @@ private extension RecoveryModeViewModel {
     }
 
     func activePlannedLoadsThisWeek() -> [UUID: Int] {
-        let snapshot = planStore.currentWeekSnapshot()
+        let snapshot = planService.currentWeekSnapshot()
         var result: [UUID: Int] = [:]
         for allocation in snapshot.currentWeekAllocations where allocation.status == .active {
             result[allocation.protocolId, default: 0] += 1
