@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 @MainActor
 protocol CommitmentActionService {
@@ -10,4 +11,8 @@ protocol CommitmentActionService {
     func nonNegotiable(id: UUID) -> NonNegotiable?
     func pauseProtocolForRecovery(protocolId: UUID, referenceDate: Date) throws
     func completeRecoveryEntryResolution()
+    
+    var systemPublisher: AnyPublisher<CommitmentSystem, Never> { get }
+    func allowedEditableFields(for protocolId: UUID, referenceDate: Date) -> Set<ProtocolField>
+    func editNonNegotiable(id: UUID, patch: NonNegotiablePatch, referenceDate: Date) throws
 }

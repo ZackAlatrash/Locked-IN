@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 @MainActor
 final class LegacyCommitmentWrapper: CommitmentActionService {
@@ -38,5 +39,15 @@ final class LegacyCommitmentWrapper: CommitmentActionService {
     
     func completeRecoveryEntryResolution() {
         store.completeRecoveryEntryResolution()
+    }
+    
+    var systemPublisher: AnyPublisher<CommitmentSystem, Never> { store.$system.eraseToAnyPublisher() }
+    
+    func allowedEditableFields(for protocolId: UUID, referenceDate: Date) -> Set<ProtocolField> {
+        store.allowedEditableFields(for: protocolId, referenceDate: referenceDate)
+    }
+    
+    func editNonNegotiable(id: UUID, patch: NonNegotiablePatch, referenceDate: Date) throws {
+        try store.editNonNegotiable(id: id, patch: patch, referenceDate: referenceDate)
     }
 }

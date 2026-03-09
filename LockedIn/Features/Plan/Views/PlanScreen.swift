@@ -19,7 +19,21 @@ struct PlanScreen: View {
     @AppStorage("didAnimatePlanColumnsSessionID") private var didAnimatePlanColumnsSessionID = ""
     @AppStorage("didDismissPlanBoardHintSessionID") private var didDismissPlanBoardHintSessionID = ""
 
-    @StateObject var viewModel = PlanViewModel()
+    @StateObject var viewModel: PlanViewModel
+    
+    init(
+        commitmentStore: CommitmentSystemStore,
+        planStore: PlanStore,
+        selectedTab: Binding<MainTab>
+    ) {
+        _selectedTab = selectedTab
+        _viewModel = StateObject(
+            wrappedValue: PlanViewModel(
+                planService: LegacyPlanWrapper(store: planStore),
+                commitmentService: LegacyCommitmentWrapper(store: commitmentStore)
+            )
+        )
+    }
     @State private var showProfile = false
     @State private var boardMode: PlanBoardMode = .focusToday
     @State private var activeDragPayload: String?
@@ -150,7 +164,6 @@ struct PlanScreen: View {
         .onAppear {
             boardMode = .focusToday
             viewModel.setReferenceDateProvider { appClock.now }
-            viewModel.bind(planStore: planStore, commitmentStore: commitmentStore)
             coordinator.bind(router: router, viewModel: viewModel)
             viewModel.refresh(referenceDate: appClock.now)
             handleRoutingIntents()

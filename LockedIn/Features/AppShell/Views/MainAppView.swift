@@ -93,7 +93,11 @@ struct MainAppView: View {
                 .tag(MainTab.cockpit)
 
                 NavigationStack {
-                    PlanScreen(selectedTab: $router.selectedTab)
+                    PlanScreen(
+                        commitmentStore: store,
+                        planStore: planStore,
+                        selectedTab: $router.selectedTab
+                    )
                 }
                 .tabItem {
                     Label("Plan", systemImage: "map.fill")

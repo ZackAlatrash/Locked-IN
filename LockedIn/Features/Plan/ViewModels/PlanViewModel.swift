@@ -28,15 +28,20 @@ final class PlanViewModel: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
     private var referenceDateProvider: () -> Date = { Date() }
 
-    private weak var planStore: PlanStore?
-    private weak var commitmentStore: CommitmentSystemStore?
+    private let planService: PlanService
+    private let commitmentService: CommitmentActionService
 
     init(
+        planService: PlanService,
+        commitmentService: CommitmentActionService,
         calendarProvider: PlanCalendarProviding? = nil,
         regulatorEngine: PlanRegulatorEngine? = nil
     ) {
+        self.planService = planService
+        self.commitmentService = commitmentService
         self.calendarProvider = calendarProvider ?? AppleCalendarProvider()
         self.regulatorEngine = regulatorEngine ?? PlanRegulatorEngine()
+        setupSubscriptions()
     }
 
     var isCalendarConnected: Bool {
@@ -59,62 +64,55 @@ final class PlanViewModel: ObservableObject {
     }
 
     var weekSubtitle: String {
-        planStore?.weekSubtitle ?? ""
+        planService.weekSubtitle
     }
 
     func setReferenceDateProvider(_ provider: @escaping () -> Date) {
         referenceDateProvider = provider
     }
 
-    func bind(planStore: PlanStore, commitmentStore: CommitmentSystemStore) {
-        let needsRebind = self.planStore !== planStore || self.commitmentStore !== commitmentStore
-        guard needsRebind else { return }
-
-        cancellables.removeAll()
-
-        self.planStore = planStore
-        self.commitmentStore = commitmentStore
+    private func setupSubscriptions() {
         calendarAccessStatus = calendarProvider.authorizationStatus()
 
-        planStore.$currentWeekDays
+        planService.currentWeekDaysPublisher
             .sink { [weak self] in self?.currentWeekDays = $0 }
             .store(in: &cancellables)
 
-        planStore.$queueItems
+        planService.queueItemsPublisher
             .sink { [weak self] in self?.queueItems = $0 }
             .store(in: &cancellables)
 
-        planStore.$selectedQueueProtocolId
+        planService.selectedQueueProtocolIdPublisher
             .sink { [weak self] in self?.selectedQueueProtocolId = $0 }
             .store(in: &cancellables)
 
-        planStore.$todaySummary
+        planService.todaySummaryPublisher
             .sink { [weak self] in self?.todaySummary = $0 }
             .store(in: &cancellables)
 
-        planStore.$structureStatus
+        planService.structureStatusPublisher
             .sink { [weak self] in self?.structureStatus = $0 }
             .store(in: &cancellables)
 
-        planStore.$structureMessage
+        planService.structureMessagePublisher
             .sink { [weak self] in self?.structureMessage = $0 }
             .store(in: &cancellables)
 
-        planStore.$warningMessage
+        planService.warningMessagePublisher
             .sink { [weak self] in self?.warningMessage = $0 }
             .store(in: &cancellables)
 
-        planStore.$warningReason
+        planService.warningReasonPublisher
             .sink { [weak self] reason in
                 self?.warningCopy = reason?.copy()
             }
             .store(in: &cancellables)
 
-        planStore.$hasTrackableProtocols
+        planService.hasTrackableProtocolsPublisher
             .sink { [weak self] in self?.hasTrackableProtocols = $0 }
             .store(in: &cancellables)
 
-        commitmentStore.$system
+        commitmentService.systemPublisher
             .sink { [weak self] _ in
                 self?.refresh(referenceDate: self?.currentReferenceDate())
             }
@@ -124,7 +122,6 @@ final class PlanViewModel: ObservableObject {
     }
 
     func refresh(referenceDate: Date? = nil) {
-        guard let planStore, let commitmentStore else { return }
         let referenceDate = referenceDate ?? currentReferenceDate()
         let week = DateRules.weekInterval(containing: referenceDate, calendar: DateRules.isoCalendar)
         calendarAccessStatus = calendarProvider.authorizationStatus()
@@ -135,7 +132,15 @@ final class PlanViewModel: ObservableObject {
             events = []
         }
         calendarEventsThisWeekCount = events.count
-        planStore.refresh(system: commitmentStore.system, calendarEvents: events, referenceDate: referenceDate)
+        
+        var currentSystem: CommitmentSystem?
+        commitmentService.systemPublisher.prefix(1).sink { system in
+            currentSystem = system
+        }.store(in: &cancellables)
+        
+        if let currentSystem = currentSystem {
+            planService.refresh(system: currentSystem, calendarEvents: events, referenceDate: referenceDate)
+        }
     }
 
     func requestCalendarAccess() async {
@@ -149,7 +154,7 @@ final class PlanViewModel: ObservableObject {
     }
 
     func protocolTitle(for id: UUID) -> String {
-        planStore?.protocolTitle(for: id) ?? "Protocol"
+        planService.protocolTitle(for: id)
     }
 
     func queueItem(for protocolId: UUID) -> PlanQueueItem? {
@@ -164,60 +169,62 @@ final class PlanViewModel: ObservableObject {
     }
 
     func validateProtocolPlacement(protocolId: UUID, day: Date, slot: PlanSlot) -> PlanPlacementValidation {
-        planStore?.validateProtocolPlacement(protocolId: protocolId, day: day, slot: slot, context: .manual)
-            ?? .blocked(message: "Plan system unavailable.", reason: .generic(message: "Plan system unavailable."))
+        planService.validateProtocolPlacement(protocolId: protocolId, day: day, slot: slot, context: .manual)
     }
 
     func validateMove(allocationId: UUID, day: Date, slot: PlanSlot) -> PlanPlacementValidation {
-        planStore?.validateMove(allocationId: allocationId, day: day, slot: slot)
-            ?? .blocked(message: "Plan system unavailable.", reason: .generic(message: "Plan system unavailable."))
+        planService.validateMove(allocationId: allocationId, day: day, slot: slot)
     }
 
     func selectProtocol(id: UUID) {
-        planStore?.selectProtocol(id)
+        planService.selectProtocol(id)
     }
 
     func focusProtocol(id: UUID?) {
-        planStore?.focusProtocol(id)
+        planService.focusProtocol(id)
     }
 
     func clearWarning() {
-        planStore?.clearWarning()
+        planService.clearWarning()
     }
 
     @discardableResult
     func placeSelectedProtocol(day: Date, slot: PlanSlot) -> PlanMutation? {
-        planStore?.placeSelectedProtocol(day: day, slot: slot)
+        planService.placeSelectedProtocol(day: day, slot: slot)
     }
 
     @discardableResult
     func placeProtocol(protocolId: UUID, day: Date, slot: PlanSlot) -> PlanMutation? {
-        planStore?.placeProtocol(protocolId: protocolId, day: day, slot: slot)
+        planService.placeProtocol(protocolId: protocolId, day: day, slot: slot)
     }
 
     func editAllocation(allocationId: UUID) {
-        selectedAllocation = planStore?.allocation(id: allocationId)
+        selectedAllocation = planService.allocation(id: allocationId)
     }
 
     func removeAllocation(allocationId: UUID) {
-        planStore?.removeAllocation(id: allocationId)
+        planService.removeAllocation(id: allocationId)
         selectedAllocation = nil
     }
 
     @discardableResult
     func moveAllocation(allocationId: UUID, to day: Date, slot: PlanSlot) -> PlanMutation? {
-        let mutation = planStore?.moveAllocation(id: allocationId, newDay: day, newSlot: slot)
+        let mutation = planService.moveAllocation(id: allocationId, newDay: day, newSlot: slot)
         selectedAllocation = nil
         return mutation
     }
 
     func runRegulator() {
-        guard let planStore, let commitmentStore else { return }
+        var currentSystem: CommitmentSystem?
+        commitmentService.systemPublisher.prefix(1).sink { system in
+            currentSystem = system
+        }.store(in: &cancellables)
+        guard let system = currentSystem else { return }
 
-        let snapshot = planStore.currentWeekSnapshot()
+        let snapshot = planService.currentWeekSnapshot()
         let activeAllocations = snapshot.currentWeekAllocations.filter { $0.status == .active }
         let protocols = buildProtocolPlanItems(
-            system: commitmentStore.system,
+            system: system,
             weekId: snapshot.weekId,
             allocations: activeAllocations
         )
@@ -249,7 +256,7 @@ final class PlanViewModel: ObservableObject {
         )
 
         let draft = regulatorEngine.regulate(input: input)
-        let validationWarnings = planStore.validateDraft(draft.suggestedAllocations)
+        let validationWarnings = planService.validateDraft(draft.suggestedAllocations)
         let mergedSuggestions = draft.suggestions + validationWarnings
 
         draftAllocations = draft.suggestedAllocations
@@ -283,10 +290,9 @@ final class PlanViewModel: ObservableObject {
 
     @discardableResult
     func applyDraft() -> Bool {
-        guard let planStore else { return false }
         guard hasDraft else { return false }
 
-        let result = planStore.applyDraft(draftAllocations)
+        let result = planService.applyDraft(draftAllocations)
         switch result {
         case .success:
             discardDraft()
@@ -313,12 +319,17 @@ final class PlanViewModel: ObservableObject {
     }
 
     func openProtocolEditor(protocolId: UUID) {
-        guard let commitmentStore else { return }
-        guard let nonNegotiable = commitmentStore.system.nonNegotiables.first(where: { $0.id == protocolId }) else {
+        var currentSystem: CommitmentSystem?
+        commitmentService.systemPublisher.prefix(1).sink { system in
+            currentSystem = system
+        }.store(in: &cancellables)
+        guard let system = currentSystem else { return }
+        
+        guard let nonNegotiable = system.nonNegotiables.first(where: { $0.id == protocolId }) else {
             return
         }
         let referenceDate = currentReferenceDate()
-        let editableFields = commitmentStore.allowedEditableFields(for: protocolId, referenceDate: referenceDate)
+        let editableFields = commitmentService.allowedEditableFields(for: protocolId, referenceDate: referenceDate)
         let lockEnd = DateRules.addingDays(
             nonNegotiable.lock.totalLockDays,
             to: DateRules.startOfDay(nonNegotiable.lock.startDate, calendar: DateRules.isoCalendar),
@@ -364,9 +375,8 @@ final class PlanViewModel: ObservableObject {
         frequencyPerWeek: Int?,
         lockDays: Int?
     ) -> Bool {
-        guard let commitmentStore else { return false }
         do {
-            try commitmentStore.editNonNegotiable(
+            try commitmentService.editNonNegotiable(
                 id: id,
                 patch: NonNegotiablePatch(
                     newTitle: title,
@@ -471,9 +481,8 @@ private extension PlanViewModel {
 
         return suggestions.map { suggestion in
             let dayLabel: String
-            if (0...6).contains(suggestion.dayIndex),
-               let planStore {
-                let start = planStore.currentWeekSnapshot().weekStartDate
+            if (0...6).contains(suggestion.dayIndex) {
+                let start = planService.currentWeekSnapshot().weekStartDate
                 if let day = DateRules.isoCalendar.date(byAdding: .day, value: suggestion.dayIndex, to: start) {
                     dayLabel = formatter.string(from: day).uppercased()
                 } else {
@@ -486,7 +495,7 @@ private extension PlanViewModel {
             return PlanSuggestionUIModel(
                 id: suggestion.id,
                 protocolId: suggestion.protocolId,
-                protocolTitle: planStore?.protocolTitle(for: suggestion.protocolId) ?? "Protocol",
+                protocolTitle: planService.protocolTitle(for: suggestion.protocolId),
                 dayLabel: dayLabel,
                 slotLabel: suggestion.slot.title,
                 confidence: suggestion.confidence,
@@ -502,8 +511,7 @@ private extension PlanViewModel {
     }
 
     func mapProtocolEditError(_ error: Error) -> String {
-        if let commitmentStore,
-           let copy = commitmentStore.policyCopy(for: error) {
+        if let copy = commitmentService.policyCopy(for: error) {
             return copy.message
         }
 
