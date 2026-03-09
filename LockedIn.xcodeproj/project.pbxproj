@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		1750B674EC17AE76D77E47A1 /* DailyCheckInReliabilityCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA6A1467F25898471104EB05 /* DailyCheckInReliabilityCalculatorTests.swift */; };
+		3097951345E4980B2A68471B /* PlanService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA99939535303F628DEFAB3F /* PlanService.swift */; };
+		37AAD9A0F479C74B1E182B3A /* LegacyCommitmentWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 688CDA26F0B9DFF7CF81B36F /* LegacyCommitmentWrapper.swift */; };
 		3C8DFC4C5AD39F37E066B7FD /* WeeklyAllowanceCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B27F50918C79535C7710FB38 /* WeeklyAllowanceCalculator.swift */; };
 		40A77A482F3CD39800BC4E39 /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A382F3CD39800BC4E39 /* GlassCard.swift */; };
 		40A77A492F3CD39800BC4E39 /* ProgressIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */; };
@@ -118,6 +120,8 @@
 		B10000000000000000000005 /* CommitmentSystemStoreBehaviorLockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000006 /* CommitmentSystemStoreBehaviorLockTests.swift */; };
 		B10000000000000000000006 /* CommitmentSystemStoreTestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000007 /* CommitmentSystemStoreTestFixtures.swift */; };
 		B10000000000000000000007 /* CrossFeatureCompletionParityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000008 /* CrossFeatureCompletionParityTests.swift */; };
+		B4248C383A6F23ABC4974479 /* CommitmentActionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABBB99CB718E66A24A5F1238 /* CommitmentActionService.swift */; };
+		C4DD740C4F7166880C2B3EFF /* LegacyPlanWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61960B7AC0C54DC2B4B09BE3 /* LegacyPlanWrapper.swift */; };
 		D6DE727F4F8ED11D0F299854 /* ReliabilityCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88E65A0BB27AED421A9F984 /* ReliabilityCalculatorTests.swift */; };
 		E55D82FC6DEF1FBBDD649022 /* ReliabilityCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF3757369CC715A9D06CD6E /* ReliabilityCalculator.swift */; };
 /* End PBXBuildFile section */
@@ -163,6 +167,8 @@
 		40A77A8A2F3DB20000BC4E39 /* UserHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = UserHistoryViewModel.swift; path = LockedIn/Features/Onboarding/SubFeatures/UserHistory/ViewModels/UserHistoryViewModel.swift; sourceTree = SOURCE_ROOT; };
 		40A77A8B2F3DB30000BC4E39 /* CreateNonNegotiableViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CreateNonNegotiableViewModel.swift; path = LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift; sourceTree = SOURCE_ROOT; };
 		40A77A8C2F3DB40000BC4E39 /* CommitmentAgreementViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommitmentAgreementViewModel.swift; path = LockedIn/Features/Onboarding/SubFeatures/CommitmentAgreement/ViewModels/CommitmentAgreementViewModel.swift; sourceTree = SOURCE_ROOT; };
+		61960B7AC0C54DC2B4B09BE3 /* LegacyPlanWrapper.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LegacyPlanWrapper.swift; sourceTree = "<group>"; };
+		688CDA26F0B9DFF7CF81B36F /* LegacyCommitmentWrapper.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LegacyCommitmentWrapper.swift; sourceTree = "<group>"; };
 		7FF3757369CC715A9D06CD6E /* ReliabilityCalculator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReliabilityCalculator.swift; sourceTree = "<group>"; };
 		A20000000000000000000001 /* CommitmentSystemRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommitmentSystemRepository.swift; path = LockedIn/Core/Persistence/CommitmentSystemRepository.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000002 /* InMemoryCommitmentSystemRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InMemoryCommitmentSystemRepository.swift; path = LockedIn/Core/Persistence/InMemoryCommitmentSystemRepository.swift; sourceTree = SOURCE_ROOT; };
@@ -238,6 +244,7 @@
 		A20000000000000000000051 /* ProfileSheetContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProfileSheetContainer.swift; path = LockedIn/CoreUI/Components/ProfileSheetContainer.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000052 /* LogsProfileToolbarActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LogsProfileToolbarActions.swift; path = LockedIn/CoreUI/Components/LogsProfileToolbarActions.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000053 /* CockpitCompletionExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CockpitCompletionExecutor.swift; path = LockedIn/Features/Cockpit/Models/CockpitCompletionExecutor.swift; sourceTree = SOURCE_ROOT; };
+		ABBB99CB718E66A24A5F1238 /* CommitmentActionService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CommitmentActionService.swift; sourceTree = "<group>"; };
 		B20000000000000000000001 /* LockedInSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LockedInSmokeTests.swift; path = LockedInTests/Smoke/LockedInSmokeTests.swift; sourceTree = SOURCE_ROOT; };
 		B20000000000000000000002 /* TestCalendarSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TestCalendarSupport.swift; path = LockedInTests/TestSupport/TestCalendarSupport.swift; sourceTree = SOURCE_ROOT; };
 		B20000000000000000000003 /* LockedInTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LockedInTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -247,6 +254,7 @@
 		B20000000000000000000007 /* CommitmentSystemStoreTestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommitmentSystemStoreTestFixtures.swift; path = LockedInTests/TestSupport/CommitmentSystemStoreTestFixtures.swift; sourceTree = SOURCE_ROOT; };
 		B20000000000000000000008 /* CrossFeatureCompletionParityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CrossFeatureCompletionParityTests.swift; path = LockedInTests/Parity/CrossFeatureCompletionParityTests.swift; sourceTree = SOURCE_ROOT; };
 		B27F50918C79535C7710FB38 /* WeeklyAllowanceCalculator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeeklyAllowanceCalculator.swift; sourceTree = "<group>"; };
+		BA99939535303F628DEFAB3F /* PlanService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlanService.swift; sourceTree = "<group>"; };
 		DA6A1467F25898471104EB05 /* DailyCheckInReliabilityCalculatorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DailyCheckInReliabilityCalculatorTests.swift; sourceTree = "<group>"; };
 		F88E65A0BB27AED421A9F984 /* ReliabilityCalculatorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReliabilityCalculatorTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -279,6 +287,8 @@
 				A2000000000000000000001C /* NonNegotiable.swift */,
 				7FF3757369CC715A9D06CD6E /* ReliabilityCalculator.swift */,
 				B27F50918C79535C7710FB38 /* WeeklyAllowanceCalculator.swift */,
+				ABBB99CB718E66A24A5F1238 /* CommitmentActionService.swift */,
+				BA99939535303F628DEFAB3F /* PlanService.swift */,
 			);
 			name = Domain;
 			path = Domain;
@@ -547,6 +557,8 @@
 		6AC30BA7867B0132CEC2C25A /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				688CDA26F0B9DFF7CF81B36F /* LegacyCommitmentWrapper.swift */,
+				61960B7AC0C54DC2B4B09BE3 /* LegacyPlanWrapper.swift */,
 			);
 			name = Data;
 			path = Data;
@@ -850,6 +862,10 @@
 				40A77A902F3DB40000BC4E39 /* CommitmentAgreementViewModel.swift in Sources */,
 				E55D82FC6DEF1FBBDD649022 /* ReliabilityCalculator.swift in Sources */,
 				3C8DFC4C5AD39F37E066B7FD /* WeeklyAllowanceCalculator.swift in Sources */,
+				B4248C383A6F23ABC4974479 /* CommitmentActionService.swift in Sources */,
+				3097951345E4980B2A68471B /* PlanService.swift in Sources */,
+				37AAD9A0F479C74B1E182B3A /* LegacyCommitmentWrapper.swift in Sources */,
+				C4DD740C4F7166880C2B3EFF /* LegacyPlanWrapper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
