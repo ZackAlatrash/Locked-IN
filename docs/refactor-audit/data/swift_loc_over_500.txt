@@ -1,0 +1,8 @@
+  2396 LockedIn/Features/Plan/Views/PlanScreen.swift
+  1366 LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift
+  1227 LockedIn/Application/PlanStore.swift
+  1013 LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift
+   847 LockedIn/Application/CommitmentSystemStore.swift
+   766 LockedIn/Features/Cockpit/Views/CockpitView.swift
+   672 LockedIn/Features/Cockpit/Views/CockpitModernView.swift
+   604 LockedIn/Features/Plan/ViewModels/PlanViewModel.swift

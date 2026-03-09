@@ -37,7 +37,6 @@
 		A10000000000000000000001 /* CommitmentSystemRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* CommitmentSystemRepository.swift */; };
 		A10000000000000000000002 /* InMemoryCommitmentSystemRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* InMemoryCommitmentSystemRepository.swift */; };
 		A10000000000000000000003 /* JSONFileCommitmentSystemRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* JSONFileCommitmentSystemRepository.swift */; };
-		A10000000000000000000004 /* RepositorySimulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* RepositorySimulation.swift */; };
 		A10000000000000000000005 /* LiquidGlassNavBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* LiquidGlassNavBar.swift */; };
 		A10000000000000000000006 /* FitnessLiquidGlassNavStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* FitnessLiquidGlassNavStyle.swift */; };
 		A10000000000000000000008 /* CockpitViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* CockpitViewModel.swift */; };
@@ -61,8 +60,6 @@
 		A1000000000000000000001A /* Window.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* Window.swift */; };
 		A1000000000000000000001B /* NonNegotiableDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* NonNegotiableDefinition.swift */; };
 		A1000000000000000000001C /* NonNegotiable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001C /* NonNegotiable.swift */; };
-		A1000000000000000000001D /* NonNegotiableEngineSimulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001D /* NonNegotiableEngineSimulation.swift */; };
-		A1000000000000000000001E /* CommitmentSystemSimulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001E /* CommitmentSystemSimulation.swift */; };
 		A1000000000000000000001F /* CommitmentSystemEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001F /* CommitmentSystemEngine.swift */; };
 		A10000000000000000000020 /* NonNegotiableEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* NonNegotiableEngine.swift */; };
 		A10000000000000000000021 /* NonNegotiableMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* NonNegotiableMode.swift */; };
@@ -82,7 +79,6 @@
 		A10000000000000000000030 /* PlanScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000030 /* PlanScreen.swift */; };
 		A10000000000000000000031 /* PlanRegulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000031 /* PlanRegulation.swift */; };
 		A10000000000000000000032 /* PlanRegulatorEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000032 /* PlanRegulatorEngine.swift */; };
-		A10000000000000000000033 /* PlanRegulatorSimulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000033 /* PlanRegulatorSimulation.swift */; };
 		A10000000000000000000034 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000034 /* Haptics.swift */; };
 		A10000000000000000000035 /* MotionRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000035 /* MotionRuntime.swift */; };
 		A10000000000000000000036 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000036 /* AppRouter.swift */; };
@@ -101,17 +97,35 @@
 		A10000000000000000000044 /* DevOptionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000044 /* DevOptionsView.swift */; };
 		A10000000000000000000045 /* DevOptionsSectionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000045 /* DevOptionsSectionCard.swift */; };
 		A10000000000000000000046 /* DevSeedScenarioRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000046 /* DevSeedScenarioRow.swift */; };
-		A10000000000000000000047 /* PlanCompletionReconciliationSimulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000047 /* PlanCompletionReconciliationSimulation.swift */; };
 		A10000000000000000000048 /* PolicyDecision.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000048 /* PolicyDecision.swift */; };
 		A10000000000000000000049 /* PolicyReason.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000049 /* PolicyReason.swift */; };
 		A1000000000000000000004A /* ProtocolPatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000004A /* ProtocolPatch.swift */; };
 		A1000000000000000000004B /* CommitmentPolicyEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000004B /* CommitmentPolicyEngine.swift */; };
-		A1000000000000000000004C /* CommitmentPolicyEngineSimulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000004C /* CommitmentPolicyEngineSimulation.swift */; };
 		A1000000000000000000004D /* RecoveryFlowState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000004D /* RecoveryFlowState.swift */; };
 		A1000000000000000000004E /* RecoveryModeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000004E /* RecoveryModeViewModel.swift */; };
 		A1000000000000000000004F /* RecoveryModePopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000004F /* RecoveryModePopup.swift */; };
 		A10000000000000000000050 /* RecoveryProtocolSelectionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000050 /* RecoveryProtocolSelectionCard.swift */; };
+		A10000000000000000000051 /* ProfileSheetContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000051 /* ProfileSheetContainer.swift */; };
+		A10000000000000000000052 /* LogsProfileToolbarActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000052 /* LogsProfileToolbarActions.swift */; };
+		A10000000000000000000053 /* CockpitCompletionExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000053 /* CockpitCompletionExecutor.swift */; };
+		B10000000000000000000001 /* LockedInSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* LockedInSmokeTests.swift */; };
+		B10000000000000000000002 /* TestCalendarSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* TestCalendarSupport.swift */; };
+		B10000000000000000000003 /* PlanStoreBehaviorLockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* PlanStoreBehaviorLockTests.swift */; };
+		B10000000000000000000004 /* PlanStoreTestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000005 /* PlanStoreTestFixtures.swift */; };
+		B10000000000000000000005 /* CommitmentSystemStoreBehaviorLockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000006 /* CommitmentSystemStoreBehaviorLockTests.swift */; };
+		B10000000000000000000006 /* CommitmentSystemStoreTestFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000007 /* CommitmentSystemStoreTestFixtures.swift */; };
+		B10000000000000000000007 /* CrossFeatureCompletionParityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000008 /* CrossFeatureCompletionParityTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B60000000000000000000002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 40A779EA2F3CCA1E00BC4E39 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 40A779F12F3CCA1E00BC4E39;
+			remoteInfo = LockedIn;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		40A779F22F3CCA1E00BC4E39 /* LockedIn.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LockedIn.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -221,10 +235,28 @@
 		A2000000000000000000004E /* RecoveryModeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecoveryModeViewModel.swift; path = LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift; sourceTree = SOURCE_ROOT; };
 		A2000000000000000000004F /* RecoveryModePopup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecoveryModePopup.swift; path = LockedIn/Features/Recovery/Views/RecoveryModePopup.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000050 /* RecoveryProtocolSelectionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecoveryProtocolSelectionCard.swift; path = LockedIn/Features/Recovery/Components/RecoveryProtocolSelectionCard.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000051 /* ProfileSheetContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProfileSheetContainer.swift; path = LockedIn/CoreUI/Components/ProfileSheetContainer.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000052 /* LogsProfileToolbarActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LogsProfileToolbarActions.swift; path = LockedIn/CoreUI/Components/LogsProfileToolbarActions.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000053 /* CockpitCompletionExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CockpitCompletionExecutor.swift; path = LockedIn/Features/Cockpit/Models/CockpitCompletionExecutor.swift; sourceTree = SOURCE_ROOT; };
+		B20000000000000000000001 /* LockedInSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LockedInSmokeTests.swift; path = LockedInTests/Smoke/LockedInSmokeTests.swift; sourceTree = SOURCE_ROOT; };
+		B20000000000000000000002 /* TestCalendarSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TestCalendarSupport.swift; path = LockedInTests/TestSupport/TestCalendarSupport.swift; sourceTree = SOURCE_ROOT; };
+		B20000000000000000000003 /* LockedInTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LockedInTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000000000000000000004 /* PlanStoreBehaviorLockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanStoreBehaviorLockTests.swift; path = LockedInTests/PlanStore/PlanStoreBehaviorLockTests.swift; sourceTree = SOURCE_ROOT; };
+		B20000000000000000000005 /* PlanStoreTestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanStoreTestFixtures.swift; path = LockedInTests/TestSupport/PlanStoreTestFixtures.swift; sourceTree = SOURCE_ROOT; };
+		B20000000000000000000006 /* CommitmentSystemStoreBehaviorLockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommitmentSystemStoreBehaviorLockTests.swift; path = LockedInTests/CommitmentSystemStore/CommitmentSystemStoreBehaviorLockTests.swift; sourceTree = SOURCE_ROOT; };
+		B20000000000000000000007 /* CommitmentSystemStoreTestFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommitmentSystemStoreTestFixtures.swift; path = LockedInTests/TestSupport/CommitmentSystemStoreTestFixtures.swift; sourceTree = SOURCE_ROOT; };
+		B20000000000000000000008 /* CrossFeatureCompletionParityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CrossFeatureCompletionParityTests.swift; path = LockedInTests/Parity/CrossFeatureCompletionParityTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		40A779EF2F3CCA1E00BC4E39 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B40000000000000000000002 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -249,6 +281,7 @@
 				A20000000000000000000035 /* MotionRuntime.swift */,
 				A20000000000000000000008 /* CockpitViewModel.swift */,
 				A20000000000000000000009 /* CockpitUIModel.swift */,
+				A20000000000000000000053 /* CockpitCompletionExecutor.swift */,
 				A2000000000000000000000A /* CockpitNonNegotiableCard.swift */,
 				A2000000000000000000000B /* CockpitKpiCard.swift */,
 				A2000000000000000000000C /* FitnessLiquidGlassNavDemoView.swift */,
@@ -325,6 +358,7 @@
 			isa = PBXGroup;
 			children = (
 				40A77A472F3CD39800BC4E39 /* LockedIn */,
+				B30000000000000000000001 /* LockedInTests */,
 				40A779F32F3CCA1E00BC4E39 /* Products */,
 				403C397F2F44F45200F8E21B /* Recovered References */,
 			);
@@ -334,8 +368,63 @@
 			isa = PBXGroup;
 			children = (
 				40A779F22F3CCA1E00BC4E39 /* LockedIn.app */,
+				B20000000000000000000003 /* LockedInTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		B30000000000000000000001 /* LockedInTests */ = {
+			isa = PBXGroup;
+			children = (
+				B30000000000000000000006 /* Parity */,
+				B30000000000000000000005 /* CommitmentSystemStore */,
+				B30000000000000000000004 /* PlanStore */,
+				B30000000000000000000002 /* Smoke */,
+				B30000000000000000000003 /* TestSupport */,
+			);
+			path = LockedInTests;
+			sourceTree = SOURCE_ROOT;
+		};
+		B30000000000000000000002 /* Smoke */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000001 /* LockedInSmokeTests.swift */,
+			);
+			path = Smoke;
+			sourceTree = "<group>";
+		};
+		B30000000000000000000003 /* TestSupport */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000007 /* CommitmentSystemStoreTestFixtures.swift */,
+				B20000000000000000000005 /* PlanStoreTestFixtures.swift */,
+				B20000000000000000000002 /* TestCalendarSupport.swift */,
+			);
+			path = TestSupport;
+			sourceTree = "<group>";
+		};
+		B30000000000000000000004 /* PlanStore */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000004 /* PlanStoreBehaviorLockTests.swift */,
+			);
+			path = PlanStore;
+			sourceTree = "<group>";
+		};
+		B30000000000000000000005 /* CommitmentSystemStore */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000006 /* CommitmentSystemStoreBehaviorLockTests.swift */,
+			);
+			path = CommitmentSystemStore;
+			sourceTree = "<group>";
+		};
+		B30000000000000000000006 /* Parity */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000008 /* CrossFeatureCompletionParityTests.swift */,
+			);
+			path = Parity;
 			sourceTree = "<group>";
 		};
 		40A77A372F3CD39800BC4E39 /* App */ = {
@@ -353,6 +442,8 @@
 				40A77A392F3CD39800BC4E39 /* PrimaryButton.swift */,
 				40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */,
 				40A77A702F3D300000BC4E39 /* NonNegotiableCard.swift */,
+				A20000000000000000000051 /* ProfileSheetContainer.swift */,
+				A20000000000000000000052 /* LogsProfileToolbarActions.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -506,6 +597,26 @@
 			productReference = 40A779F22F3CCA1E00BC4E39 /* LockedIn.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B50000000000000000000001 /* LockedInTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B70000000000000000000003 /* Build configuration list for PBXNativeTarget "LockedInTests" */;
+			buildPhases = (
+				B40000000000000000000003 /* Sources */,
+				B40000000000000000000002 /* Frameworks */,
+				B40000000000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B60000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = LockedInTests;
+			packageProductDependencies = (
+			);
+			productName = LockedInTests;
+			productReference = B20000000000000000000003 /* LockedInTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -518,6 +629,10 @@
 				TargetAttributes = {
 					40A779F12F3CCA1E00BC4E39 = {
 						CreatedOnToolsVersion = 26.2;
+					};
+					B50000000000000000000001 = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = 40A779F12F3CCA1E00BC4E39;
 					};
 				};
 			};
@@ -536,6 +651,7 @@
 			projectRoot = "";
 			targets = (
 				40A779F12F3CCA1E00BC4E39 /* LockedIn */,
+				B50000000000000000000001 /* LockedInTests */,
 			);
 		};
 /* End PBXProject section */
@@ -547,6 +663,13 @@
 			files = (
 				40A77A592F3CD80000BC4E39 /* Assets.xcassets in Resources */,
 				40A77A772F3D700000BC4E39 /* Inter-VariableFont_opsz,wght.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B40000000000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -562,7 +685,6 @@
 				A10000000000000000000003 /* JSONFileCommitmentSystemRepository.swift in Sources */,
 				A1000000000000000000002B /* PlanAllocationRepository.swift in Sources */,
 				A1000000000000000000002C /* JSONFilePlanAllocationRepository.swift in Sources */,
-				A10000000000000000000004 /* RepositorySimulation.swift in Sources */,
 				A10000000000000000000005 /* LiquidGlassNavBar.swift in Sources */,
 				A10000000000000000000006 /* FitnessLiquidGlassNavStyle.swift in Sources */,
 				A10000000000000000000034 /* Haptics.swift in Sources */,
@@ -589,7 +711,6 @@
 				A10000000000000000000040 /* AppClock.swift in Sources */,
 				A10000000000000000000041 /* DevRuntimeState.swift in Sources */,
 				A1000000000000000000002D /* PlanStore.swift in Sources */,
-				A10000000000000000000047 /* PlanCompletionReconciliationSimulation.swift in Sources */,
 				A10000000000000000000042 /* DevOptionsController.swift in Sources */,
 				A10000000000000000000043 /* DevSeedScenario.swift in Sources */,
 				A10000000000000000000037 /* DailyCheckInPolicy.swift in Sources */,
@@ -613,7 +734,6 @@
 				A10000000000000000000030 /* PlanScreen.swift in Sources */,
 				A10000000000000000000031 /* PlanRegulation.swift in Sources */,
 				A10000000000000000000032 /* PlanRegulatorEngine.swift in Sources */,
-				A10000000000000000000033 /* PlanRegulatorSimulation.swift in Sources */,
 				A10000000000000000000014 /* DateRules.swift in Sources */,
 				A10000000000000000000015 /* Violation.swift in Sources */,
 				A10000000000000000000016 /* NonNegotiableState.swift in Sources */,
@@ -623,8 +743,6 @@
 				A1000000000000000000001A /* Window.swift in Sources */,
 				A1000000000000000000001B /* NonNegotiableDefinition.swift in Sources */,
 				A1000000000000000000001C /* NonNegotiable.swift in Sources */,
-				A1000000000000000000001D /* NonNegotiableEngineSimulation.swift in Sources */,
-				A1000000000000000000001E /* CommitmentSystemSimulation.swift in Sources */,
 				A1000000000000000000001F /* CommitmentSystemEngine.swift in Sources */,
 				A10000000000000000000020 /* NonNegotiableEngine.swift in Sources */,
 				A10000000000000000000021 /* NonNegotiableMode.swift in Sources */,
@@ -633,11 +751,13 @@
 				A10000000000000000000049 /* PolicyReason.swift in Sources */,
 				A1000000000000000000004A /* ProtocolPatch.swift in Sources */,
 				A1000000000000000000004B /* CommitmentPolicyEngine.swift in Sources */,
-				A1000000000000000000004C /* CommitmentPolicyEngineSimulation.swift in Sources */,
 				40A77A482F3CD39800BC4E39 /* GlassCard.swift in Sources */,
 				40A77A492F3CD39800BC4E39 /* ProgressIndicator.swift in Sources */,
 				40A77A6F2F3D300000BC4E39 /* NonNegotiableCard.swift in Sources */,
 				40A77A4C2F3CD39800BC4E39 /* PrimaryButton.swift in Sources */,
+				A10000000000000000000051 /* ProfileSheetContainer.swift in Sources */,
+				A10000000000000000000052 /* LogsProfileToolbarActions.swift in Sources */,
+				A10000000000000000000053 /* CockpitCompletionExecutor.swift in Sources */,
 				40A77A542F3CD49800BC4E39 /* Locked_INApp.swift in Sources */,
 				40A77A612F3CF00000BC4E39 /* OnboardingShellView.swift in Sources */,
 				40A77A632F3CF00000BC4E39 /* OnboardingShellViewModel.swift in Sources */,
@@ -662,7 +782,29 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B40000000000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000005 /* CommitmentSystemStoreBehaviorLockTests.swift in Sources */,
+				B10000000000000000000006 /* CommitmentSystemStoreTestFixtures.swift in Sources */,
+				B10000000000000000000001 /* LockedInSmokeTests.swift in Sources */,
+				B10000000000000000000002 /* TestCalendarSupport.swift in Sources */,
+				B10000000000000000000003 /* PlanStoreBehaviorLockTests.swift in Sources */,
+				B10000000000000000000004 /* PlanStoreTestFixtures.swift in Sources */,
+				B10000000000000000000007 /* CrossFeatureCompletionParityTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B60000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 40A779F12F3CCA1E00BC4E39 /* LockedIn */;
+			targetProxy = B60000000000000000000002 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		40A779FD2F3CCA1F00BC4E39 /* Debug */ = {
@@ -858,6 +1000,56 @@
 			};
 			name = Release;
 		};
+		B70000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2A6452539P;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "Epistles-of-Wisdom.LockedInTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LockedIn.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LockedIn";
+				TEST_TARGET_NAME = LockedIn;
+			};
+			name = Debug;
+		};
+		B70000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2A6452539P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "Epistles-of-Wisdom.LockedInTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LockedIn.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LockedIn";
+				TEST_TARGET_NAME = LockedIn;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -875,6 +1067,15 @@
 			buildConfigurations = (
 				40A77A002F3CCA1F00BC4E39 /* Debug */,
 				40A77A012F3CCA1F00BC4E39 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B70000000000000000000003 /* Build configuration list for PBXNativeTarget "LockedInTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B70000000000000000000001 /* Debug */,
+				B70000000000000000000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

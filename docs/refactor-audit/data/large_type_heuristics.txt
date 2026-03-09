@@ -1,0 +1,24 @@
+  838 LockedIn/Application/CommitmentSystemStore.swift:10 final class CommitmentSystemStore: ObservableObject {
+  513 LockedIn/Application/PlanStore.swift:51 final class PlanStore: ObservableObject {
+  395 LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:5 final class DailyCheckInViewModel: ObservableObject {
+  387 LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:5 final class PlanViewModel: ObservableObject {
+  375 LockedIn/Domain/Engines/CommitmentSystemEngine.swift:16 final class CommitmentSystemEngine {
+  326 LockedIn/Application/DevOptionsController.swift:5 final class DevOptionsController: ObservableObject {
+  304 LockedIn/Domain/Engines/NonNegotiableEngine.swift:35 struct NonNegotiableEngine {
+  304 LockedIn/Features/Plan/Views/PlanScreen.swift:2068 private struct ProtocolSchedulingEditorSheet: View {
+  284 LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:5 final class CreateNonNegotiableViewModel: ObservableObject {
+  256 LockedIn/Features/Cockpit/Views/CockpitView.swift:497 private struct CockpitNonNegotiableDetailsSheet: View {
+  229 LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:969 struct ProtocolIconPickerSheet: View {
+  224 LockedIn/Features/Plan/Views/PlanScreen.swift:10 struct PlanScreen: View {
+  215 LockedIn/Features/Cockpit/Views/CockpitModernView.swift:8 struct CockpitModernView: View {
+  206 LockedIn/CoreUI/Components/NonNegotiableCard.swift:13 struct NonNegotiableCard: View {
+  201 LockedIn/Features/Cockpit/Components/CockpitNonNegotiableCard.swift:3 struct CockpitNonNegotiableCard: View {
+  169 LockedIn/Domain/Engines/PlanRegulatorEngine.swift:3 struct PlanRegulatorEngine {
+  161 LockedIn/Features/Cockpit/Views/CockpitView.swift:9 struct CockpitView: View {
+  157 LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift:5 final class RecoveryModeViewModel: ObservableObject {
+  151 LockedIn/Domain/Policy/CommitmentPolicyEngine.swift:8 final class CommitmentPolicyEngine {
+  149 LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:1199 struct ProtocolIconCatalog {
+  145 LockedIn/CoreUI/Theme/Theme.swift:12 enum Theme {
+  143 LockedIn/Features/AppShell/Views/MainAppView.swift:39 struct MainAppView: View {
+  141 LockedIn/Domain/Models/NonNegotiableDefinition.swift:19 struct NonNegotiableDefinition: Codable, Equatable {
+  120 LockedIn/CoreUI/Components/FitnessLiquidGlassNavStyle.swift:44 struct FitnessLiquidGlassNavStyle: ViewModifier {

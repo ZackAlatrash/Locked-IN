@@ -1,0 +1,270 @@
+LockedIn/Features/Onboarding/SubFeatures/Paywall/Views/PaywallContentView.swift:17:    private let accentBlue = Color(hex: "00D4FF")
+LockedIn/Features/Onboarding/SubFeatures/Paywall/Views/PaywallContentView.swift:18:    private let accentGreen = Color(hex: "00FF88")
+LockedIn/Features/Onboarding/SubFeatures/Paywall/Views/PaywallContentView.swift:19:    private let gradientStart = Color(hex: "0066FF")
+LockedIn/Features/Onboarding/SubFeatures/Paywall/Views/PaywallContentView.swift:20:    private let gradientEnd = Color(hex: "00CC88")
+LockedIn/Features/AppShell/Views/MainAppView.swift:33:        case .light: return Color(hex: "#0369A1")
+LockedIn/Features/AppShell/Views/MainAppView.swift:34:        case .dark: return Color(hex: "#22D3EE")
+LockedIn/Features/AppShell/Views/MainAppView.swift:67:            return appAppearanceMode == .dark ? Color(hex: "#EF4444") : Color(hex: "#B91C1C")
+LockedIn/Features/AppShell/Views/MainAppView.swift:244:                            ? Color(hex: "#F87171").opacity(0.36)
+LockedIn/Features/AppShell/Views/MainAppView.swift:245:                            : Color(hex: "#B91C1C").opacity(0.26),
+LockedIn/Features/Onboarding/SubFeatures/CoreDifferentiation/Views/CoreDifferentiationContentView.swift:198:                                Color(hex: "#110808").opacity(0.4)
+LockedIn/Features/Onboarding/SubFeatures/FailureLoop/Views/FailureLoopContentView.swift:177:                .fill(step.isHighlighted ? Theme.Colors.authority : Color(hex: "#161616"))
+LockedIn/Features/Plan/Views/PlanScreen.swift:39:    private var navItemColor: Color { isDarkMode ? Theme.Colors.textSecondary : Color(hex: "111827") }
+LockedIn/Features/Plan/Views/PlanScreen.swift:42:            return isDarkMode ? Color(hex: "#F87171") : Color(hex: "#B91C1C")
+LockedIn/Features/Plan/Views/PlanScreen.swift:44:        return isDarkMode ? Color(hex: "#00F2FF") : Color(hex: "#0EA5E9")
+LockedIn/Features/Plan/Views/PlanScreen.swift:203:                                .foregroundColor((isDarkMode ? Color.white : Color(hex: "111827")).opacity(0.75))
+LockedIn/Features/Plan/Views/PlanScreen.swift:210:                .foregroundColor(isDarkMode ? .white : Color(hex: "111827"))
+LockedIn/Features/Plan/Views/PlanScreen.swift:253:                    .foregroundColor(isDarkMode ? Color(hex: "00D9FF") : Color(hex: "334155"))
+LockedIn/Features/Plan/Views/PlanScreen.swift:273:                    .foregroundColor(isDarkMode ? Color(hex: "#020617") : Color.white)
+LockedIn/Features/Plan/Views/PlanScreen.swift:278:                            .fill(isDarkMode ? toneColor(for: .cyan).opacity(0.92) : Color(hex: "#0EA5E9"))
+LockedIn/Features/Plan/Views/PlanScreen.swift:282:                            .stroke(isDarkMode ? toneColor(for: .cyan).opacity(0.25) : Color(hex: "#0369A1").opacity(0.35), lineWidth: 1)
+LockedIn/Features/Plan/Views/PlanScreen.swift:320:                .fill(viewModel.isCalendarConnected ? toneColor(for: .cyan) : Color(hex: "F59E0B"))
+LockedIn/Features/Plan/Views/PlanScreen.swift:360:        isDarkMode ? toneColor(for: .cyan) : Color(hex: "#0369A1")
+LockedIn/Features/Plan/Views/PlanScreen.swift:422:                        .fill(Color(hex: "FACC15"))
+LockedIn/Features/Plan/Views/PlanScreen.swift:686:                    .foregroundColor(isDarkMode ? Color(hex: "020617") : .white)
+LockedIn/Features/Plan/Views/PlanScreen.swift:710:                    .foregroundColor(dropFeedback.isAllowed ? toneColor(for: .cyan) : Color(hex: "EF4444"))
+LockedIn/Features/Plan/Views/PlanScreen.swift:727:                                dropFeedback.isAllowed ? toneColor(for: preview.tone).opacity(0.7) : Color(hex: "EF4444").opacity(0.75),
+LockedIn/Features/Plan/Views/PlanScreen.swift:739:                        .foregroundColor(dropFeedback.isAllowed ? toneColor(for: preview.tone) : Color(hex: "EF4444"))
+LockedIn/Features/Plan/Views/PlanScreen.swift:906:                    .foregroundColor(slot.freeMinutes > 0 ? textMuted : Color(hex: "F59E0B"))
+LockedIn/Features/Plan/Views/PlanScreen.swift:967:                            ? (isDarkMode ? Color(hex: "00F2FF").opacity(0.7) : Color(hex: "0EA5E9").opacity(0.8))
+LockedIn/Features/Plan/Views/PlanScreen.swift:968:                            : Color(hex: "EF4444").opacity(0.75)
+LockedIn/Features/Plan/Views/PlanScreen.swift:1152:                        colors: [Color(hex: "1F2937"), Color(hex: "030712")],
+LockedIn/Features/Plan/Views/PlanScreen.swift:1165:                    .fill(Color(hex: "111827"))
+LockedIn/Features/Plan/Views/PlanScreen.swift:1173:                    .fill(Color(hex: "111827"))
+LockedIn/Features/Plan/Views/PlanScreen.swift:1205:            legendItem(color: Color(hex: "F59E0B").opacity(0.65), label: "Fragile")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1330:            return feedback.isAllowed ? toneColor(for: .cyan).opacity(0.8) : Color(hex: "EF4444").opacity(0.78)
+LockedIn/Features/Plan/Views/PlanScreen.swift:1665:                        colors: [Color(hex: "15080A"), Color(hex: "020203")],
+LockedIn/Features/Plan/Views/PlanScreen.swift:1670:                        colors: [Color(hex: "DC2626").opacity(0.34), .clear],
+LockedIn/Features/Plan/Views/PlanScreen.swift:1676:                        colors: [Color(hex: "7F1D1D").opacity(0.28), .clear],
+LockedIn/Features/Plan/Views/PlanScreen.swift:1685:                    colors: [Color(hex: "1A243D"), Color(hex: "020617")],
+LockedIn/Features/Plan/Views/PlanScreen.swift:1694:                    Color(hex: "FCF4F4")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1696:                        colors: [Color(hex: "FCA5A5").opacity(0.44), .clear],
+LockedIn/Features/Plan/Views/PlanScreen.swift:1702:                        colors: [Color(hex: "FECACA").opacity(0.42), .clear],
+LockedIn/Features/Plan/Views/PlanScreen.swift:1708:                        colors: [Color(hex: "FCA5A5").opacity(0.3), .clear],
+LockedIn/Features/Plan/Views/PlanScreen.swift:1714:                    Color(hex: "F8F9FB")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1751:    var textMain: Color { isDarkMode ? .white : Color(hex: "0B1220") }
+LockedIn/Features/Plan/Views/PlanScreen.swift:1752:    var textMuted: Color { isDarkMode ? Color.white.opacity(0.52) : Color(hex: "6B7280") }
+LockedIn/Features/Plan/Views/PlanScreen.swift:1753:    var textSubtle: Color { isDarkMode ? Color.white.opacity(0.34) : Color(hex: "9CA3AF") }
+LockedIn/Features/Plan/Views/PlanScreen.swift:1756:            return isDarkMode ? Color(hex: "F87171") : Color(hex: "B91C1C")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1758:        return isDarkMode ? Color(hex: "00F2FF") : Color(hex: "0F172A")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1763:            return isDarkMode ? Color(hex: "F87171") : Color(hex: "B91C1C")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1766:        case .structural: return isDarkMode ? Color(hex: "00F2FF") : Color(hex: "0EA5E9")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1767:        case .fragile: return Color(hex: "F59E0B")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1768:        case .unstructured: return Color(hex: "EF4444")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1774:            return isDarkMode ? Color(hex: "1A0C10").opacity(0.5) : Color.white.opacity(0.72)
+LockedIn/Features/Plan/Views/PlanScreen.swift:1776:        return isDarkMode ? Color(hex: "0F172A").opacity(0.35) : Color.white.opacity(0.52)
+LockedIn/Features/Plan/Views/PlanScreen.swift:1781:            return isDarkMode ? Color(hex: "F87171").opacity(0.22) : Color(hex: "FCA5A5").opacity(0.6)
+LockedIn/Features/Plan/Views/PlanScreen.swift:1788:            return isDarkMode ? Color(hex: "2A1116").opacity(0.66) : Color.white.opacity(0.94)
+LockedIn/Features/Plan/Views/PlanScreen.swift:1790:        return isDarkMode ? Color(hex: "001A2A").opacity(0.56) : Color.white.opacity(0.9)
+LockedIn/Features/Plan/Views/PlanScreen.swift:1801:            fillColor = isDarkMode ? Color(hex: "1B0A0D").opacity(0.55) : Color.white.opacity(0.86)
+LockedIn/Features/Plan/Views/PlanScreen.swift:1802:            strokeColor = isDarkMode ? Color(hex: "F87171").opacity(0.28) : Color(hex: "FCA5A5").opacity(0.62)
+LockedIn/Features/Plan/Views/PlanScreen.swift:1804:            fillColor = isDarkMode ? Color(hex: "0F172A").opacity(0.4) : Color.white.opacity(0.8)
+LockedIn/Features/Plan/Views/PlanScreen.swift:1823:            case .cyan: return isDarkMode ? Color(hex: "F87171") : Color(hex: "DC2626")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1824:            case .indigo: return isDarkMode ? Color(hex: "FB7185") : Color(hex: "BE123C")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1825:            case .purple: return isDarkMode ? Color(hex: "FDA4AF") : Color(hex: "B91C1C")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1826:            case .amber: return isDarkMode ? Color(hex: "FCA5A5") : Color(hex: "991B1B")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1827:            case .blue: return isDarkMode ? Color(hex: "EF4444") : Color(hex: "B91C1C")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1831:        case (.cyan, true): return Color(hex: "00F2FF")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1832:        case (.cyan, false): return Color(hex: "0EA5E9")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1833:        case (.indigo, true): return Color(hex: "6366F1")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1834:        case (.indigo, false): return Color(hex: "4F46E5")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1835:        case (.purple, true): return Color(hex: "A855F7")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1836:        case (.purple, false): return Color(hex: "7C3AED")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1837:        case (.amber, true): return Color(hex: "F59E0B")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1838:        case (.amber, false): return Color(hex: "D97706")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1839:        case (.blue, true): return Color(hex: "38BDF8")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1840:        case (.blue, false): return Color(hex: "0284C7")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1856:        isDarkMode ? .white : Color(hex: "0F172A")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1902:        colorScheme == .dark ? Color(hex: "#22D3EE") : Color(hex: "#0369A1")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1984:        case .recommendOnly: return Color(hex: "#2563EB")
+LockedIn/Features/Plan/Views/PlanScreen.swift:1985:        case .draftCandidate: return Color(hex: "#0891B2")
+LockedIn/Features/Plan/Views/PlanScreen.swift:2092:        colorScheme == .dark ? Color(hex: "#22D3EE") : Color(hex: "#0369A1")
+LockedIn/Features/Cockpit/Views/WeeklyActivityDetailView.swift:13:    private var pageBackground: Color { isDarkMode ? Color.black : Color(hex: "F2F2F7") }
+LockedIn/Features/Cockpit/Views/WeeklyActivityDetailView.swift:14:    private var cardBackground: Color { isDarkMode ? Color(hex: "#1C1C1E") : Color.white }
+LockedIn/Features/Cockpit/Views/WeeklyActivityDetailView.swift:15:    private var textMain: Color { isDarkMode ? Color.white : Color(hex: "101827") }
+LockedIn/Features/Cockpit/Views/WeeklyActivityDetailView.swift:16:    private var textSecondary: Color { isDarkMode ? Color.white.opacity(0.72) : Color(hex: "6B7280") }
+LockedIn/Features/Cockpit/Views/WeeklyActivityDetailView.swift:17:    private var textMuted: Color { isDarkMode ? Color.white.opacity(0.48) : Color(hex: "9CA3AF") }
+LockedIn/Features/Onboarding/SubFeatures/IdentityWarning/Views/IdentityWarningContentView.swift:56:                    Color(hex: "#0a0505").opacity(0.6),
+LockedIn/Features/Onboarding/SubFeatures/IdentityWarning/Views/IdentityWarningContentView.swift:57:                    Color(hex: "#0a0505")
+LockedIn/Features/Cockpit/Views/CockpitView.swift:153:                    .foregroundColor(cockpitStyle == .dark ? .white : Color(hex: "0F172A"))
+LockedIn/Features/Cockpit/Views/CockpitView.swift:185:        cockpitStyle == .dark ? Theme.Colors.textSecondary : Color(hex: "111827")
+LockedIn/Features/Cockpit/Views/CockpitView.swift:277:            return cockpitStyle == .dark ? Color(hex: "#F87171") : Color(hex: "#B91C1C")
+LockedIn/Features/Cockpit/Views/CockpitView.swift:284:            return cockpitStyle == .dark ? Color(hex: "#EF4444") : Color(hex: "#DC2626")
+LockedIn/Features/Cockpit/Views/CockpitView.swift:286:        return cockpitStyle == .dark ? Color(hex: "#38BDF8") : Color(hex: "#0C7AA6")
+LockedIn/Features/Cockpit/Views/CockpitView.swift:291:            return cockpitStyle == .dark ? Color(hex: "#FB7185") : Color(hex: "#991B1B")
+LockedIn/Features/Cockpit/Views/CockpitView.swift:293:        return cockpitStyle == .dark ? Color(hex: "#F59E0B") : Color(hex: "#B45309")
+LockedIn/Features/Cockpit/Views/CockpitView.swift:507:    private var pageBackground: Color { isDarkMode ? Color.black : Color(hex: "F2F2F7") }
+LockedIn/Features/Cockpit/Views/CockpitView.swift:509:    private var textPrimary: Color { isDarkMode ? Color.white : Color(hex: "101827") }
+LockedIn/Features/Cockpit/Views/CockpitView.swift:510:    private var textSecondary: Color { isDarkMode ? Color.white.opacity(0.72) : Color(hex: "6B7280") }
+LockedIn/Features/Cockpit/Views/CockpitView.swift:511:    private var textMuted: Color { isDarkMode ? Color.white.opacity(0.48) : Color(hex: "9CA3AF") }
+LockedIn/Features/Cockpit/Views/StreakDetailView.swift:14:    private var pageBackground: Color { isDarkMode ? Color.black : Color(hex: "F2F2F7") }
+LockedIn/Features/Cockpit/Views/StreakDetailView.swift:15:    private var cardBackground: Color { isDarkMode ? Color(hex: "#1C1C1E") : Color.white }
+LockedIn/Features/Cockpit/Views/StreakDetailView.swift:16:    private var textMain: Color { isDarkMode ? Color.white : Color(hex: "101827") }
+LockedIn/Features/Cockpit/Views/StreakDetailView.swift:17:    private var textSecondary: Color { isDarkMode ? Color.white.opacity(0.72) : Color(hex: "6B7280") }
+LockedIn/Features/Cockpit/Views/StreakDetailView.swift:18:    private var textMuted: Color { isDarkMode ? Color.white.opacity(0.48) : Color(hex: "9CA3AF") }
+LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift:48:                        .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#111827"))
+LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift:65:                        .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#111827"))
+LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift:119:                    colors: [Color(hex: "#081327"), Color(hex: "#020617")],
+LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift:124:                Color(hex: "#F4F7FB")
+LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift:131:        colorScheme == .dark ? Color(hex: "#22D3EE") : Color(hex: "#0369A1")
+LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift:135:        colorScheme == .dark ? .white : Color(hex: "#0F172A")
+LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift:139:        colorScheme == .dark ? Color.white.opacity(0.68) : Color(hex: "#6B7280")
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:17:    private var pageBackground: Color { isDarkMode ? Color.black : Color(hex: "F2F2F7") }
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:18:    private var cardBackground: Color { isDarkMode ? Color(hex: "#1C1C1E") : Color.white }
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:20:    private var textMain: Color { isDarkMode ? Color.white : Color(hex: "101827") }
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:21:    private var textSecondary: Color { isDarkMode ? Color.white.opacity(0.72) : Color(hex: "6B7280") }
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:22:    private var textMuted: Color { isDarkMode ? Color.white.opacity(0.45) : Color(hex: "9CA3AF") }
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:61:                            .foregroundColor(isDarkMode ? Color(hex: "FCA5A5") : Color(hex: "B91C1C"))
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:136:        accentColorOverride ?? (isDarkMode ? Color(hex: "#22D3EE") : Color(hex: "#0369A1"))
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:144:        isDarkMode ? Color(hex: "050608") : Color(hex: "F1F3F6")
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:148:        isDarkMode ? Color(hex: "1C1C1E") : Color.white
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:156:        isDarkMode ? Color.white : Color(hex: "101827")
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:160:        isDarkMode ? Color(hex: "8F97A6") : Color(hex: "6B7280")
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:280:                .fill(Color(hex: "38BDF8").opacity(0.07))
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:654:                            tint: Color(hex: "F59E0B"),
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:665:                            .foregroundColor(Color(hex: "D97706"))
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:709:                            .foregroundColor(Color(hex: "F87171"))
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:712:                            .foregroundColor(isDarkMode ? Color(hex: "FCA5A5") : Color(hex: "B91C1C"))
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:760:            return Color(hex: "EF4444")
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:762:            return Color(hex: "F59E0B")
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:1173:                .foregroundColor(isSelected ? accentColor : (colorScheme == .dark ? .white : Color(hex: "0F172A")))
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:197:                        .tint(colorScheme == .dark ? Color(hex: "22D3EE") : Color(hex: "0EA5E9"))
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:209:                        .tint(colorScheme == .dark ? Color(hex: "22D3EE") : Color(hex: "0EA5E9"))
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:300:                .foregroundColor(colorScheme == .dark ? Color(hex: "22D3EE") : Color(hex: "0EA5E9"))
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:352:            .foregroundColor(colorScheme == .dark ? Color(hex: "FCA5A5") : Color(hex: "B91C1C"))
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:377:        colorScheme == .dark ? Color.black : Color(hex: "F2F2F7")
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:381:        colorScheme == .dark ? .white : Color(hex: "111827")
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:385:        colorScheme == .dark ? Color.white.opacity(0.68) : Color(hex: "6B7280")
+LockedIn/Features/DailyCheckIn/Components/DailyCheckInCloseDayView.swift:12:        colorScheme == .dark ? Color(hex: "#22D3EE") : Color(hex: "#0369A1")
+LockedIn/Features/DailyCheckIn/Components/DailyCheckInCloseDayView.swift:16:        colorScheme == .dark ? .white : Color(hex: "#0F172A")
+LockedIn/Features/DailyCheckIn/Components/DailyCheckInCloseDayView.swift:20:        colorScheme == .dark ? Color.white.opacity(0.7) : Color(hex: "#6B7280")
+LockedIn/CoreUI/Theme/Theme.swift:17:        static let authority = Color(hex: "#ea2a33")      // Red - Authority/Warning (#ea2a33)
+LockedIn/CoreUI/Theme/Theme.swift:18:        static let execution = Color(hex: "#1a1a1a")      // Dark - Execution/Action
+LockedIn/CoreUI/Theme/Theme.swift:21:        static let backgroundPrimary = Color(hex: "#0a0505")
+LockedIn/CoreUI/Theme/Theme.swift:22:        static let backgroundSecondary = Color(hex: "#0f0808")
+LockedIn/CoreUI/Theme/Theme.swift:23:        static let backgroundTertiary = Color(hex: "#120a0a")
+LockedIn/CoreUI/Theme/Theme.swift:26:        static let glassBackground = Color(hex: "#0f0808").opacity(0.65)
+LockedIn/CoreUI/Theme/Theme.swift:42:        static let surfaceDark = Color(hex: "#2d1b1c")      // Dark surface for inputs/cards
+LockedIn/CoreUI/Theme/Theme.swift:43:        static let border = Color(hex: "#663336")          // Border color from Stitch design
+LockedIn/Features/DevOptions/Components/DevOptionsSectionCard.swift:48:        colorScheme == .dark ? .white : Color(hex: "111827")
+LockedIn/Features/DevOptions/Components/DevOptionsSectionCard.swift:52:        colorScheme == .dark ? Color.white.opacity(0.68) : Color(hex: "6B7280")
+LockedIn/Features/Cockpit/Components/CockpitKpiCard.swift:45:                .fill(Color(hex: "#1b2737"))
+LockedIn/Features/DailyCheckIn/Components/DailyCheckInResolutionSheet.swift:15:        colorScheme == .dark ? Color(hex: "#22D3EE") : Color(hex: "#0369A1")
+LockedIn/Features/DailyCheckIn/Components/DailyCheckInResolutionSheet.swift:19:        colorScheme == .dark ? .white : Color(hex: "#0F172A")
+LockedIn/Features/DailyCheckIn/Components/DailyCheckInResolutionSheet.swift:23:        colorScheme == .dark ? Color.white.opacity(0.65) : Color(hex: "#6B7280")
+LockedIn/Features/DevOptions/Components/DevSeedScenarioRow.swift:28:            .tint(colorScheme == .dark ? Color(hex: "22D3EE") : Color(hex: "0EA5E9"))
+LockedIn/Features/DevOptions/Components/DevSeedScenarioRow.swift:34:        colorScheme == .dark ? .white : Color(hex: "111827")
+LockedIn/Features/DevOptions/Components/DevSeedScenarioRow.swift:38:        colorScheme == .dark ? Color.white.opacity(0.68) : Color(hex: "6B7280")
+LockedIn/Features/Cockpit/Components/CockpitNonNegotiableCard.swift:10:                .fill(Color(hex: "#162331"))
+LockedIn/Features/Cockpit/Components/CockpitNonNegotiableCard.swift:19:                            Color(hex: "#162331").opacity(0.95),
+LockedIn/Features/Cockpit/Components/CockpitNonNegotiableCard.swift:20:                            Color(hex: "#162331").opacity(0.88),
+LockedIn/Features/DailyCheckIn/Components/DailyCheckInProtocolRow.swift:11:        colorScheme == .dark ? Color(hex: "#22D3EE") : Color(hex: "#0369A1")
+LockedIn/Features/DailyCheckIn/Components/DailyCheckInProtocolRow.swift:15:        colorScheme == .dark ? Color(hex: "#FDE047") : Color(hex: "#A16207")
+LockedIn/Features/DailyCheckIn/Components/DailyCheckInProtocolRow.swift:19:        colorScheme == .dark ? .white : Color(hex: "#0F172A")
+LockedIn/Features/DailyCheckIn/Components/DailyCheckInProtocolRow.swift:23:        colorScheme == .dark ? Color.white.opacity(0.62) : Color(hex: "#6B7280")
+LockedIn/Features/DailyCheckIn/Components/DailyCheckInProtocolRow.swift:56:                    .foregroundColor(item.isExtraToday ? extraAccent : (item.needsAttention ? Color(hex: "#F59E0B") : textMuted))
+LockedIn/CoreUI/Components/GlassCard.swift:31:                        .fill(Color(hex: "#0f0808").opacity(0.65))
+LockedIn/CoreUI/Components/NonNegotiableCard.swift:48:                            .fill(Color(hex: "#1b2737"))
+LockedIn/Features/DailyCheckIn/Components/DailyCheckInCard.swift:28:            ? Color(hex: "#0B152D").opacity(0.76)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:202:                legendItem(label: "Yellow", description: "Extra only", color: isDarkMode ? Color(hex: "FDE047") : Color(hex: "FDE68A"))
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:229:                iconColor: isDarkMode ? magentaAccent : Color(hex: "60A5FA"),
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:238:                iconColor: isDarkMode ? cyanAccent : Color(hex: "6366F1"),
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:388:                            metricPill(label: "Delta", value: entry.output, accent: isDarkMode ? magentaAccent : Color(hex: "2563EB"))
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:501:            return isDarkMode ? Color(hex: "F87171") : Color(hex: "B91C1C")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:503:        return isDarkMode ? cyanAccent : Color(hex: "2563EB")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:505:    var cyanAccent: Color { Color(hex: "00F2FF") }
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:506:    var magentaAccent: Color { Color(hex: "FF00E5") }
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:508:    var navItemColor: Color { isDarkMode ? Theme.Colors.textSecondary : Color(hex: "111827") }
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:516:                        colors: [Color(hex: "15080A"), Color(hex: "020203")],
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:521:                        colors: [Color(hex: "DC2626").opacity(0.32), .clear],
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:527:                        colors: [Color(hex: "7F1D1D").opacity(0.28), .clear],
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:536:                    colors: [Color(hex: "1A243D"), Color(hex: "020617")],
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:545:                    Color(hex: "FCF4F4")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:547:                        colors: [Color(hex: "FCA5A5").opacity(0.44), .clear],
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:553:                        colors: [Color(hex: "FECACA").opacity(0.42), .clear],
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:559:                        colors: [Color(hex: "FCA5A5").opacity(0.3), .clear],
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:565:                    Color(hex: "F8F9FB")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:606:                    return Color(hex: "1B0A0D").opacity(muted ? 0.38 : 0.56)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:611:                return Color(hex: "0F172A").opacity(muted ? 0.3 : 0.42)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:618:                return isDarkMode ? Color(hex: "F87171").opacity(0.32) : Color(hex: "FCA5A5").opacity(0.72)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:620:            return isDarkMode ? Color.white.opacity(0.1) : Color(hex: "B9C7D7").opacity(0.72)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:631:    var textMain: Color { isDarkMode ? .white : Color(hex: "0B1220") }
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:632:    var textSecondary: Color { isDarkMode ? Color.white.opacity(0.62) : Color(hex: "5B6778") }
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:633:    var textMuted: Color { isDarkMode ? Color.white.opacity(0.48) : Color(hex: "6B7280") }
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:634:    var textSubtle: Color { isDarkMode ? Color.white.opacity(0.36) : Color(hex: "9CA3AF") }
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:639:            return isDarkMode ? Color(hex: "EF4444").opacity(0.16) : Color(hex: "FEE2E2")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:642:        return Color(hex: "D9F99D")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:647:            return isDarkMode ? Color(hex: "F87171").opacity(0.35) : Color(hex: "FCA5A5")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:650:        return Color(hex: "B7E269")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:655:            return isDarkMode ? Color(hex: "FCA5A5") : Color(hex: "B91C1C")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:658:        return Color(hex: "1F2937")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:663:            return isDarkMode ? Color(hex: "2A1116").opacity(0.5) : Color(hex: "FEE2E2").opacity(0.72)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:669:        isDarkMode ? Color.white.opacity(0.06) : Color(hex: "60A5FA").opacity(0.18)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:673:        isDarkMode ? Color(hex: "22D3EE").opacity(0.82) : Color(hex: "38BDF8")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:677:        isDarkMode ? Color(hex: "06B6D4").opacity(0.68) : Color(hex: "7DD3FC")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:681:        isDarkMode ? Color(hex: "EF4444").opacity(0.36) : Color(hex: "FCA5A5")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:685:        isDarkMode ? Color(hex: "DC2626").opacity(0.22) : Color(hex: "FECACA")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:690:            return isDarkMode ? Color(hex: "F87171") : Color(hex: "B91C1C")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:692:        return isDarkMode ? cyanAccent : Color(hex: "60A5FA")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:704:            return isDarkMode ? Color(hex: "FDE047").opacity(0.8) : Color(hex: "FDE68A")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:720:            return Color(hex: "EF4444").opacity(isDarkMode ? 0.9 : 0.7)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:723:            return isDarkMode ? Color(hex: "FCA5A5").opacity(0.72) : Color(hex: "DC2626").opacity(0.52)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:726:            return isDarkMode ? Color(hex: "FDE047").opacity(0.98) : Color(hex: "CA8A04").opacity(0.9)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:729:            return isDarkMode ? Color(hex: "67E8F9") : Color(hex: "0EA5E9").opacity(0.9)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:732:            return isDarkMode ? Color(hex: "22D3EE").opacity(0.98) : Color(hex: "0284C7").opacity(0.9)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:734:        return isDarkMode ? Color.white.opacity(0.08) : Color(hex: "60A5FA").opacity(0.16)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:740:        if point.unproductive { return Color(hex: "FCA5A5").opacity(0.22) }
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:742:            return Color(hex: "FDE047").opacity(0.72)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:745:            return Color(hex: "67E8F9").opacity(0.8)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:748:            return Color(hex: "22D3EE").opacity(0.65)
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:759:            return isDarkMode ? Color.white : Color(hex: "0F172A")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:762:            return isDarkMode ? Color.red.opacity(0.88) : Color(hex: "B91C1C")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:765:            return isDarkMode ? Color(hex: "FCA5A5") : Color(hex: "991B1B")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:767:        return isDarkMode ? Color.white.opacity(0.72) : Color(hex: "334155")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:773:                return isDarkMode ? cyanAccent : Color(hex: "1D4ED8")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:776:                return isDarkMode ? Color(hex: "FDE047") : Color(hex: "A16207")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:782:            return isDarkMode ? Color(hex: "FDE047") : Color(hex: "A16207")
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:851:                    ? (isDarkMode ? Color(hex: "FDE047") : Color(hex: "A16207"))
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:852:                    : (isDarkMode ? cyanAccent : Color(hex: "15803D")),
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:854:                    ? (isDarkMode ? Color(hex: "FDE047").opacity(0.14) : Color(hex: "FEF3C7"))
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:855:                    : (isDarkMode ? cyanAccent.opacity(0.1) : Color(hex: "DCFCE7")),
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:857:                    ? (isDarkMode ? Color(hex: "FDE047").opacity(0.42) : Color(hex: "FCD34D"))
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:858:                    : (isDarkMode ? cyanAccent.opacity(0.35) : Color(hex: "86EFAC")),
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:861:                    ? (isDarkMode ? Color(hex: "FDE047") : Color(hex: "A16207"))
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:862:                    : (isDarkMode ? cyanAccent : Color(hex: "1D4ED8")),
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:878:                badgeColor: isDarkMode ? Color(hex: "F87171") : Color(hex: "DC2626"),
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:882:                iconTint: isDarkMode ? Color(hex: "F87171") : Color(hex: "DC2626"),
+LockedIn/Features/Recovery/Views/RecoveryModePopup.swift:28:        colorScheme == .dark ? Color(hex: "#F87171") : Color(hex: "#B91C1C")
+LockedIn/Features/Recovery/Views/RecoveryModePopup.swift:32:        colorScheme == .dark ? .white : Color(hex: "#111827")
+LockedIn/Features/Recovery/Views/RecoveryModePopup.swift:36:        colorScheme == .dark ? Color.white.opacity(0.7) : Color(hex: "#6B7280")
+LockedIn/Features/Recovery/Components/RecoveryProtocolSelectionCard.swift:11:        colorScheme == .dark ? Color(hex: "#F87171") : Color(hex: "#B91C1C")
+LockedIn/Features/Recovery/Components/RecoveryProtocolSelectionCard.swift:15:        colorScheme == .dark ? .white : Color(hex: "#111827")
+LockedIn/Features/Recovery/Components/RecoveryProtocolSelectionCard.swift:19:        colorScheme == .dark ? Color.white.opacity(0.68) : Color(hex: "#6B7280")
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:48:        accentColor: Color = Color(hex: "06B6D4"),
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:105:            return style == .dark ? Color(hex: "F87171") : Color(hex: "B91C1C")
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:107:        return style == .dark ? Color(hex: "00F2FF") : Color(hex: "3B82F6")
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:111:            return style == .dark ? Color(hex: "16080A") : Color(hex: "FDF5F5")
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:113:        return Color(hex: "1A243D")
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:117:            return style == .dark ? Color(hex: "020203") : Color(hex: "F9EAEA")
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:119:        return Color(hex: "020617")
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:123:            return style == .dark ? Color(hex: "1B0A0D").opacity(0.56) : Color.white.opacity(0.8)
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:125:        return style == .dark ? Color(hex: "0F172A").opacity(0.42) : Color.white.opacity(0.72)
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:129:            return style == .dark ? Color(hex: "F87171").opacity(0.32) : Color(hex: "FCA5A5").opacity(0.72)
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:131:        return style == .dark ? Color.white.opacity(0.09) : Color(hex: "B9C7D7").opacity(0.78)
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:133:    private var textMain: Color { style == .dark ? .white : Color(hex: "0B1220") }
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:134:    private var textSecondary: Color { style == .dark ? Color.white.opacity(0.45) : Color(hex: "5B6778") }
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:136:    private var ringTrack: Color { style == .dark ? Color.white.opacity(0.08) : Color(hex: "94A3B8").opacity(0.3) }
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:139:    private var ringValueTextColor: Color { style == .dark ? primary : Color(hex: "111827") }
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:140:    private var ringMetaTextColor: Color { style == .dark ? primary : Color(hex: "374151") }
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:166:        capacityStatusText.uppercased() == "STABLE" ? primary : Color(hex: "F87171")
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:230:                    Color(hex: "FCF4F4")
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:232:                        colors: [Color(hex: "FCA5A5").opacity(0.42), .clear],
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:238:                        colors: [Color(hex: "FECACA").opacity(0.45), .clear],
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:244:                        colors: [Color(hex: "FCA5A5").opacity(0.34), .clear],
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:250:                    Color(hex: "F8F9FB")
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:529:                return Color(hex: "FDE047")
+LockedIn/Features/Cockpit/Views/CapacityDetailView.swift:11:    private var pageBackground: Color { isDarkMode ? Color.black : Color(hex: "F2F2F7") }
+LockedIn/Features/Cockpit/Views/CapacityDetailView.swift:12:    private var cardBackground: Color { isDarkMode ? Color(hex: "#1C1C1E") : Color.white }
+LockedIn/Features/Cockpit/Views/CapacityDetailView.swift:14:    private var textMain: Color { isDarkMode ? Color.white : Color(hex: "101827") }
+LockedIn/Features/Cockpit/Views/CapacityDetailView.swift:15:    private var textSecondary: Color { isDarkMode ? Color.white.opacity(0.72) : Color(hex: "6B7280") }
+LockedIn/Features/Cockpit/Views/CapacityDetailView.swift:16:    private var textMuted: Color { isDarkMode ? Color.white.opacity(0.48) : Color(hex: "9CA3AF") }

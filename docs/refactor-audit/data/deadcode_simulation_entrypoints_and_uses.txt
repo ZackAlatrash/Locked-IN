@@ -1,0 +1,12 @@
+== runRepositorySimulation ==
+LockedIn/Core/Persistence/RepositorySimulation.swift:3:func runRepositorySimulation() {
+== runNonNegotiableEngineSimulation ==
+LockedIn/Domain/Engines/NonNegotiableEngineSimulation.swift:3:func runNonNegotiableEngineSimulation() {
+== runCommitmentSystemSimulation ==
+LockedIn/Domain/Engines/CommitmentSystemSimulation.swift:3:func runCommitmentSystemSimulation() {
+== runPlanRegulatorSimulation ==
+LockedIn/Domain/Engines/PlanRegulatorSimulation.swift:3:func runPlanRegulatorSimulation() {
+== runPlanCompletionReconciliationSimulation ==
+LockedIn/Application/PlanCompletionReconciliationSimulation.swift:4:func runPlanCompletionReconciliationSimulation() {
+== runCommitmentPolicyEngineSimulation ==
+LockedIn/Domain/Policy/CommitmentPolicyEngineSimulation.swift:3:func runCommitmentPolicyEngineSimulation() {

@@ -350,29 +350,14 @@ private extension CockpitView {
                     actionErrorMessage = "This protocol is no longer available."
                     return
                 }
-                let outcome = try store.recordCompletionDetailed(for: nnId, at: appClock.now)
-                let reconciliation = planStore.reconcileAfterCompletion(
-                    protocolId: nnId,
-                    mode: protocolModel.definition.mode,
-                    completionDate: outcome.date,
-                    completionKind: outcome.kind
+                let executor = CockpitCompletionExecutor(
+                    commitmentStore: store,
+                    planStore: planStore,
+                    nowProvider: { appClock.now }
                 )
-                store.runDailyIntegrityTick(referenceDate: appClock.now)
-                if outcome.kind == .extra {
-                    if protocolModel.definition.mode == .session {
-                        showCompletionToast("Weekly target already met. Logged as EXTRA.")
-                    } else {
-                        showCompletionToast("Logged as EXTRA.")
-                    }
-                } else if case .released(let released) = reconciliation {
-                    showCompletionToast(
-                        releasedToastMessage(
-                            protocolTitle: protocolModel.definition.title,
-                            completionDate: outcome.date,
-                            releasedDay: released.day,
-                            slot: released.slot
-                        )
-                    )
+                let execution = try executor.complete(protocolModel: protocolModel)
+                if let toastMessage = execution.toastMessage {
+                    showCompletionToast(toastMessage)
                 }
                 Haptics.success()
             } catch {
@@ -476,22 +461,6 @@ private extension CockpitView {
         }
     }
 
-    func releasedDaySlotLabel(day: Date, slot: PlanSlot) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = .current
-        formatter.dateFormat = "EEE"
-        return "\(formatter.string(from: day).uppercased()) \(slot.title)"
-    }
-
-    func releasedToastMessage(protocolTitle: String, completionDate: Date, releasedDay: Date, slot: PlanSlot) -> String {
-        let completionDay = DateRules.startOfDay(completionDate)
-        let tomorrow = DateRules.addingDays(1, to: completionDay)
-        let releasedDayStart = DateRules.startOfDay(releasedDay)
-        if releasedDayStart == tomorrow {
-            return "\(protocolTitle) wasn't scheduled today. Tomorrow's \(slot.title) session was removed."
-        }
-        return "\(protocolTitle) wasn't scheduled today. \(releasedDaySlotLabel(day: releasedDayStart, slot: slot)) was removed."
-    }
 }
 
 private struct CockpitNonNegotiableDetailsSheet: View {

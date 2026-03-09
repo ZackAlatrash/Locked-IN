@@ -1,0 +1,59 @@
+LockedIn/Features/Onboarding/Views/OnboardingShellView.swift:39:        .fullScreenCover(isPresented: $showPaywall) {
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:78:        .toolbar {
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:85:                        dismiss()
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:108:        .sheet(isPresented: $showingIconPicker) {
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:790:                    dismiss()
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:1003:        NavigationStack {
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:1013:            .toolbar {
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:1017:                        dismiss()
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:1195:        dismiss()
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:40:        .alert(item: $pendingDangerAction) { action in
+LockedIn/Features/AppShell/Views/MainAppView.swift:78:            TabView(selection: $router.selectedTab) {
+LockedIn/Features/AppShell/Views/MainAppView.swift:79:                NavigationStack {
+LockedIn/Features/AppShell/Views/MainAppView.swift:92:                NavigationStack {
+LockedIn/Features/AppShell/Views/MainAppView.swift:100:                NavigationStack {
+LockedIn/Features/Cockpit/Views/CockpitView.swift:44:        .toolbar {
+LockedIn/Features/Cockpit/Views/CockpitView.swift:87:        .navigationDestination(item: $activeRoute) { route in
+LockedIn/Features/Cockpit/Views/CockpitView.swift:99:        .sheet(isPresented: $showCreateNonNegotiable) {
+LockedIn/Features/Cockpit/Views/CockpitView.swift:100:            NavigationStack {
+LockedIn/Features/Cockpit/Views/CockpitView.swift:113:        .sheet(item: $detailsSelection) { selection in
+LockedIn/Features/Cockpit/Views/CockpitView.swift:132:        .alert(
+LockedIn/Features/Cockpit/Views/LiquidGlassNavDemos.swift:129:        .toolbar(.hidden, for: .navigationBar)
+LockedIn/Features/Cockpit/Views/LiquidGlassNavDemos.swift:194:        NavigationStack {
+LockedIn/Features/Cockpit/Views/LiquidGlassNavDemos.swift:196:                NavigationLink("System Liquid Glass Nav Demo") {
+LockedIn/Features/Cockpit/Views/LiquidGlassNavDemos.swift:199:                NavigationLink("Floating Liquid Glass Nav Demo") {
+LockedIn/CoreUI/Components/FitnessLiquidGlassNavStyle.swift:70:            .toolbar {
+LockedIn/CoreUI/Components/FitnessLiquidGlassNavStyle.swift:171:                .toolbarBackground(.visible, for: .navigationBar)
+LockedIn/CoreUI/Components/FitnessLiquidGlassNavStyle.swift:172:                .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+LockedIn/CoreUI/Components/FitnessLiquidGlassNavStyle.swift:236:    NavigationStack { YourScrollableContent() }
+LockedIn/CoreUI/Components/FitnessLiquidGlassNavStyle.swift:244:    - Let NavigationStack and .navigationTitle drive collapse behavior.
+LockedIn/Features/Cockpit/Views/FitnessLiquidGlassNavDemoView.swift:5:        NavigationStack {
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:61:        .toolbar {
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:91:        .sheet(isPresented: $showProfile) {
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:92:            NavigationStack {
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:182:        NavigationLink {
+LockedIn/CoreUI/Components/LiquidGlassNavBar.swift:59:            .toolbar {
+LockedIn/CoreUI/Components/LiquidGlassNavBar.swift:95:                .toolbarBackground(.visible, for: .navigationBar)
+LockedIn/CoreUI/Components/LiquidGlassNavBar.swift:96:                .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+LockedIn/CoreUI/Components/LiquidGlassNavBar.swift:184: NavigationStack {
+LockedIn/Features/Plan/Views/PlanScreen.swift:73:        .toolbar {
+LockedIn/Features/Plan/Views/PlanScreen.swift:103:        .sheet(isPresented: $showProfile) {
+LockedIn/Features/Plan/Views/PlanScreen.swift:104:            NavigationStack {
+LockedIn/Features/Plan/Views/PlanScreen.swift:108:        .sheet(item: $viewModel.selectedAllocation) { allocation in
+LockedIn/Features/Plan/Views/PlanScreen.swift:123:        .sheet(isPresented: $viewModel.showingRegulatorSheet) {
+LockedIn/Features/Plan/Views/PlanScreen.swift:145:        .sheet(item: $viewModel.protocolSchedulingEditor) { editor in
+LockedIn/Features/Plan/Views/PlanScreen.swift:1906:        NavigationStack {
+LockedIn/Features/Plan/Views/PlanScreen.swift:1951:                        dismiss()
+LockedIn/Features/Plan/Views/PlanScreen.swift:1959:                        dismiss()
+LockedIn/Features/Plan/Views/PlanScreen.swift:1971:            .toolbar {
+LockedIn/Features/Plan/Views/PlanScreen.swift:1975:                        dismiss()
+LockedIn/Features/Plan/Views/PlanScreen.swift:2019:        NavigationStack {
+LockedIn/Features/Plan/Views/PlanScreen.swift:2042:                        dismiss()
+LockedIn/Features/Plan/Views/PlanScreen.swift:2050:                        dismiss()
+LockedIn/Features/Plan/Views/PlanScreen.swift:2056:            .toolbar {
+LockedIn/Features/Plan/Views/PlanScreen.swift:2060:                        dismiss()
+LockedIn/Features/Plan/Views/PlanScreen.swift:2135:        NavigationStack {
+LockedIn/Features/Plan/Views/PlanScreen.swift:2285:            .toolbar {
+LockedIn/Features/Plan/Views/PlanScreen.swift:2290:                        dismiss()
+LockedIn/Features/Plan/Views/PlanScreen.swift:2313:                            dismiss()
+LockedIn/Features/Plan/Views/PlanScreen.swift:2322:            .sheet(isPresented: $showingIconPicker) {

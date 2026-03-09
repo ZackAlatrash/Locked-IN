@@ -1,0 +1,221 @@
+LockedIn/Features/Onboarding/Flow/OnboardingCoordinator.swift:17:final class OnboardingCoordinator: ObservableObject {
+LockedIn/Features/Onboarding/Flow/OnboardingCoordinator.swift:21:    @Published private(set) var currentStep: OnboardingStep
+LockedIn/Features/Onboarding/Flow/OnboardingCoordinator.swift:22:    @Published private(set) var isTransitioning = false
+LockedIn/Application/DevRuntimeState.swift:5:final class DevRuntimeState: ObservableObject {
+LockedIn/Application/DevRuntimeState.swift:6:    @Published var reliabilityOverride: Int?
+LockedIn/Application/DevRuntimeState.swift:7:    @Published var forceShowDailyCheckInToken: UUID?
+LockedIn/Application/AppClock.swift:5:final class AppClock: ObservableObject {
+LockedIn/Application/AppClock.swift:6:    @Published private(set) var simulatedNow: Date?
+LockedIn/App/Locked_INApp.swift:24:    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+LockedIn/App/Locked_INApp.swift:25:    @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
+LockedIn/App/Locked_INApp.swift:26:    @AppStorage("phase1MotionSessionID") private var phase1MotionSessionID = ""
+LockedIn/App/Locked_INApp.swift:27:    @StateObject private var appClock = AppClock()
+LockedIn/App/Locked_INApp.swift:28:    @StateObject private var devRuntime = DevRuntimeState()
+LockedIn/App/Locked_INApp.swift:29:    @StateObject private var commitmentSystemStore: CommitmentSystemStore
+LockedIn/App/Locked_INApp.swift:30:    @StateObject private var planStore: PlanStore
+LockedIn/App/Locked_INApp.swift:31:    @StateObject private var onboardingCoordinator = OnboardingCoordinator(
+LockedIn/App/Locked_INApp.swift:35:    @State private var didInitializeMotionSession = false
+LockedIn/Application/DevOptionsController.swift:5:final class DevOptionsController: ObservableObject {
+LockedIn/Application/DevOptionsController.swift:6:    @Published private(set) var statusMessage: String?
+LockedIn/Application/CommitmentSystemStore.swift:10:final class CommitmentSystemStore: ObservableObject {
+LockedIn/Application/CommitmentSystemStore.swift:35:    @Published private(set) var system: CommitmentSystem
+LockedIn/Application/PlanStore.swift:51:final class PlanStore: ObservableObject {
+LockedIn/Application/PlanStore.swift:52:    @Published private(set) var currentWeekDays: [PlanDayModel] = []
+LockedIn/Application/PlanStore.swift:53:    @Published private(set) var queueItems: [PlanQueueItem] = []
+LockedIn/Application/PlanStore.swift:54:    @Published private(set) var selectedQueueProtocolId: UUID?
+LockedIn/Application/PlanStore.swift:55:    @Published private(set) var todaySummary: PlanTodaySummary = .empty
+LockedIn/Application/PlanStore.swift:56:    @Published private(set) var structureStatus: PlanStructureStatus = .unstructured
+LockedIn/Application/PlanStore.swift:57:    @Published private(set) var structureMessage: String = "No plan allocations for this week."
+LockedIn/Application/PlanStore.swift:58:    @Published private(set) var warningMessage: String?
+LockedIn/Application/PlanStore.swift:59:    @Published private(set) var warningReason: PolicyReason?
+LockedIn/Application/PlanStore.swift:60:    @Published private(set) var hasTrackableProtocols = false
+LockedIn/Application/PlanStore.swift:61:    @Published private(set) var planSignal: PlanStructureStatus = .unstructured
+LockedIn/Application/PlanStore.swift:62:    @Published private(set) var planSignalMessage: String = "No plan allocations for this week."
+LockedIn/Features/Onboarding/Views/OnboardingShellView.swift:13:    @ObservedObject private var coordinator: OnboardingCoordinator
+LockedIn/Features/Onboarding/Views/OnboardingShellView.swift:14:    @StateObject private var shellVM: OnboardingShellViewModel
+LockedIn/Features/Onboarding/Views/OnboardingShellView.swift:16:    @State private var showPaywall = false
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:5:    @ObservedObject var controller: DevOptionsController
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:7:    @EnvironmentObject private var appClock: AppClock
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:8:    @EnvironmentObject private var devRuntime: DevRuntimeState
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:11:    @State private var pendingDangerAction: DangerAction?
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:12:    @State private var simulatedPickerDate = Date()
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:5:final class PlanViewModel: ObservableObject {
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:6:    @Published private(set) var currentWeekDays: [PlanDayModel] = []
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:7:    @Published private(set) var queueItems: [PlanQueueItem] = []
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:8:    @Published private(set) var selectedQueueProtocolId: UUID?
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:9:    @Published private(set) var todaySummary: PlanTodaySummary = .empty
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:10:    @Published private(set) var structureStatus: PlanStructureStatus = .unstructured
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:11:    @Published private(set) var structureMessage: String = ""
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:12:    @Published private(set) var warningMessage: String?
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:13:    @Published private(set) var warningCopy: PolicyCopy?
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:14:    @Published private(set) var hasTrackableProtocols = false
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:15:    @Published private(set) var regulatorSuggestions: [PlanSuggestionUIModel] = []
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:16:    @Published private(set) var draftAllocations: [PlanAllocationDraft] = []
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:17:    @Published private(set) var hasDraft = false
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:18:    @Published private(set) var calendarAccessStatus: PlanCalendarAuthorizationStatus = .notDetermined
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:19:    @Published private(set) var calendarEventsThisWeekCount: Int = 0
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:20:    @Published var protocolSchedulingEditor: ProtocolSchedulingEditorState?
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:21:    @Published var protocolEditErrorMessage: String?
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:22:    @Published var showingRegulatorSheet = false
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:24:    @Published var selectedAllocation: PlanAllocation?
+LockedIn/Features/AppShell/Views/MainAppView.swift:40:    @EnvironmentObject private var store: CommitmentSystemStore
+LockedIn/Features/AppShell/Views/MainAppView.swift:41:    @EnvironmentObject private var planStore: PlanStore
+LockedIn/Features/AppShell/Views/MainAppView.swift:42:    @EnvironmentObject private var appClock: AppClock
+LockedIn/Features/AppShell/Views/MainAppView.swift:43:    @EnvironmentObject private var devRuntime: DevRuntimeState
+LockedIn/Features/AppShell/Views/MainAppView.swift:46:    @StateObject private var router = AppRouter()
+LockedIn/Features/AppShell/Views/MainAppView.swift:47:    @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
+LockedIn/Features/AppShell/Views/MainAppView.swift:48:    @AppStorage(DailyCheckInPolicy.Keys.lastCompletedDay) private var dailyCheckInLastCompletedDay = ""
+LockedIn/Features/AppShell/Views/MainAppView.swift:49:    @AppStorage(DailyCheckInPolicy.Keys.lastPromptedDay) private var dailyCheckInLastPromptedDay = ""
+LockedIn/Features/AppShell/Views/MainAppView.swift:50:    @AppStorage(DailyCheckInPolicy.Keys.repromptedDay) private var dailyCheckInRepromptedDay = ""
+LockedIn/Features/AppShell/Views/MainAppView.swift:51:    @AppStorage(DailyCheckInPolicy.Keys.deferredUntilTimestamp) private var dailyCheckInDeferredUntilTimestamp: Double = 0
+LockedIn/Features/AppShell/Views/MainAppView.swift:52:    @AppStorage(DailyCheckInPolicy.Keys.hour) private var dailyCheckInHour = 18
+LockedIn/Features/AppShell/Views/MainAppView.swift:53:    @AppStorage(DailyCheckInPolicy.Keys.minute) private var dailyCheckInMinute = 0
+LockedIn/Features/AppShell/Views/MainAppView.swift:54:    @State private var wasRecoveryActive = false
+LockedIn/Features/Recovery/Views/RecoveryModePopup.swift:4:    @StateObject private var viewModel: RecoveryModeViewModel
+LockedIn/Features/Recovery/Views/RecoveryModePopup.swift:9:    @State private var didAppear = false
+LockedIn/CoreUI/Components/FitnessLiquidGlassNavStyle.swift:51:    @State private var dragOffset: CGSize = .zero
+LockedIn/Features/AppShell/Models/AppRouter.swift:5:final class AppRouter: ObservableObject {
+LockedIn/Features/AppShell/Models/AppRouter.swift:6:    @Published var selectedTab: MainTab = .cockpit
+LockedIn/Features/AppShell/Models/AppRouter.swift:7:    @Published var pendingPlanFocusProtocolId: UUID?
+LockedIn/Features/AppShell/Models/AppRouter.swift:8:    @Published var pendingPlanEditProtocolId: UUID?
+LockedIn/Features/AppShell/Models/AppRouter.swift:9:    @Published var presentDailyCheckIn = false
+LockedIn/Features/AppShell/Models/AppRouter.swift:10:    @Published var presentRecoveryEntry = false
+LockedIn/CoreUI/Components/NonNegotiableCard.swift:21:    @State private var timeRemaining: TimeInterval
+LockedIn/CoreUI/Components/NonNegotiableCard.swift:22:    @State private var timerSubscription: AnyCancellable?
+LockedIn/Features/Cockpit/Views/CockpitView.swift:10:    @Binding var selectedTab: MainTab
+LockedIn/Features/Cockpit/Views/CockpitView.swift:13:    @EnvironmentObject private var store: CommitmentSystemStore
+LockedIn/Features/Cockpit/Views/CockpitView.swift:14:    @EnvironmentObject private var planStore: PlanStore
+LockedIn/Features/Cockpit/Views/CockpitView.swift:15:    @EnvironmentObject private var router: AppRouter
+LockedIn/Features/Cockpit/Views/CockpitView.swift:16:    @EnvironmentObject private var appClock: AppClock
+LockedIn/Features/Cockpit/Views/CockpitView.swift:17:    @EnvironmentObject private var devRuntime: DevRuntimeState
+LockedIn/Features/Cockpit/Views/CockpitView.swift:18:    @StateObject private var viewModel = CockpitViewModel()
+LockedIn/Features/Cockpit/Views/CockpitView.swift:19:    @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
+LockedIn/Features/Cockpit/Views/CockpitView.swift:21:    @State private var activeRoute: CockpitRoute?
+LockedIn/Features/Cockpit/Views/CockpitView.swift:23:    @State private var showCreateNonNegotiable = false
+LockedIn/Features/Cockpit/Views/CockpitView.swift:24:    @State private var detailsSelection: CockpitDetailsSelection?
+LockedIn/Features/Cockpit/Views/CockpitView.swift:26:    @State private var actionErrorMessage: String?
+LockedIn/Features/Cockpit/Views/CockpitView.swift:27:    @State private var completionToastMessage: String?
+LockedIn/Features/Cockpit/Views/CockpitView.swift:500:    @EnvironmentObject private var store: CommitmentSystemStore
+LockedIn/Features/Cockpit/Views/CockpitView.swift:501:    @EnvironmentObject private var appClock: AppClock
+LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:5:final class DailyCheckInViewModel: ObservableObject {
+LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:6:    @Published private(set) var overview: DailyCheckInOverviewModel?
+LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:7:    @Published private(set) var protocolItems: [DailyCheckInProtocolItem] = []
+LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:8:    @Published private(set) var unresolvedCount = 0
+LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:9:    @Published private(set) var step: DailyCheckInFlowStep = .overview
+LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:10:    @Published private(set) var recommendation: DailyCheckInRecommendationModel?
+LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:11:    @Published private(set) var warningMessage: String?
+LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:12:    @Published private(set) var toastMessage: String?
+LockedIn/Features/Cockpit/Views/LiquidGlassNavDemos.swift:4:    @State private var scrollOffset: CGFloat = 0
+LockedIn/Features/Cockpit/Views/LiquidGlassNavDemos.swift:5:    @State private var mode: DemoContentMode = .list
+LockedIn/Features/Cockpit/Views/LiquidGlassNavDemos.swift:93:    @State private var scrollOffset: CGFloat = 0
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:4:    @Binding var selectedTab: MainTab
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:5:    @EnvironmentObject private var store: CommitmentSystemStore
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:6:    @EnvironmentObject private var appClock: AppClock
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:9:    @AppStorage("phase1MotionSessionID") private var motionSessionID = ""
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:10:    @AppStorage("didAnimateLogsPhase1SessionID") private var didAnimateLogsPhase1SessionID = ""
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:11:    @State private var showProfile = false
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:12:    @State private var hasStartedEntrance = false
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:13:    @State private var showIntegritySection = false
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:14:    @State private var showPerformanceSection = false
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:15:    @State private var showHistorySection = false
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:16:    @State private var revealedMatrixCount = 0
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:17:    @State private var metricsAnimatedIn = false
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:18:    @State private var revealedHistoryCount = 0
+LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift:5:final class RecoveryModeViewModel: ObservableObject {
+LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift:6:    @Published private(set) var step: RecoveryFlowState = .entry
+LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift:7:    @Published private(set) var protocolOptions: [RecoveryProtocolOption] = []
+LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift:8:    @Published var selectedProtocolId: UUID?
+LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift:9:    @Published private(set) var triggerProtocolTitle: String?
+LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift:10:    @Published private(set) var pausedProtocolTitle: String?
+LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift:11:    @Published private(set) var requiresPauseSelection = false
+LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift:12:    @Published private(set) var isPendingResolution = false
+LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift:13:    @Published private(set) var warningMessage: String?
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:4:    @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:5:    @AppStorage(DailyCheckInPolicy.Keys.hour) private var dailyCheckInHour = 18
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:6:    @AppStorage(DailyCheckInPolicy.Keys.minute) private var dailyCheckInMinute = 0
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:10:    @EnvironmentObject private var store: CommitmentSystemStore
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:11:    @EnvironmentObject private var planStore: PlanStore
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:12:    @EnvironmentObject private var appClock: AppClock
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:13:    @EnvironmentObject private var devRuntime: DevRuntimeState
+LockedIn/Features/Onboarding/SubFeatures/UserHistory/Views/UserHistoryContentView.swift:14:    @ObservedObject var viewModel: UserHistoryViewModel
+LockedIn/Features/Cockpit/ViewModels/CockpitViewModel.swift:5:final class CockpitViewModel: ObservableObject {
+LockedIn/Features/Cockpit/ViewModels/CockpitViewModel.swift:6:    @Published private(set) var uiState: CockpitUIState = .placeholder
+LockedIn/Features/Onboarding/SubFeatures/UserHistory/ViewModels/UserHistoryViewModel.swift:12:final class UserHistoryViewModel: ObservableObject {
+LockedIn/Features/Onboarding/SubFeatures/UserHistory/ViewModels/UserHistoryViewModel.swift:15:    @Published var selectedOption: String?
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:13:    @EnvironmentObject private var store: CommitmentSystemStore
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:17:    @StateObject private var viewModel: CreateNonNegotiableViewModel
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:18:    @State private var showingIconPicker = false
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:978:    @State private var searchText = ""
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:979:    @State private var selectedCategory: ProtocolIconCatalog.Category = .all
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:980:    @State private var selectedSymbol: String
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:981:    @State private var recentSymbols: [String]
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableContentView.swift:14:    @ObservedObject var viewModel: CreateNonNegotiableViewModel
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:5:final class CreateNonNegotiableViewModel: ObservableObject {
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:31:    @Published var title: String = ""
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:32:    @Published var mode: NonNegotiableMode = .session {
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:44:    @Published var frequencyPerWeek: Int = 4
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:45:    @Published var totalLockDays: Int = 28
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:46:    @Published var selectedGoalId: UUID
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:47:    @Published var selectedIconSystemName: String = NonNegotiableDefinition.defaultIconSystemName(for: .session)
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:48:    @Published var preferredExecutionSlot: PreferredExecutionSlot = .none
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:49:    @Published var selectedDurationMinutes: Int = 60
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:50:    @Published var customDurationText: String = ""
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:51:    @Published var isUsingCustomDuration: Bool = false
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:53:    @Published var isSubmitting: Bool = false
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:54:    @Published var showValidationError: Bool = false
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:55:    @Published var fieldValidationMessages: [String] = []
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:56:    @Published var submissionErrorMessage: String?
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:66:    @Published var minimumMinutesText: String = ""
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:67:    @Published var timeWindowStartHour: Int = 0
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:68:    @Published var timeWindowEndHour: Int = 24
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:69:    @Published var frequency: NonNegotiableFrequency = .custom
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:36:    @AppStorage("phase1MotionSessionID") private var motionSessionID = ""
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:37:    @AppStorage("didAnimateCockpitPhase1SessionID") private var didAnimateCockpitPhase1SessionID = ""
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:39:    @State private var hasStartedEntrance = false
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:40:    @State private var showReliabilityModule = false
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:41:    @State private var showWeeklyStrip = false
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:42:    @State private var showActiveSection = false
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:43:    @State private var revealedProtocolRows = 0
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:44:    @State private var animatedReliabilityValue: Double = 0
+LockedIn/Features/Onboarding/SubFeatures/AIRegulator/Views/AIRegulatorContentView.swift:13:    @State private var showPulse = false
+LockedIn/Features/Plan/Views/PlanScreen.swift:11:    @Binding var selectedTab: MainTab
+LockedIn/Features/Plan/Views/PlanScreen.swift:13:    @EnvironmentObject private var commitmentStore: CommitmentSystemStore
+LockedIn/Features/Plan/Views/PlanScreen.swift:14:    @EnvironmentObject private var planStore: PlanStore
+LockedIn/Features/Plan/Views/PlanScreen.swift:15:    @EnvironmentObject private var router: AppRouter
+LockedIn/Features/Plan/Views/PlanScreen.swift:16:    @EnvironmentObject private var appClock: AppClock
+LockedIn/Features/Plan/Views/PlanScreen.swift:21:    @AppStorage("phase1MotionSessionID") private var motionSessionID = ""
+LockedIn/Features/Plan/Views/PlanScreen.swift:22:    @AppStorage("didAnimatePlanColumnsSessionID") private var didAnimatePlanColumnsSessionID = ""
+LockedIn/Features/Plan/Views/PlanScreen.swift:23:    @AppStorage("didDismissPlanBoardHintSessionID") private var didDismissPlanBoardHintSessionID = ""
+LockedIn/Features/Plan/Views/PlanScreen.swift:25:    @StateObject private var viewModel = PlanViewModel()
+LockedIn/Features/Plan/Views/PlanScreen.swift:26:    @State private var showProfile = false
+LockedIn/Features/Plan/Views/PlanScreen.swift:27:    @State private var boardMode: PlanBoardMode = .focusToday
+LockedIn/Features/Plan/Views/PlanScreen.swift:28:    @State private var activeDragPayload: String?
+LockedIn/Features/Plan/Views/PlanScreen.swift:29:    @State private var targetedSlotId: String?
+LockedIn/Features/Plan/Views/PlanScreen.swift:30:    @State private var toast: PlanToast?
+LockedIn/Features/Plan/Views/PlanScreen.swift:31:    @State private var pendingUndo: PlanUndoAction?
+LockedIn/Features/Plan/Views/PlanScreen.swift:32:    @State private var revealedDayIds: Set<Date> = []
+LockedIn/Features/Plan/Views/PlanScreen.swift:33:    @State private var didRunColumnEntrance = false
+LockedIn/Features/Plan/Views/PlanScreen.swift:34:    @State private var recentlyLockedAllocationKeys: Set<String> = []
+LockedIn/Features/Plan/Views/PlanScreen.swift:35:    @State private var lockInPulseActive = false
+LockedIn/Features/Plan/Views/PlanScreen.swift:1999:    @State private var selectedDay: Date
+LockedIn/Features/Plan/Views/PlanScreen.swift:2000:    @State private var selectedSlot: PlanSlot
+LockedIn/Features/Plan/Views/PlanScreen.swift:2077:    @State private var title: String
+LockedIn/Features/Plan/Views/PlanScreen.swift:2078:    @State private var selectedIconSystemName: String
+LockedIn/Features/Plan/Views/PlanScreen.swift:2079:    @State private var preferredSlot: PreferredExecutionSlot
+LockedIn/Features/Plan/Views/PlanScreen.swift:2080:    @State private var mode: NonNegotiableMode
+LockedIn/Features/Plan/Views/PlanScreen.swift:2081:    @State private var frequencyPerWeek: Int
+LockedIn/Features/Plan/Views/PlanScreen.swift:2082:    @State private var lockDays: Int
+LockedIn/Features/Plan/Views/PlanScreen.swift:2083:    @State private var selectedDurationPreset: Int?
+LockedIn/Features/Plan/Views/PlanScreen.swift:2084:    @State private var customDurationText: String
+LockedIn/Features/Plan/Views/PlanScreen.swift:2085:    @State private var isUsingCustomDuration: Bool
+LockedIn/Features/Plan/Views/PlanScreen.swift:2086:    @State private var localErrorMessage: String?
+LockedIn/Features/Plan/Views/PlanScreen.swift:2087:    @State private var showingIconPicker = false
+LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift:4:    @StateObject private var viewModel: DailyCheckInViewModel
+LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift:10:    @State private var didAppear = false
+LockedIn/Features/Onboarding/ViewModels/OnboardingShellViewModel.swift:11:final class OnboardingShellViewModel: ObservableObject {
+LockedIn/Features/Onboarding/ViewModels/OnboardingShellViewModel.swift:12:    @Published private(set) var currentStep: OnboardingStep
+LockedIn/Features/Onboarding/SubFeatures/CommitmentAgreement/Views/CommitmentAgreementContentView.swift:14:    @ObservedObject var viewModel: CommitmentAgreementViewModel
+LockedIn/Features/Onboarding/SubFeatures/CommitmentAgreement/ViewModels/CommitmentAgreementViewModel.swift:12:final class CommitmentAgreementViewModel: ObservableObject {
+LockedIn/Features/Onboarding/SubFeatures/CommitmentAgreement/ViewModels/CommitmentAgreementViewModel.swift:15:    @Published var hasAcceptedTerms: Bool = false
+LockedIn/Features/Onboarding/SubFeatures/CommitmentAgreement/ViewModels/CommitmentAgreementViewModel.swift:16:    @Published var fullName: String = ""
+LockedIn/Features/Onboarding/SubFeatures/CommitmentAgreement/ViewModels/CommitmentAgreementViewModel.swift:17:    @Published var showValidationError: Bool = false

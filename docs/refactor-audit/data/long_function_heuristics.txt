@@ -1,0 +1,24 @@
+  261 LockedIn/Domain/Engines/NonNegotiableEngineSimulation.swift:3 func runNonNegotiableEngineSimulation() {
+  178 LockedIn/Domain/Engines/CommitmentSystemSimulation.swift:3 func runCommitmentSystemSimulation() {
+  161 LockedIn/Domain/Engines/PlanRegulatorEngine.swift:10     func regulate(input: PlanRegulationInput) -> PlanDraft {
+  144 LockedIn/Features/Cockpit/ViewModels/CockpitViewModel.swift:218     func todayTasks(system: CommitmentSystem, referenceDate: Date) -> [TodayTask] {
+  139 LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:47     func refresh() {
+  122 LockedIn/Domain/Policy/PolicyReason.swift:52     func copy() -> PolicyCopy {
+  106 LockedIn/Domain/Policy/CommitmentPolicyEngineSimulation.swift:3 func runCommitmentPolicyEngineSimulation() {
+   97 LockedIn/Features/Plan/Views/PlanScreen.swift:458     func queueCard(_ item: PlanQueueItem) -> some View {
+   95 LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:246     func runSingleProtocolRegulator(protocolId: UUID) {
+   89 LockedIn/Application/PlanCompletionReconciliationSimulation.swift:4 func runPlanCompletionReconciliationSimulation() {
+   87 LockedIn/Features/Cockpit/Views/CockpitView.swift:345     func perform(_ action: CockpitAction) {
+   82 LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:337     func sessionCard(_ entry: LogEntry, index: Int) -> some View {
+   77 LockedIn/Features/Onboarding/SubFeatures/UserHistory/Views/UserHistoryContentView.swift:113     func selectionCard(for option: UserHistoryOption) -> some View {
+   75 LockedIn/Features/Plan/Views/PlanScreen.swift:1008     func allocationChip(_ allocation: PlanAllocationDisplay, day: Date, slot: PlanSlot) -> some View {
+   72 LockedIn/Application/PlanStore.swift:802     func buildWeekDays(referenceDate: Date) {
+   71 LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift:37     func refresh() {
+   70 LockedIn/Application/PlanStore.swift:424     func validateDraft(_ draft: [PlanAllocationDraft]) -> [PlanSuggestion] {
+   69 LockedIn/Features/Onboarding/Models/OnboardingPresentationConfig.swift:24     static func config(for step: OnboardingStep) -> OnboardingPresentationConfig {
+   69 LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:214     func runRegulator() {
+   68 LockedIn/Application/PlanStore.swift:495     func applyDraft(_ draft: [PlanAllocationDraft]) -> Result<Int, PlanDraftApplyError> {
+   66 LockedIn/Domain/Engines/PlanRegulatorSimulation.swift:3 func runPlanRegulatorSimulation() {
+   65 LockedIn/Features/Cockpit/Views/CockpitModernView.swift:521     func protocolRow(_ task: TodayTask) -> some View {
+   63 LockedIn/Features/Plan/Views/PlanScreen.swift:694     func slotCard(day: PlanDayModel, slot: PlanSlotModel, isCompact: Bool) -> some View {
+   60 LockedIn/Domain/Engines/NonNegotiableEngine.swift:76     func evaluateDailyComplianceIfNeeded(_ nn: inout NonNegotiable, at currentDate: Date) {

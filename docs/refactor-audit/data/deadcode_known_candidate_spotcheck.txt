@@ -1,0 +1,10 @@
+== CockpitKpiCard ==
+LockedIn/Features/Cockpit/Components/CockpitKpiCard.swift:3:struct CockpitKpiCard: View {
+== CockpitNonNegotiableCard ==
+LockedIn/Features/Cockpit/Components/CockpitNonNegotiableCard.swift:3:struct CockpitNonNegotiableCard: View {
+== LiquidGlassNavDemosRootView ==
+LockedIn/Features/Cockpit/Views/LiquidGlassNavDemos.swift:192:struct LiquidGlassNavDemosRootView: View {
+== MockPlanCalendarProvider ==
+LockedIn/Features/Plan/Models/PlanModels.swift:373:struct MockPlanCalendarProvider: PlanCalendarProviding {
+== PlaceholderAIService ==
+LockedIn/Core/Services/AIServiceProtocol.swift:66:final class PlaceholderAIService: AIServiceProtocol {

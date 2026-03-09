@@ -1,0 +1,53 @@
+LockedIn/Application/PlanCompletionReconciliationSimulation.swift:3:@MainActor
+LockedIn/Application/DevRuntimeState.swift:4:@MainActor
+LockedIn/Application/AppClock.swift:4:@MainActor
+LockedIn/Application/CommitmentSystemStore.swift:9:@MainActor
+LockedIn/Application/PlanStore.swift:50:@MainActor
+LockedIn/Application/PlanStore.swift:1219:        Task { @MainActor [weak self] in
+LockedIn/Application/PlanStore.swift:1220:            try? await Task.sleep(nanoseconds: 2_200_000_000)
+LockedIn/Application/DevOptionsController.swift:4:@MainActor
+LockedIn/Features/Onboarding/Flow/OnboardingCoordinator.swift:119:        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift:89:            Task { @MainActor in
+LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift:90:                try? await Task.sleep(nanoseconds: 2_200_000_000)
+LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:4:@MainActor
+LockedIn/Features/AppShell/Models/AppRouter.swift:4:@MainActor
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:11:@MainActor
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift:4:@MainActor
+LockedIn/Features/Cockpit/Views/CockpitView.swift:8:@MainActor
+LockedIn/Features/Cockpit/Views/CockpitView.swift:471:        Task { @MainActor in
+LockedIn/Features/Cockpit/Views/CockpitView.swift:472:            try? await Task.sleep(nanoseconds: 2_300_000_000)
+LockedIn/Features/Plan/Views/PlanScreen.swift:394:            Task {
+LockedIn/Features/Plan/Views/PlanScreen.swift:395:                await viewModel.requestCalendarAccess()
+LockedIn/Features/Plan/Views/PlanScreen.swift:1415:        Task { @MainActor in
+LockedIn/Features/Plan/Views/PlanScreen.swift:1416:            try? await Task.sleep(nanoseconds: 4_800_000_000)
+LockedIn/Features/Plan/Views/PlanScreen.swift:1467:        DispatchQueue.main.async {
+LockedIn/Features/Plan/Views/PlanScreen.swift:1516:            DispatchQueue.main.asyncAfter(deadline: .now() + Double(reverseIndex) * 0.06) {
+LockedIn/Features/Plan/Views/PlanScreen.swift:1521:        DispatchQueue.main.asyncAfter(deadline: .now() + settleDelay) {
+LockedIn/Features/Plan/Views/PlanScreen.swift:1537:        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
+LockedIn/Features/Plan/Views/PlanScreen.swift:1543:        DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) {
+LockedIn/Features/Plan/Views/PlanScreen.swift:1549:        DispatchQueue.main.asyncAfter(deadline: .now() + 1.55) {
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:464:        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:470:        DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:477:        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:484:            DispatchQueue.main.asyncAfter(deadline: .now() + 0.36 + (Double(index) * 0.06)) {
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:491:        DispatchQueue.main.asyncAfter(deadline: .now() + 0.62) {
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:4:@MainActor
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:141:    func requestCalendarAccess() async {
+LockedIn/Features/Plan/ViewModels/PlanViewModel.swift:142:        let status = await calendarProvider.requestAccess()
+LockedIn/Features/Plan/Models/PlanModels.swift:274:    func requestAccess() async -> PlanCalendarAuthorizationStatus
+LockedIn/Features/Plan/Models/PlanModels.swift:302:    func requestAccess() async -> PlanCalendarAuthorizationStatus {
+LockedIn/Features/Plan/Models/PlanModels.swift:310:                _ = try await eventStore.requestFullAccessToEvents()
+LockedIn/Features/Plan/Models/PlanModels.swift:312:                _ = try await withCheckedThrowingContinuation { continuation in
+LockedIn/Features/Plan/Models/PlanModels.swift:378:    func requestAccess() async -> PlanCalendarAuthorizationStatus {
+LockedIn/Features/Cockpit/ViewModels/CockpitViewModel.swift:4:@MainActor
+LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift:4:@MainActor
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:609:        DispatchQueue.main.asyncAfter(deadline: .now() + 0.10) {
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:615:        DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:622:            DispatchQueue.main.asyncAfter(deadline: .now() + 0.28 + (Double(index) * 0.07)) {
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:629:        DispatchQueue.main.asyncAfter(deadline: .now() + 0.52) {
+LockedIn/Core/Services/AIServiceProtocol.swift:19:    func parseNonNegotiable(from text: String) async throws -> NonNegotiableParseResult
+LockedIn/Core/Services/AIServiceProtocol.swift:26:    func explainDecision(_ decision: SystemDecision, context: DecisionContext) async throws -> String
+LockedIn/Core/Services/AIServiceProtocol.swift:33:    func generateCoachingMessage(for history: UserHistory, at stage: String) async throws -> String
+LockedIn/Core/Services/AIServiceProtocol.swift:67:    func parseNonNegotiable(from text: String) async throws -> NonNegotiableParseResult {
+LockedIn/Core/Services/AIServiceProtocol.swift:77:    func explainDecision(_ decision: SystemDecision, context: DecisionContext) async throws -> String {
+LockedIn/Core/Services/AIServiceProtocol.swift:81:    func generateCoachingMessage(for history: UserHistory, at stage: String) async throws -> String {

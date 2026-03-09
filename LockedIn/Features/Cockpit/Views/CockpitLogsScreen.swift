@@ -59,37 +59,21 @@ struct CockpitLogsScreen: View {
             runEntranceIfNeeded()
         }
         .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                Button {
+            LogsProfileToolbarActions(
+                iconColor: navItemColor,
+                indicatorColor: activeAccent,
+                onLogsTap: {
                     Haptics.selection()
                     selectedTab = .logs
-                } label: {
-                    ZStack(alignment: .topTrailing) {
-                        Image(systemName: "bell")
-                            .font(.system(size: 18, weight: .medium))
-
-                        Circle()
-                            .fill(activeAccent)
-                            .frame(width: 7, height: 7)
-                            .offset(x: 5, y: -3)
-                    }
-                    .foregroundColor(navItemColor)
-                }
-                .accessibilityLabel("Open logs")
-
-                Button {
+                },
+                onProfileTap: {
                     Haptics.selection()
                     showProfile = true
-                } label: {
-                    Image(systemName: "person.crop.circle")
-                        .font(.system(size: 19, weight: .medium))
-                        .foregroundColor(navItemColor)
                 }
-                .accessibilityLabel("Open profile")
-            }
+            )
         }
         .sheet(isPresented: $showProfile) {
-            NavigationStack {
+            ProfileSheetContainer {
                 ProfilePlaceholderView()
             }
         }

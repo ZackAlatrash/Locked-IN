@@ -1,0 +1,38 @@
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:118:        .onChange(of: viewModel.submissionErrorMessage) { message in
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:32:        .onAppear {
+LockedIn/Features/DevOptions/Views/DevOptionsView.swift:35:        .onChange(of: appClock.simulatedNow) { simulated in
+LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift:81:        .onAppear {
+LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift:87:        .onChange(of: viewModel.toastMessage) { message in
+LockedIn/Features/AppShell/Views/MainAppView.swift:142:        .onAppear {
+LockedIn/Features/AppShell/Views/MainAppView.swift:147:        .onChange(of: scenePhase) { phase in
+LockedIn/Features/AppShell/Views/MainAppView.swift:153:        .onChange(of: router.selectedTab) { _ in
+LockedIn/Features/AppShell/Views/MainAppView.swift:158:        .onChange(of: appClock.simulatedNow) { _ in
+LockedIn/Features/AppShell/Views/MainAppView.swift:162:        .onChange(of: devRuntime.forceShowDailyCheckInToken) { token in
+LockedIn/Features/AppShell/Views/MainAppView.swift:169:        .onChange(of: store.system) { system in
+LockedIn/Features/Onboarding/SubFeatures/AIRegulator/Views/AIRegulatorContentView.swift:90:                .onAppear {
+LockedIn/App/Locked_INApp.swift:78:        .onAppear {
+LockedIn/App/Locked_INApp.swift:98:        .onChange(of: scenePhase) { newPhase in
+LockedIn/App/Locked_INApp.swift:103:        .onChange(of: appClock.simulatedNow) { _ in
+LockedIn/Features/Cockpit/Views/CockpitView.swift:90:        .onAppear {
+LockedIn/Features/Cockpit/Views/CockpitView.swift:93:        .onReceive(store.$system) { _ in
+LockedIn/Features/Cockpit/Views/CockpitView.swift:96:        .onChange(of: appClock.simulatedNow) { _ in
+LockedIn/Features/Recovery/Views/RecoveryModePopup.swift:65:        .onAppear {
+LockedIn/Features/Recovery/Views/RecoveryModePopup.swift:71:        .onChange(of: viewModel.isPendingResolution) { isPending in
+LockedIn/Features/Recovery/Views/RecoveryModePopup.swift:76:        .onChange(of: didAppear) { _ in
+LockedIn/Features/Plan/Views/PlanScreen.swift:169:        .onAppear {
+LockedIn/Features/Plan/Views/PlanScreen.swift:177:        .onChange(of: router.pendingPlanFocusProtocolId) { protocolId in
+LockedIn/Features/Plan/Views/PlanScreen.swift:180:        .onChange(of: router.pendingPlanEditProtocolId) { protocolId in
+LockedIn/Features/Plan/Views/PlanScreen.swift:183:        .onChange(of: scenePhase) { phase in
+LockedIn/Features/Plan/Views/PlanScreen.swift:188:        .onChange(of: appClock.simulatedNow) { _ in
+LockedIn/Features/Plan/Views/PlanScreen.swift:541:                    .onAppear {
+LockedIn/Features/Plan/Views/PlanScreen.swift:610:            .onAppear {
+LockedIn/Features/Plan/Views/PlanScreen.swift:614:            .onChange(of: viewModel.currentWeekDays.map(\.id)) { _ in
+LockedIn/Features/Plan/Views/PlanScreen.swift:618:            .onChange(of: boardMode) { _ in
+LockedIn/Features/Plan/Views/PlanScreen.swift:848:                            .onAppear {
+LockedIn/Features/Plan/Views/PlanScreen.swift:932:                                .onAppear {
+LockedIn/Features/Plan/Views/PlanScreen.swift:2177:                    .onChange(of: mode) { newMode in
+LockedIn/Features/Plan/Views/PlanScreen.swift:2246:                        .onChange(of: isUsingCustomDuration) { enabled in
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:58:        .onAppear {
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:210:        .onAppear {
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:218:        .onChange(of: reliabilityScore) { newValue in
+LockedIn/CoreUI/Components/NonNegotiableCard.swift:60:        .onAppear {

@@ -1,0 +1,51 @@
+LockedIn/Domain/Engines/NonNegotiableEngineSimulation.swift:255:        let decodedLegacy = try JSONDecoder().decode(
+LockedIn/Application/DevOptionsController.swift:12:    private let userDefaults: UserDefaults
+LockedIn/Application/DevOptionsController.swift:20:        userDefaults: UserDefaults = .standard,
+LockedIn/Features/AppShell/Views/MainAppView.swift:47:    @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
+LockedIn/Features/AppShell/Views/MainAppView.swift:48:    @AppStorage(DailyCheckInPolicy.Keys.lastCompletedDay) private var dailyCheckInLastCompletedDay = ""
+LockedIn/Features/AppShell/Views/MainAppView.swift:49:    @AppStorage(DailyCheckInPolicy.Keys.lastPromptedDay) private var dailyCheckInLastPromptedDay = ""
+LockedIn/Features/AppShell/Views/MainAppView.swift:50:    @AppStorage(DailyCheckInPolicy.Keys.repromptedDay) private var dailyCheckInRepromptedDay = ""
+LockedIn/Features/AppShell/Views/MainAppView.swift:51:    @AppStorage(DailyCheckInPolicy.Keys.deferredUntilTimestamp) private var dailyCheckInDeferredUntilTimestamp: Double = 0
+LockedIn/Features/AppShell/Views/MainAppView.swift:52:    @AppStorage(DailyCheckInPolicy.Keys.hour) private var dailyCheckInHour = 18
+LockedIn/Features/AppShell/Views/MainAppView.swift:53:    @AppStorage(DailyCheckInPolicy.Keys.minute) private var dailyCheckInMinute = 0
+LockedIn/Features/Cockpit/Views/CockpitView.swift:19:    @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:1354:        let saved = UserDefaults.standard.array(forKey: key) as? [String] ?? []
+LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift:1364:        UserDefaults.standard.set(current, forKey: key)
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:36:    @AppStorage("phase1MotionSessionID") private var motionSessionID = ""
+LockedIn/Features/Cockpit/Views/CockpitModernView.swift:37:    @AppStorage("didAnimateCockpitPhase1SessionID") private var didAnimateCockpitPhase1SessionID = ""
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:9:    @AppStorage("phase1MotionSessionID") private var motionSessionID = ""
+LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift:10:    @AppStorage("didAnimateLogsPhase1SessionID") private var didAnimateLogsPhase1SessionID = ""
+LockedIn/App/Locked_INApp.swift:24:    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+LockedIn/App/Locked_INApp.swift:25:    @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
+LockedIn/App/Locked_INApp.swift:26:    @AppStorage("phase1MotionSessionID") private var phase1MotionSessionID = ""
+LockedIn/App/Locked_INApp.swift:84:            if UserDefaults.standard.bool(forKey: freshStartResetKey) == false {
+LockedIn/App/Locked_INApp.swift:88:                UserDefaults.standard.set(true, forKey: freshStartResetKey)
+LockedIn/App/Locked_INApp.swift:91:            if UserDefaults.standard.bool(forKey: protocolResetKey) == false {
+LockedIn/App/Locked_INApp.swift:94:                UserDefaults.standard.set(true, forKey: protocolResetKey)
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:4:    @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:5:    @AppStorage(DailyCheckInPolicy.Keys.hour) private var dailyCheckInHour = 18
+LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift:6:    @AppStorage(DailyCheckInPolicy.Keys.minute) private var dailyCheckInMinute = 0
+LockedIn/Core/Persistence/JSONFileCommitmentSystemRepository.swift:11:    private let fileManager: FileManager
+LockedIn/Core/Persistence/JSONFileCommitmentSystemRepository.swift:16:        fileManager: FileManager = .default,
+LockedIn/Core/Persistence/JSONFileCommitmentSystemRepository.swift:41:            data = try Data(contentsOf: url)
+LockedIn/Core/Persistence/JSONFileCommitmentSystemRepository.swift:64:            try data.write(to: url, options: .atomic)
+LockedIn/Core/Persistence/JSONFileCommitmentSystemRepository.swift:81:    private func makeEncoder() -> JSONEncoder {
+LockedIn/Core/Persistence/JSONFileCommitmentSystemRepository.swift:82:        let encoder = JSONEncoder()
+LockedIn/Core/Persistence/JSONFileCommitmentSystemRepository.swift:88:    private func makeDecoder() -> JSONDecoder {
+LockedIn/Core/Persistence/JSONFileCommitmentSystemRepository.swift:89:        let decoder = JSONDecoder()
+LockedIn/Core/Persistence/RepositorySimulation.swift:4:    let repository = JSONFileCommitmentSystemRepository(baseDirectoryURL: FileManager.default.temporaryDirectory)
+LockedIn/Core/Persistence/JSONFilePlanAllocationRepository.swift:11:    private let fileManager: FileManager
+LockedIn/Core/Persistence/JSONFilePlanAllocationRepository.swift:16:        fileManager: FileManager = .default,
+LockedIn/Core/Persistence/JSONFilePlanAllocationRepository.swift:35:            data = try Data(contentsOf: url)
+LockedIn/Core/Persistence/JSONFilePlanAllocationRepository.swift:58:            try data.write(to: url, options: .atomic)
+LockedIn/Core/Persistence/JSONFilePlanAllocationRepository.swift:75:    private func makeEncoder() -> JSONEncoder {
+LockedIn/Core/Persistence/JSONFilePlanAllocationRepository.swift:76:        let encoder = JSONEncoder()
+LockedIn/Core/Persistence/JSONFilePlanAllocationRepository.swift:82:    private func makeDecoder() -> JSONDecoder {
+LockedIn/Core/Persistence/JSONFilePlanAllocationRepository.swift:83:        let decoder = JSONDecoder()
+LockedIn/Features/Plan/Views/PlanScreen.swift:21:    @AppStorage("phase1MotionSessionID") private var motionSessionID = ""
+LockedIn/Features/Plan/Views/PlanScreen.swift:22:    @AppStorage("didAnimatePlanColumnsSessionID") private var didAnimatePlanColumnsSessionID = ""
+LockedIn/Features/Plan/Views/PlanScreen.swift:23:    @AppStorage("didDismissPlanBoardHintSessionID") private var didDismissPlanBoardHintSessionID = ""
+LockedIn/Features/Plan/Models/PlanModels.swift:2:import EventKit
+LockedIn/Features/Plan/Models/PlanModels.swift:291:    private let eventStore: EKEventStore
+LockedIn/Features/Plan/Models/PlanModels.swift:293:    init(eventStore: EKEventStore = EKEventStore()) {
+LockedIn/Features/Plan/Models/PlanModels.swift:298:        let status = EKEventStore.authorizationStatus(for: .event)

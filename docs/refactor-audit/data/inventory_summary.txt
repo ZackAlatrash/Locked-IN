@@ -1,0 +1,6 @@
+GeneratedAtUTC: 2026-03-08T15:43:42Z
+RepoRoot: /Users/zackalatrash/Desktop/Locked IN
+AllFilesCount: 4836
+LockedInFilesCount: 232
+LockedInDirectoriesCount: 136
+SwiftFilesCount: 102

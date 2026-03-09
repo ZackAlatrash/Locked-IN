@@ -1,0 +1,8 @@
+  80 @Published
+  61 @State
+  24 @EnvironmentObject
+  21 @AppStorage
+  15 ObservableObject
+  12 @StateObject
+   5 @ObservedObject
+   3 @Binding

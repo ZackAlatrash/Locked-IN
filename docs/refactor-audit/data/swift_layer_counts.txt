@@ -1,0 +1,6 @@
+  50 Features
+  27 Domain
+   9 CoreUI
+   8 Application
+   7 Core
+   1 App
