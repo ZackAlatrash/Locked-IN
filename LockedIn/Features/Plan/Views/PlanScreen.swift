@@ -19,15 +19,15 @@ struct PlanScreen: View {
 
     @StateObject var viewModel = PlanViewModel()
     @State private var showProfile = false
-    @State var boardMode: PlanBoardMode = .focusToday
-    @State var activeDragPayload: String?
-    @State var targetedSlotId: String?
-    @State var toast: PlanToast?
-    @State var pendingUndo: PlanUndoAction?
-    @State var revealedDayIds: Set<Date> = []
-    @State var didRunColumnEntrance = false
-    @State var recentlyLockedAllocationKeys: Set<String> = []
-    @State var lockInPulseActive = false
+    @State private var boardMode: PlanBoardMode = .focusToday
+    @State private var activeDragPayload: String?
+    @State private var targetedSlotId: String?
+    @State private var toast: PlanToast?
+    @State private var pendingUndo: PlanUndoAction?
+    @State private var revealedDayIds: Set<Date> = []
+    @State private var didRunColumnEntrance = false
+    @State private var recentlyLockedAllocationKeys: Set<String> = []
+    @State private var lockInPulseActive = false
 
     var isDarkMode: Bool { colorScheme == .dark }
     var isRecoveryThemeActive: Bool { commitmentStore.isSystemStable == false }
