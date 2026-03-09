@@ -133,7 +133,6 @@
 		40A77A392F3CD39800BC4E39 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PrimaryButton.swift; path = LockedIn/CoreUI/Components/PrimaryButton.swift; sourceTree = SOURCE_ROOT; };
 		40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProgressIndicator.swift; path = LockedIn/CoreUI/Components/ProgressIndicator.swift; sourceTree = SOURCE_ROOT; };
 		40A77A3C2F3CD39800BC4E39 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Theme.swift; path = LockedIn/CoreUI/Theme/Theme.swift; sourceTree = SOURCE_ROOT; };
-		40A77A412F3CD39800BC4E39 /* IdentityWarningViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = IdentityWarningViewModel.swift; path = LockedIn/Features/Onboarding/SubFeatures/IdentityWarning/ViewModels/IdentityWarningViewModel.swift; sourceTree = SOURCE_ROOT; };
 		40A77A532F3CD49800BC4E39 /* Locked_INApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Locked_INApp.swift; sourceTree = "<group>"; };
 		40A77A5A2F3CD80000BC4E39 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = LockedIn/Resources/Assets.xcassets; sourceTree = SOURCE_ROOT; };
 		40A77A622F3CF00000BC4E39 /* OnboardingShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OnboardingShellView.swift; path = LockedIn/Features/Onboarding/Views/OnboardingShellView.swift; sourceTree = SOURCE_ROOT; };
@@ -161,7 +160,6 @@
 		A20000000000000000000001 /* CommitmentSystemRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommitmentSystemRepository.swift; path = LockedIn/Core/Persistence/CommitmentSystemRepository.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000002 /* InMemoryCommitmentSystemRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InMemoryCommitmentSystemRepository.swift; path = LockedIn/Core/Persistence/InMemoryCommitmentSystemRepository.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000003 /* JSONFileCommitmentSystemRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = JSONFileCommitmentSystemRepository.swift; path = LockedIn/Core/Persistence/JSONFileCommitmentSystemRepository.swift; sourceTree = SOURCE_ROOT; };
-		A20000000000000000000004 /* RepositorySimulation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RepositorySimulation.swift; path = LockedIn/Core/Persistence/RepositorySimulation.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000005 /* LiquidGlassNavBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LiquidGlassNavBar.swift; path = LockedIn/CoreUI/Components/LiquidGlassNavBar.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000006 /* FitnessLiquidGlassNavStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FitnessLiquidGlassNavStyle.swift; path = LockedIn/CoreUI/Components/FitnessLiquidGlassNavStyle.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000008 /* CockpitViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CockpitViewModel.swift; path = LockedIn/Features/Cockpit/ViewModels/CockpitViewModel.swift; sourceTree = SOURCE_ROOT; };
@@ -185,8 +183,6 @@
 		A2000000000000000000001A /* Window.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Window.swift; path = LockedIn/Domain/Models/Window.swift; sourceTree = SOURCE_ROOT; };
 		A2000000000000000000001B /* NonNegotiableDefinition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NonNegotiableDefinition.swift; path = LockedIn/Domain/Models/NonNegotiableDefinition.swift; sourceTree = SOURCE_ROOT; };
 		A2000000000000000000001C /* NonNegotiable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NonNegotiable.swift; path = LockedIn/Domain/Models/NonNegotiable.swift; sourceTree = SOURCE_ROOT; };
-		A2000000000000000000001D /* NonNegotiableEngineSimulation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NonNegotiableEngineSimulation.swift; path = LockedIn/Domain/Engines/NonNegotiableEngineSimulation.swift; sourceTree = SOURCE_ROOT; };
-		A2000000000000000000001E /* CommitmentSystemSimulation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommitmentSystemSimulation.swift; path = LockedIn/Domain/Engines/CommitmentSystemSimulation.swift; sourceTree = SOURCE_ROOT; };
 		A2000000000000000000001F /* CommitmentSystemEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommitmentSystemEngine.swift; path = LockedIn/Domain/Engines/CommitmentSystemEngine.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000020 /* NonNegotiableEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NonNegotiableEngine.swift; path = LockedIn/Domain/Engines/NonNegotiableEngine.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000021 /* NonNegotiableMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NonNegotiableMode.swift; path = LockedIn/Domain/Models/NonNegotiableMode.swift; sourceTree = SOURCE_ROOT; };
@@ -206,7 +202,6 @@
 		A20000000000000000000030 /* PlanScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanScreen.swift; path = LockedIn/Features/Plan/Views/PlanScreen.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000031 /* PlanRegulation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanRegulation.swift; path = LockedIn/Domain/Models/PlanRegulation.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000032 /* PlanRegulatorEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanRegulatorEngine.swift; path = LockedIn/Domain/Engines/PlanRegulatorEngine.swift; sourceTree = SOURCE_ROOT; };
-		A20000000000000000000033 /* PlanRegulatorSimulation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanRegulatorSimulation.swift; path = LockedIn/Domain/Engines/PlanRegulatorSimulation.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000034 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Haptics.swift; path = LockedIn/CoreUI/Utilities/Haptics.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000035 /* MotionRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MotionRuntime.swift; path = LockedIn/CoreUI/Utilities/MotionRuntime.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000036 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppRouter.swift; path = LockedIn/Features/AppShell/Models/AppRouter.swift; sourceTree = SOURCE_ROOT; };
@@ -225,12 +220,10 @@
 		A20000000000000000000044 /* DevOptionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DevOptionsView.swift; path = LockedIn/Features/DevOptions/Views/DevOptionsView.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000045 /* DevOptionsSectionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DevOptionsSectionCard.swift; path = LockedIn/Features/DevOptions/Components/DevOptionsSectionCard.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000046 /* DevSeedScenarioRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DevSeedScenarioRow.swift; path = LockedIn/Features/DevOptions/Components/DevSeedScenarioRow.swift; sourceTree = SOURCE_ROOT; };
-		A20000000000000000000047 /* PlanCompletionReconciliationSimulation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanCompletionReconciliationSimulation.swift; path = LockedIn/Application/PlanCompletionReconciliationSimulation.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000048 /* PolicyDecision.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PolicyDecision.swift; path = LockedIn/Domain/Policy/PolicyDecision.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000049 /* PolicyReason.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PolicyReason.swift; path = LockedIn/Domain/Policy/PolicyReason.swift; sourceTree = SOURCE_ROOT; };
 		A2000000000000000000004A /* ProtocolPatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProtocolPatch.swift; path = LockedIn/Domain/Policy/ProtocolPatch.swift; sourceTree = SOURCE_ROOT; };
 		A2000000000000000000004B /* CommitmentPolicyEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommitmentPolicyEngine.swift; path = LockedIn/Domain/Policy/CommitmentPolicyEngine.swift; sourceTree = SOURCE_ROOT; };
-		A2000000000000000000004C /* CommitmentPolicyEngineSimulation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommitmentPolicyEngineSimulation.swift; path = LockedIn/Domain/Policy/CommitmentPolicyEngineSimulation.swift; sourceTree = SOURCE_ROOT; };
 		A2000000000000000000004D /* RecoveryFlowState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecoveryFlowState.swift; path = LockedIn/Features/Recovery/Models/RecoveryFlowState.swift; sourceTree = SOURCE_ROOT; };
 		A2000000000000000000004E /* RecoveryModeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecoveryModeViewModel.swift; path = LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift; sourceTree = SOURCE_ROOT; };
 		A2000000000000000000004F /* RecoveryModePopup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecoveryModePopup.swift; path = LockedIn/Features/Recovery/Views/RecoveryModePopup.swift; sourceTree = SOURCE_ROOT; };
@@ -274,7 +267,6 @@
 				A20000000000000000000003 /* JSONFileCommitmentSystemRepository.swift */,
 				A2000000000000000000002B /* PlanAllocationRepository.swift */,
 				A2000000000000000000002C /* JSONFilePlanAllocationRepository.swift */,
-				A20000000000000000000004 /* RepositorySimulation.swift */,
 				A20000000000000000000005 /* LiquidGlassNavBar.swift */,
 				A20000000000000000000006 /* FitnessLiquidGlassNavStyle.swift */,
 				A20000000000000000000034 /* Haptics.swift */,
@@ -315,7 +307,6 @@
 				A20000000000000000000030 /* PlanScreen.swift */,
 				A20000000000000000000031 /* PlanRegulation.swift */,
 				A20000000000000000000032 /* PlanRegulatorEngine.swift */,
-				A20000000000000000000033 /* PlanRegulatorSimulation.swift */,
 				A20000000000000000000010 /* OnboardingPresentationConfig.swift */,
 				A20000000000000000000011 /* CreateNonNegotiableView.swift */,
 				A20000000000000000000012 /* OnboardingCoordinator.swift */,
@@ -323,7 +314,6 @@
 				A20000000000000000000040 /* AppClock.swift */,
 				A20000000000000000000041 /* DevRuntimeState.swift */,
 				A2000000000000000000002D /* PlanStore.swift */,
-				A20000000000000000000047 /* PlanCompletionReconciliationSimulation.swift */,
 				A20000000000000000000042 /* DevOptionsController.swift */,
 				A20000000000000000000043 /* DevSeedScenario.swift */,
 				A20000000000000000000037 /* DailyCheckInPolicy.swift */,
@@ -336,8 +326,6 @@
 				A2000000000000000000001A /* Window.swift */,
 				A2000000000000000000001B /* NonNegotiableDefinition.swift */,
 				A2000000000000000000001C /* NonNegotiable.swift */,
-				A2000000000000000000001D /* NonNegotiableEngineSimulation.swift */,
-				A2000000000000000000001E /* CommitmentSystemSimulation.swift */,
 				A2000000000000000000001F /* CommitmentSystemEngine.swift */,
 				A20000000000000000000020 /* NonNegotiableEngine.swift */,
 				A20000000000000000000021 /* NonNegotiableMode.swift */,
@@ -346,7 +334,6 @@
 				A20000000000000000000049 /* PolicyReason.swift */,
 				A2000000000000000000004A /* ProtocolPatch.swift */,
 				A2000000000000000000004B /* CommitmentPolicyEngine.swift */,
-				A2000000000000000000004C /* CommitmentPolicyEngineSimulation.swift */,
 				40A77A8A2F3DB20000BC4E39 /* UserHistoryViewModel.swift */,
 				40A77A8B2F3DB30000BC4E39 /* CreateNonNegotiableViewModel.swift */,
 				40A77A8C2F3DB40000BC4E39 /* CommitmentAgreementViewModel.swift */,
@@ -476,7 +463,6 @@
 		40A77A422F3CD39800BC4E39 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
-				40A77A412F3CD39800BC4E39 /* IdentityWarningViewModel.swift */,
 				40A77A642F3CF00000BC4E39 /* OnboardingShellViewModel.swift */,
 			);
 			path = ViewModels;
@@ -1004,7 +990,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2A6452539P;
@@ -1030,7 +1016,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2A6452539P;
