@@ -1,5 +1,3 @@
-# 02 Phased Migration Plan
-
 This document outlines the strictly ordered, incremental phases required to transition LockedIn from its current state (heavy global stores, UI-orchestrated rules) to the approved target architecture defined in `01-target-architecture.md`.
 
 The strategy prioritizes safety, behavior preservation, and mechanical moves before semantic structural changes. It heavily leverages the "Legacy Store Coexistence Pattern" to keep the app functional while individual features are modernized.
@@ -130,55 +128,78 @@ The strategy prioritizes safety, behavior preservation, and mechanical moves bef
 
 ---
 
-## Phase 6: Mechanical Plan Split
+## Phase 7: Feature Migration - Plan Routing & Coordinator
 
-**Objective:** Break apart the `PlanScreen.swift` god-view mechanically into manageable SwiftUI components without changing its logic.
-**Why this phase comes next:** `PlanScreen` is over 2300 lines. Attempting to migrate its architecture while it is a monolith introduces unacceptable regression risk. We must split it mechanically first.
+**Objective:** Extract all navigation intent consumption logic out of `PlanScreen` and into a dedicated `PlanCoordinator`.
+**Why this phase comes next:** Before migrating `PlanViewModel`'s heavy data logic to Service Wrappers, we must isolate the UI's reaction to global intents (like deep links to edit a protocol). Moving intent consumption out of the SwiftUI `.onChange` graph stabilizing the UI lifecycle first.
 
-- **Scope:** `Features/Plan/UI`.
-- **Likely files/modules affected:** `PlanScreen.swift`.
-- **Prerequisites:** Phase 5 complete.
-- **Exact tasks:**
-  1. Extract structural sections of `PlanScreen` (e.g., `PlanHeaderView`, `PlanQueueView`, `PlanEditFormView`) into separate `.swift` files within `Features/Plan/UI/`.
-  2. Pass necessary `@EnvironmentObject`s and `@State` bindings natively through the view hierarchy modifier chains so behavior is preserved perfectly.
-- **What must NOT change:** 
-  - The legacy `PlanStore` orchestration inside the view. Drag and drop behavior exactly as currently implemented.
-- **Verification steps:** Compile. Perform extensive manual interaction test in the Plan tab (dragging, adding, undoing).
-- **Rollback strategy:** Revert the mechanical extraction of `PlanScreen.swift`.
-- **Definition of done:** `PlanScreen.swift` is under 300 LOC, acting only as a container for smaller child views.
-
----
-
-## Phase 7: Feature Migration - Plan & Recovery Semantic Refactor
-
-**Objective:** Extract the semantic logic, intent consumption, and store mutations out of the newly split Plan views and Recovery models.
-**Why this phase comes next:** Now that the Plan views are manageable (Phase 6), we can safely migrate their bindings from the legacy global store to local ViewModels and Coordinators.
-
-- **Scope:** `Features/Plan/Presentation` and `Features/Recovery`.
-- **Likely files/modules affected:** Plan views, `RecoveryModeViewModel`.
+- **Scope:** `Features/Plan/Presentation` and `Features/Plan/UI`.
+- **Likely files/modules affected:** `PlanScreen.swift`, new `PlanCoordinator.swift`.
 - **Prerequisites:** Phase 6 complete.
 - **Exact tasks:**
-  1. Extract the Navigation intent consumption state out of the views into a `Features/Plan/Presentation/PlanCoordinator` (or equivalent navigation model).
-  2. Ensure `RecoveryModeViewModel` calls coordinated service wrappers (from Phase 3) rather than reaching into both `PlanStore` and `CommitmentSystemStore` directly.
-  3. Lift validation logic (e.g., maximum queue constraints) out of the views into a `Features/Plan/Presentation/PlanViewModel`.
+  1. Create `Features/Plan/Presentation/PlanCoordinator` to observe `AppRouter`.
+  2. Move the `AppRouter` `.onChange` and intent consumption (e.g., focus protocol, open editor) out of `PlanScreen`.
+  3. Change `PlanScreen` to observe the new local `PlanCoordinator` for its sheet presentation and focus state.
 - **What must NOT change:** 
-  - Data saved to disk. Calendar Sync logic.
-- **Verification steps:** Trigger recovery mode pause allocations, exit recovery, and ensure Plan queue automatically resolves correctly.
-- **Rollback strategy:** Revert semantic changes in `Features/Plan` and `Features/Recovery`.
-- **Definition of done:** All Plan and Recovery UI files observe local ViewModels and use the Phase 3 Service Wrappers.
+  - `PlanViewModel` still uses legacy global stores. `RecoveryMode` is untouched.
+- **Verification steps:** Trigger a check-in or toast that routes to `Plan` and opens the editor. Ensure the sheet still presents exactly as before.
+- **Rollback strategy:** Revert `PlanCoordinator` and restore `.onChange` bindings in `PlanScreen`.
+- **Definition of done:** `PlanScreen` does not directly observe `AppRouter` intents.
 
 ---
 
-## Phase 8: Global Store Deprecation and Persistence Finalization
+## Phase 8: Feature Migration - Recovery Services 
+
+**Objective:** Migrate `RecoveryModeViewModel` to use the Phase 3 Service Wrappers instead of the legacy global stores.
+**Why this phase comes next:** The Recovery domain is smaller and more isolated than the Plan domain. Migrating it first forces us to safely expand the Service Wrappers' capabilities (like pausing allocations) before tackling the massive `PlanViewModel`.
+
+- **Scope:** `Features/Recovery` and `Shared/Data` wrappers.
+- **Likely files/modules affected:** `RecoveryModeViewModel.swift`, Service Wrappers.
+- **Prerequisites:** Phase 7 complete.
+- **Exact tasks:**
+  1. Inject `CommitmentActionService` and `PlanService` into `RecoveryModeViewModel`.
+  2. Implement any missing wrapper functions required by Recovery (e.g., `recoveryEntryContext()`, `pauseAllocations()`).
+  3. Ensure the wrappers forward synchronously to the legacy stores.
+  4. Remove all direct `PlanStore` and `CommitmentSystemStore` references from `RecoveryModeViewModel`.
+- **What must NOT change:** 
+  - `PlanViewModel` and `PlanScreen` are untouched.
+- **Verification steps:** Trigger recovery mode, pause an allocation, and ensure the UI reflects it. 
+- **Rollback strategy:** Restore legacy store references in `RecoveryModeViewModel`.
+- **Definition of done:** `RecoveryModeViewModel` interacts solely with Service Wrappers.
+
+---
+
+## Phase 9: Feature Migration - Plan Services 
+
+**Objective:** Migrate the heavy business logic in `PlanViewModel` to use the Phase 3 Service Wrappers.
+**Why this phase comes next:** This is the largest and riskiest migration. By isolating it into its own phase, we ensure the Service Wrappers and the UI routing are completely stable before touching the complex Plan data mapping logic.
+
+- **Scope:** `Features/Plan/Presentation` and `Shared/Data` wrappers.
+- **Likely files/modules affected:** `PlanViewModel.swift`, Service Wrappers.
+- **Prerequisites:** Phase 8 complete.
+- **Exact tasks:**
+  1. Remove the legacy `.bind(planStore:commitmentStore:)` method and weak global properties from `PlanViewModel`.
+  2. Inject `CommitmentActionService` and `PlanService` into `PlanViewModel` at initialization.
+  3. Expand the Service Wrappers to handle the complex reads and writes `PlanViewModel` requires (e.g., fetching snapshots, editing protocols).
+  4. Verify all wrapper expansions strictly sync with the legacy stores on the `@MainActor`.
+- **What must NOT change:** 
+  - Data saved to disk. Calendar Sync logic.
+- **Verification steps:** Perform heavy edits, drags, and queue modifications in the Plan tab. Verify Apple Calendar sync still triggers accurately.
+- **Rollback strategy:** Revert `PlanViewModel` and any newly added Service Wrapper methods.
+- **Definition of done:** `PlanViewModel` has zero references to `PlanStore` or `CommitmentSystemStore`.
+
+---
+
+## Phase 10: Global Store Deprecation and Persistence Finalization
 
 **Objective:** Delete the legacy global stores (`PlanStore` and `CommitmentSystemStore`) and finalize the data layer.
-**Why this phase comes last:** Only after every UI feature (Phases 4, 5, 7) has been migrated to use Service Wrappers can we safely remove the underlying global EnvironmentObjects that powered them. 
+**Why this phase comes last:** Only after every UI feature (Phases 4, 5, 8, 9) has been migrated to use Service Wrappers can we safely remove the underlying global EnvironmentObjects that powered them. 
 
 - **Scope:** Deprecation of the legacy global stores, final JSON persistence wiring.
 - **Likely files/modules affected:** `App/Locked_INApp.swift`, `CommitmentSystemStore`, `PlanStore`, `Shared/Data/JSONRepositories`.
 - **Prerequisites:** All Feature UI (Cockpit, Plan, Check-In, Recovery, Onboarding) are fully isolated from view-level store mutations.
 - **Exact tasks:**
-  1. Refactor the Phase 3 Service wrappers to directly perform the JSON read/write logic using pure Repositories `Shared/Data/CommitmentDataRepository` and `Shared/Data/PlanDataRepository`.
+  1. Refactor the Service wrappers to directly perform the JSON read/write logic using pure Repositories `Shared/Data/CommitmentDataRepository` and `Shared/Data/PlanDataRepository`.
   2. Implement background/async write strategies to replace the legacy blocking `Data(contentsOf:)` calls on the MainActor.
   3. **Delete `CommitmentSystemStore.swift` and `PlanStore.swift`.**
   4. Remove the destructive startup flag logic from `Locked_INApp.swift` to prevent accidental production resets.

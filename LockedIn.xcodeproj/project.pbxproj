@@ -127,8 +127,10 @@
 		F10000000000000000000001 /* PlanRegulatorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000001 /* PlanRegulatorSheet.swift */; };
 		F10000000000000000000002 /* PlanAllocationEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000002 /* PlanAllocationEditorSheet.swift */; };
 		F10000000000000000000003 /* ProtocolSchedulingEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000003 /* ProtocolSchedulingEditorSheet.swift */; };
+		F10000000000000000000003 /* ProtocolSchedulingEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000003 /* ProtocolSchedulingEditorSheet.swift */; };
 		F10000000000000000000004 /* PlanScreenTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000004 /* PlanScreenTypes.swift */; };
 		F10000000000000000000005 /* PlanScreenStyling.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000005 /* PlanScreenStyling.swift */; };
+		F30000000000000000000001 /* PlanCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F40000000000000000000001 /* PlanCoordinator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -265,8 +267,10 @@
 		F20000000000000000000001 /* PlanRegulatorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanRegulatorSheet.swift; path = LockedIn/Features/Plan/Views/PlanRegulatorSheet.swift; sourceTree = SOURCE_ROOT; };
 		F20000000000000000000002 /* PlanAllocationEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanAllocationEditorSheet.swift; path = LockedIn/Features/Plan/Views/PlanAllocationEditorSheet.swift; sourceTree = SOURCE_ROOT; };
 		F20000000000000000000003 /* ProtocolSchedulingEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProtocolSchedulingEditorSheet.swift; path = LockedIn/Features/Plan/Views/ProtocolSchedulingEditorSheet.swift; sourceTree = SOURCE_ROOT; };
+		F20000000000000000000003 /* ProtocolSchedulingEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProtocolSchedulingEditorSheet.swift; path = LockedIn/Features/Plan/Views/ProtocolSchedulingEditorSheet.swift; sourceTree = SOURCE_ROOT; };
 		F20000000000000000000004 /* PlanScreenTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanScreenTypes.swift; path = LockedIn/Features/Plan/Views/PlanScreenTypes.swift; sourceTree = SOURCE_ROOT; };
 		F20000000000000000000005 /* PlanScreenStyling.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanScreenStyling.swift; path = LockedIn/Features/Plan/Views/PlanScreenStyling.swift; sourceTree = SOURCE_ROOT; };
+		F40000000000000000000001 /* PlanCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanCoordinator.swift; path = LockedIn/Features/Plan/Presentation/PlanCoordinator.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -366,6 +370,7 @@
 				A20000000000000000000046 /* DevSeedScenarioRow.swift */,
 				A2000000000000000000002E /* PlanModels.swift */,
 				A2000000000000000000002F /* PlanViewModel.swift */,
+				F40000000000000000000001 /* PlanCoordinator.swift */,
 				A20000000000000000000030 /* PlanScreen.swift */,
 				F20000000000000000000001 /* PlanRegulatorSheet.swift */,
 				F20000000000000000000002 /* PlanAllocationEditorSheet.swift */,
@@ -827,6 +832,7 @@
 				A10000000000000000000046 /* DevSeedScenarioRow.swift in Sources */,
 				A1000000000000000000002E /* PlanModels.swift in Sources */,
 				A1000000000000000000002F /* PlanViewModel.swift in Sources */,
+				F30000000000000000000001 /* PlanCoordinator.swift in Sources */,
 				A10000000000000000000030 /* PlanScreen.swift in Sources */,
 				F10000000000000000000001 /* PlanRegulatorSheet.swift in Sources */,
 				F10000000000000000000002 /* PlanAllocationEditorSheet.swift in Sources */,

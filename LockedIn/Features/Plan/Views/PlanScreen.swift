@@ -8,6 +8,8 @@ struct PlanScreen: View {
     @EnvironmentObject private var commitmentStore: CommitmentSystemStore
     @EnvironmentObject private var planStore: PlanStore
     @EnvironmentObject private var router: AppRouter
+    @StateObject private var coordinator = PlanCoordinator()
+
     @EnvironmentObject private var appClock: AppClock
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openURL) private var openURL
@@ -149,15 +151,15 @@ struct PlanScreen: View {
             boardMode = .focusToday
             viewModel.setReferenceDateProvider { appClock.now }
             viewModel.bind(planStore: planStore, commitmentStore: commitmentStore)
+            coordinator.bind(router: router, viewModel: viewModel)
             viewModel.refresh(referenceDate: appClock.now)
-            handleExternalPlanFocus(router.pendingPlanFocusProtocolId)
-            handleExternalPlanEdit(router.pendingPlanEditProtocolId)
+            handleRoutingIntents()
         }
-        .onChange(of: router.pendingPlanFocusProtocolId) { protocolId in
-            handleExternalPlanFocus(protocolId)
+        .onChange(of: router.pendingPlanFocusProtocolId) { _ in
+            handleRoutingIntents()
         }
-        .onChange(of: router.pendingPlanEditProtocolId) { protocolId in
-            handleExternalPlanEdit(protocolId)
+        .onChange(of: router.pendingPlanEditProtocolId) { _ in
+            handleRoutingIntents()
         }
         .onChange(of: scenePhase) { phase in
             if phase == .active {
@@ -1452,22 +1454,18 @@ extension PlanScreen {
         }
     }
 
-    func handleExternalPlanFocus(_ protocolId: UUID?) {
-        guard let protocolId else { return }
-        viewModel.focusProtocol(id: protocolId)
-        withAnimation(reduceMotion ? .none : Theme.Animation.context) {
-            boardMode = .expandedWeek
+    func handleRoutingIntents() {
+        let setExpandedWeek = {
+            withAnimation(reduceMotion ? .none : Theme.Animation.context) {
+                boardMode = .expandedWeek
+            }
         }
-        router.consumePlanFocusIntent()
-    }
-
-    func handleExternalPlanEdit(_ protocolId: UUID?) {
-        guard let protocolId else { return }
-        viewModel.openProtocolEditor(protocolId: protocolId)
-        withAnimation(reduceMotion ? .none : Theme.Animation.context) {
-            boardMode = .expandedWeek
-        }
-        router.consumePlanEditIntent()
+        coordinator.handleRoutingIntents(
+            focusId: router.pendingPlanFocusProtocolId,
+            editId: router.pendingPlanEditProtocolId,
+            reduceMotion: reduceMotion,
+            setExpandedWeek: setExpandedWeek
+        )
     }
 
     func runColumnEntranceIfNeeded() {

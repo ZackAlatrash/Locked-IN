@@ -4,14 +4,14 @@ This document tracks the specific architectural, behavioral, and organizational 
 
 ## RR-01: Persistence/Data Loss
 - **Risk Title:** Silent data loss during JSON repository migration.
-- **Description:** Phase 8 deprecates the legacy stores and wires up abstract Repositories. If models decode differently or fail to save asynchronously, users could lose plan allocations or protocol history.
+- **Description:** Phase 10 deprecates the legacy stores and wires up abstract Repositories. If models decode differently or fail to save asynchronously, users could lose plan allocations or protocol history.
 - **Likely Cause:** Differences between legacy `Data(contentsOf:)` synchronous reads and new async Data/JSON mappings, or unexpected background task cancellation during the new async write strategy.
 - **Impact:** Critical (user loses progress/data).
 - **Likelihood:** Medium.
 - **Detection Signal:** Repository fetch operations fail and return empty lists or throw decoding errors during startup; user reports missing data on app restart.
 - **Mitigation Strategy:** Implement strict unit tests for the new `Shared/Data` repositories against a static mock JSON matching a known legacy production state.
-- **Contingency / Rollback Response:** Temporarily restore the legacy singletons in `Locked_INApp.swift` to read data, pause rollout of Phase 8.
-- **Affected Phases:** Phase 8.
+- **Contingency / Rollback Response:** Temporarily restore the legacy singletons in `Locked_INApp.swift` to read data, pause rollout of Phase 10.
+- **Affected Phases:** Phase 10.
 
 ## RR-02: Behavior Drift (Domain Rules)
 - **Risk Title:** Math/Scoring formula divergence during pure function extraction.
@@ -37,25 +37,25 @@ This document tracks the specific architectural, behavioral, and organizational 
 
 ## RR-04: Legacy Store Coexistence
 - **Risk Title:** Race conditions between Coexistence Wrappers and legacy Global Stores.
-- **Description:** In Phases 3-7, migrated features use `Shared/Data` wrappers that internally mutate the legacy stores. If a migrated feature reads from the legacy store faster/slower than an unmigrated feature, UI inconsistencies will appear.
+- **Description:** In Phases 3-9, migrated features use `Shared/Data` wrappers that internally mutate the legacy stores. If a migrated feature reads from the legacy store faster/slower than an unmigrated feature, UI inconsistencies will appear.
 - **Likely Cause:** Adding `Task` or `DispatchQueue.main.async` hops inside the wrapper protocols that artificially delay the synchronous mutations expected by the legacy views.
 - **Impact:** Medium (temporary UI flicker or stale reads on unmigrated tabs).
 - **Likelihood:** High.
 - **Detection Signal:** "Plan" tab shows old active protocol state even when "Cockpit" tab has just recorded it as complete.
-- **Mitigation Strategy:** Wrappers must execute their internal legacy store mutations synchronously on the `@MainActor` during coexistence phases. Do not introduce background async behavior to the wrappers until Phase 8.
+- **Mitigation Strategy:** Wrappers must execute their internal legacy store mutations synchronously on the `@MainActor` during coexistence phases. Do not introduce background async behavior to the wrappers until Phase 10.
 - **Contingency / Rollback Response:** Strip the wrapper interface bounds and revert the specific migrated feature's ViewModel to talk to `@EnvironmentObject` directly again.
-- **Affected Phases:** Phases 3, 4, 5, 7.
+- **Affected Phases:** Phases 3, 4, 5, 8, 9.
 
 ## RR-05: Cross-Feature Sync (Recovery vs Daily)
 - **Risk Title:** Recovery pause logic desyncs from daily check-in prompt logic.
 - **Description:** The legacy shell relies on fragile state reads to suppress check-in when Recovery is active. Refactoring either system independently might bypass the suppression.
-- **Likely Cause:** Extracting `RecoveryModeViewModel` (Phase 7) or `DailyCheckInViewModel` (Phase 5) changes the timing of when recovery flags hit `@AppStorage` or the global singletons.
+- **Likely Cause:** Extracting `RecoveryModeViewModel` (Phase 8) or `DailyCheckInViewModel` (Phase 5) changes the timing of when recovery flags hit `@AppStorage` or the global singletons.
 - **Impact:** High (user is forced to check-in while physically recovered, corrupting data).
 - **Likelihood:** Medium.
 - **Detection Signal:** Manual QA observes Daily Check-In popup triggering while Recovery mode is actively pausing the app.
 - **Mitigation Strategy:** Write explicit black-box checks (Phase 0) for this exact overlapping state.
-- **Contingency / Rollback Response:** Revert Phase 5 or Phase 7 depending on which introduced the race condition.
-- **Affected Phases:** Phase 5, Phase 7.
+- **Contingency / Rollback Response:** Revert Phase 5 or Phase 8 depending on which introduced the race condition.
+- **Affected Phases:** Phase 5, Phase 8.
 
 ## RR-06: Performance Blind Spots
 - **Risk Title:** Excessive view invalidations post-migration.
@@ -66,7 +66,7 @@ This document tracks the specific architectural, behavioral, and organizational 
 - **Detection Signal:** SwiftUI `_printChanges()` logs continuous hits; app scrolling stutters on the plan queue view.
 - **Mitigation Strategy:** Strict adherence to `@State` and `@StateObject` (or `@Observable` in iOS 17+) boundaries. Phase 6 mechanical split must preserve native bindings precisely.
 - **Contingency / Rollback Response:** Move the injected ViewModel up one layer to the parent container to stabilize its memory footprint.
-- **Affected Phases:** Phases 4, 5, 6, 7.
+- **Affected Phases:** Phases 4, 5, 6, 7, 9.
 
 ## RR-07: Test Coverage Deficiencies
 - **Risk Title:** Phase 0 tests don't actually cover critical boundary cases.

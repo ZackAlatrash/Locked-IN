@@ -179,32 +179,83 @@ This document provides operational, phase-by-phase checklists for executing the 
 
 ---
 
-## Phase 7: Feature Migration - Plan & Recovery Semantic Refactor
+## Phase 7: Feature Migration - Plan Routing & Coordinator
 
 ### Pre-checks
 - [ ] Phase 6 mechanical split is merged.
 
 ### Implementation
-- [ ] Create `Features/Plan/Presentation/PlanViewModel` and `PlanCoordinator`.
-- [ ] Move sheet presentation logic (`.sheet(item:)`) into the Coordinator/ViewModel.
-- [ ] Inject `PlanService` into the new ViewModels.
-- [ ] Refactor `RecoveryModeViewModel` to use the injected Service Wrappers instead of the global singletons.
+- [ ] Create `Features/Plan/Presentation/PlanCoordinator.swift`.
+- [ ] Move the `.onChange(of: router...)` intent consumption logic out of `PlanScreen`.
+- [ ] Have `PlanCoordinator` observe `AppRouter`.
+- [ ] Make `PlanScreen` observe `PlanCoordinator` for its focus/edit sheet state.
 
 ### Validation
-- [ ] Trigger Recovery mode. Pause allocations.
-- [ ] Return to Plan view. Verify the plan allocations appear as "paused" via the legacy store sync.
-- [ ] Validate Apple Calendar sync interactions still trigger properly.
+- [ ] Trigger a toast that contains an action to "view plan" or "edit protocol".
+- [ ] Verify jumping to the plan tab and opening the editor still works identically.
 
 ### Completion
-- [ ] All Plan and Recovery UI files observe local ViewModels, not `@EnvironmentObject`.
+- [ ] `PlanScreen` does not directly query or observe `AppRouter`.
 - [ ] PR created and merged.
 
 ### 🛑 Escalation Triggers / Stop Conditions
-- Stop if: Apple Calendar visual events disappear from the UI.
+- Stop if: Opening a deep-link from another tab fails to present the plan editor sheet. Do not proceed until routing UX matches legacy.
 
 ---
 
-## Phase 8: Global Store Deprecation and Persistence Finalization
+## Phase 8: Feature Migration - Recovery Services 
+
+### Pre-checks
+- [ ] Phase 7 is merged.
+
+### Implementation
+- [ ] Update `Features/Recovery/ViewModels/RecoveryModeViewModel.swift`.
+- [ ] Inject `CommitmentActionService` and `PlanService`.
+- [ ] Remove `PlanStore` and `CommitmentSystemStore` fields.
+- [ ] Replace `commitmentStore.recoveryEntryContext()` and `planStore.pauseAllocations()` with wrapper calls.
+- [ ] Expand the Phase 3 Service Wrappers if these methods don't exist yet, ensuring they strictly forward to legacy stores.
+
+### Validation
+- [ ] Manually enter Recovery Mode in the simulator.
+- [ ] Pause a protocol allocation.
+- [ ] Return to the Plan tab and ensure the allocation shows as paused.
+
+### Completion
+- [ ] `RecoveryModeViewModel` acts only on Service Wrappers.
+- [ ] PR created and merged.
+
+### 🛑 Escalation Triggers / Stop Conditions
+- Stop if: Pausing allocations from `RecoveryModeViewModel` fails to sync to the `PlanScreen` queue immediately.
+
+---
+
+## Phase 9: Feature Migration - Plan Services 
+
+### Pre-checks
+- [ ] Phase 8 is merged.
+
+### Implementation
+- [ ] Update `Features/Plan/ViewModels/PlanViewModel.swift`.
+- [ ] Remove the `.bind(planStore:commitmentStore:)` method and weak references.
+- [ ] Inject `CommitmentActionService` and `PlanService` through `init`.
+- [ ] Expand Service Wrappers to cover all `PlanViewModel` reads/writes (e.g., `editNonNegotiable()`, `applyUndo()`, `currentWeekSnapshot()`).
+- [ ] Verify wrapper expansions strictly run synchronously on the `@MainActor`.
+
+### Validation
+- [ ] Drag and drop an allocation on the plan board.
+- [ ] Edit a protocol via the editor sheet.
+- [ ] Verify Apple Calendar events still render.
+
+### Completion
+- [ ] `PlanViewModel` contains absolutely zero references to legacy global stores.
+- [ ] PR created and merged.
+
+### 🛑 Escalation Triggers / Stop Conditions
+- Stop if: Dragging and dropping allocations causes stutter or failed writes. This indicates the wrapper abstraction has introduced an async race condition. Refactor wrapper to be strictly synchronous before merging.
+
+---
+
+## Phase 10: Global Store Deprecation and Persistence Finalization
 
 ### Pre-checks
 - [ ] Search the entire codebase for `@EnvironmentObject var commitmentStore`. It must return 0 hits in UI views.
@@ -229,4 +280,4 @@ This document provides operational, phase-by-phase checklists for executing the 
 - [ ] PR created and merged.
 
 ### 🛑 Escalation Triggers / Stop Conditions
-- Stop instantly if: The app launches into an empty state. The new pure Repositories must correctly decode the legacy JSON schemas. Do not merge Phase 8 if data migration fails.
+- Stop instantly if: The app launches into an empty state. The new pure Repositories must correctly decode the legacy JSON schemas. Do not merge Phase 10 if data migration fails.
