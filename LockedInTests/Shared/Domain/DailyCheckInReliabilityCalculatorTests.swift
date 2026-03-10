@@ -2,7 +2,7 @@ import XCTest
 @testable import LockedIn
 
 final class DailyCheckInReliabilityCalculatorTests: XCTestCase {
-    private typealias Fixtures = CommitmentSystemStoreTestFixtures
+    private typealias Fixtures = RepositoryCommitmentServiceTestFixtures
 
     func testScoreStartsDynamicBaseNot92() {
         let nn = Fixtures.makeProtocol(frequencyPerWeek: 1)

@@ -10,7 +10,7 @@ private struct CommitmentPeriodOption: Identifiable {
 
 @MainActor
 struct CreateNonNegotiableView: View {
-    @EnvironmentObject private var store: CommitmentSystemStore
+    @EnvironmentObject private var store: RepositoryCommitmentService
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
 
@@ -956,7 +956,7 @@ struct CreateNonNegotiableView_Previews: PreviewProvider {
     static var previews: some View {
         CreateNonNegotiableView()
             .environmentObject(
-                CommitmentSystemStore(
+                RepositoryCommitmentService(
                     repository: InMemoryCommitmentSystemRepository(),
                     systemEngine: CommitmentSystemEngine(nonNegotiableEngine: NonNegotiableEngine()),
                     nonNegotiableEngine: NonNegotiableEngine()

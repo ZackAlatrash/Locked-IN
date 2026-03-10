@@ -2,7 +2,7 @@ import XCTest
 @testable import LockedIn
 
 final class ReliabilityCalculatorTests: XCTestCase {
-    private typealias Fixtures = CommitmentSystemStoreTestFixtures
+    private typealias Fixtures = RepositoryCommitmentServiceTestFixtures
 
     func testScoreStartsAt92ForNewProtocol() {
         let nn = Fixtures.makeProtocol()

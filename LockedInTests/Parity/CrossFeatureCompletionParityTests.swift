@@ -5,31 +5,31 @@ import XCTest
 final class CrossFeatureCompletionParityTests: XCTestCase {
     func testCockpitAndDailyCheckIn_countedCompletionWithPlanReleaseStayInParity() {
         let calendar = TestCalendarSupport.utcISO8601
-        let referenceDate = CommitmentSystemStoreTestFixtures.date(year: 2026, month: 1, day: 7, hour: 9)
+        let referenceDate = RepositoryCommitmentServiceTestFixtures.date(year: 2026, month: 1, day: 7, hour: 9)
         let protocolId = UUID()
         let releasedAllocationId = UUID()
         let remainingAllocationId = UUID()
 
-        let protocolModel = CommitmentSystemStoreTestFixtures.makeProtocol(
+        let protocolModel = RepositoryCommitmentServiceTestFixtures.makeProtocol(
             id: protocolId,
             title: "Deep Work",
             mode: .session,
             frequencyPerWeek: 3,
-            startDate: CommitmentSystemStoreTestFixtures.referenceDate,
-            createdAt: CommitmentSystemStoreTestFixtures.referenceDate
+            startDate: RepositoryCommitmentServiceTestFixtures.referenceDate,
+            createdAt: RepositoryCommitmentServiceTestFixtures.referenceDate
         )
-        let system = CommitmentSystemStoreTestFixtures.makeSystem(nonNegotiables: [protocolModel])
+        let system = RepositoryCommitmentServiceTestFixtures.makeSystem(nonNegotiables: [protocolModel])
 
-        let releasedAllocation = PlanStoreTestFixtures.makeAllocation(
+        let releasedAllocation = RepositoryPlanServiceTestFixtures.makeAllocation(
             id: releasedAllocationId,
             protocolId: protocolId,
-            day: CommitmentSystemStoreTestFixtures.date(year: 2026, month: 1, day: 8, hour: 6),
+            day: RepositoryCommitmentServiceTestFixtures.date(year: 2026, month: 1, day: 8, hour: 6),
             slot: .am
         )
-        let remainingAllocation = PlanStoreTestFixtures.makeAllocation(
+        let remainingAllocation = RepositoryPlanServiceTestFixtures.makeAllocation(
             id: remainingAllocationId,
             protocolId: protocolId,
-            day: CommitmentSystemStoreTestFixtures.date(year: 2026, month: 1, day: 9, hour: 18),
+            day: RepositoryCommitmentServiceTestFixtures.date(year: 2026, month: 1, day: 9, hour: 18),
             slot: .eve
         )
 
@@ -81,30 +81,30 @@ final class CrossFeatureCompletionParityTests: XCTestCase {
 
     func testCockpitAndDailyCheckIn_extraCompletionPathStayInParity() {
         let calendar = TestCalendarSupport.utcISO8601
-        let referenceDate = CommitmentSystemStoreTestFixtures.date(year: 2026, month: 1, day: 7, hour: 9)
+        let referenceDate = RepositoryCommitmentServiceTestFixtures.date(year: 2026, month: 1, day: 7, hour: 9)
         let protocolId = UUID()
         let allocationId = UUID()
 
         let priorCountedCompletion = CompletionRecord(
-            date: CommitmentSystemStoreTestFixtures.date(year: 2026, month: 1, day: 6, hour: 8),
+            date: RepositoryCommitmentServiceTestFixtures.date(year: 2026, month: 1, day: 6, hour: 8),
             weekId: DateRules.weekID(for: referenceDate, calendar: calendar),
             kind: .counted
         )
-        let protocolModel = CommitmentSystemStoreTestFixtures.makeProtocol(
+        let protocolModel = RepositoryCommitmentServiceTestFixtures.makeProtocol(
             id: protocolId,
             title: "Deep Work",
             mode: .session,
             frequencyPerWeek: 1,
-            startDate: CommitmentSystemStoreTestFixtures.referenceDate,
-            createdAt: CommitmentSystemStoreTestFixtures.referenceDate,
+            startDate: RepositoryCommitmentServiceTestFixtures.referenceDate,
+            createdAt: RepositoryCommitmentServiceTestFixtures.referenceDate,
             completions: [priorCountedCompletion]
         )
-        let system = CommitmentSystemStoreTestFixtures.makeSystem(nonNegotiables: [protocolModel])
+        let system = RepositoryCommitmentServiceTestFixtures.makeSystem(nonNegotiables: [protocolModel])
 
-        let allocation = PlanStoreTestFixtures.makeAllocation(
+        let allocation = RepositoryPlanServiceTestFixtures.makeAllocation(
             id: allocationId,
             protocolId: protocolId,
-            day: CommitmentSystemStoreTestFixtures.date(year: 2026, month: 1, day: 8, hour: 6),
+            day: RepositoryCommitmentServiceTestFixtures.date(year: 2026, month: 1, day: 8, hour: 6),
             slot: .am
         )
 
@@ -181,9 +181,9 @@ private extension CrossFeatureCompletionParityTests {
     }
 
     struct CompletionHarness {
-        let commitmentStore: CommitmentSystemStore
+        let commitmentStore: RepositoryCommitmentService
         let commitmentRepository: RecordingCommitmentSystemRepository
-        let planStore: PlanStore
+        let planStore: RepositoryPlanService
         let planRepository: RecordingPlanAllocationRepository
     }
 
@@ -214,8 +214,8 @@ private extension CrossFeatureCompletionParityTests {
         let viewModel = DailyCheckInViewModel(
             commitmentStore: harness.commitmentStore,
             planStore: harness.planStore,
-            commitmentService: LegacyCommitmentWrapper(store: harness.commitmentStore),
-            planService: LegacyPlanWrapper(store: harness.planStore),
+            commitmentService: harness.commitmentStore,
+            planService: harness.planStore,
             router: makeRetainedRouter(),
             referenceDateProvider: { referenceDate },
             calendar: calendar
@@ -251,7 +251,7 @@ private extension CrossFeatureCompletionParityTests {
     ) -> CompletionHarness {
         let commitmentRepository = RecordingCommitmentSystemRepository(initialSystem: system)
         let nonNegotiableEngine = NonNegotiableEngine(calendar: calendar)
-        let commitmentStore = CommitmentSystemStore(
+        let commitmentStore = RepositoryCommitmentService(
             repository: commitmentRepository,
             systemEngine: CommitmentSystemEngine(nonNegotiableEngine: nonNegotiableEngine),
             nonNegotiableEngine: nonNegotiableEngine,
@@ -259,17 +259,20 @@ private extension CrossFeatureCompletionParityTests {
             streakEngine: StreakEngine(calendar: calendar),
             calendar: calendar
         )
-        CommitmentSystemStoreTestRetainer.retain(commitmentStore)
+
 
         let planRepository = RecordingPlanAllocationRepository(initialAllocations: allocations)
-        let planStore = PlanStore(
+        let planStore = RepositoryPlanService(
             repository: planRepository,
             policy: CommitmentPolicyEngine(calendar: calendar),
             calendar: calendar
         )
-        PlanStoreTestRetainer.retain(planStore)
-        planStore.refresh(system: system, calendarEvents: [], referenceDate: referenceDate)
 
+        planStore.refresh(system: system, calendarEvents: [], referenceDate: referenceDate)
+        
+        RepositoryCommitmentServiceTestRetainer.retain(commitmentStore)
+        RepositoryPlanServiceTestRetainer.retain(planStore)
+        
         return CompletionHarness(
             commitmentStore: commitmentStore,
             commitmentRepository: commitmentRepository,
@@ -291,8 +294,8 @@ private extension CrossFeatureCompletionParityTests {
         }
 
         let viewModel = CockpitViewModel(
-            commitmentService: LegacyCommitmentWrapper(store: harness.commitmentStore),
-            planService: LegacyPlanWrapper(store: harness.planStore),
+            commitmentService: harness.commitmentStore,
+            planService: harness.planStore,
             nowProvider: { referenceDate }
         )
         CockpitViewModelParityTestRetainer.retain(viewModel)

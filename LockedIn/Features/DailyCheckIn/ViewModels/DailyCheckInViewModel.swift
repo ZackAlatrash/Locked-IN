@@ -11,8 +11,8 @@ final class DailyCheckInViewModel: ObservableObject {
     @Published private(set) var warningMessage: String?
     @Published private(set) var toastMessage: String?
 
-    private let commitmentStore: CommitmentSystemStore
-    private let planStore: PlanStore
+    private let commitmentStore: RepositoryCommitmentService
+    private let planStore: RepositoryPlanService
     private let commitmentService: CommitmentActionService
     private let planService: PlanService
     private let regulatorEngine: PlanRegulatorEngine
@@ -21,8 +21,8 @@ final class DailyCheckInViewModel: ObservableObject {
     private let calendar: Calendar
 
     init(
-        commitmentStore: CommitmentSystemStore,
-        planStore: PlanStore,
+        commitmentStore: RepositoryCommitmentService,
+        planStore: RepositoryPlanService,
         commitmentService: CommitmentActionService,
         planService: PlanService,
         regulatorEngine: PlanRegulatorEngine = PlanRegulatorEngine(),

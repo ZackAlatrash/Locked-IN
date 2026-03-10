@@ -51,7 +51,7 @@ func runPlanCompletionReconciliationSimulation() {
         ]
 
         let repository = InMemoryPlanAllocationRepository(value: initialAllocations)
-        let planStore = PlanStore(repository: repository, calendar: calendar)
+        let planStore = RepositoryPlanService(repository: repository, calendar: calendar)
         let system = CommitmentSystem(nonNegotiables: [protocolModel], createdAt: reference)
         planStore.refresh(system: system, calendarEvents: [], referenceDate: reference)
 

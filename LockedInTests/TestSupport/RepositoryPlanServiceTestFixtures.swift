@@ -23,7 +23,7 @@ final class RecordingPlanAllocationRepository: PlanAllocationRepository {
     }
 }
 
-enum PlanStoreTestFixtures {
+enum RepositoryPlanServiceTestFixtures {
     static var calendar: Calendar { TestCalendarSupport.utcISO8601 }
 
     static var referenceDate: Date {
@@ -115,10 +115,10 @@ enum PlanStoreTestFixtures {
     }
 }
 
-enum PlanStoreTestRetainer {
-    static var stores: [PlanStore] = []
+enum RepositoryPlanServiceTestRetainer {
+    static var stores: [RepositoryPlanService] = []
 
-    static func retain(_ store: PlanStore) {
+    static func retain(_ store: RepositoryPlanService) {
         stores.append(store)
     }
 }

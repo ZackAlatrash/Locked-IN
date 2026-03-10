@@ -171,7 +171,7 @@ final class CreateNonNegotiableViewModel: ObservableObject {
         return messages.isEmpty
     }
 
-    func submit(using store: CommitmentSystemStore, onSuccess: () -> Void) {
+    func submit(using store: RepositoryCommitmentService, onSuccess: () -> Void) {
         guard validateForm() else { return }
         guard let effectiveDuration = resolvedDurationMinutes() else { return }
 

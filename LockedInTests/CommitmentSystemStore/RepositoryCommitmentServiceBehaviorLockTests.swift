@@ -2,19 +2,19 @@ import XCTest
 @testable import LockedIn
 
 @MainActor
-final class CommitmentSystemStoreBehaviorLockTests: XCTestCase {
+final class RepositoryCommitmentServiceBehaviorLockTests: XCTestCase {
     func testRunDailyIntegrityTick_seventhCleanRecoveryDayPromotesRecoveryAndClearsEntryState() {
-        let referenceDate = CommitmentSystemStoreTestFixtures.referenceDate
-        let recoveryProtocol = CommitmentSystemStoreTestFixtures.makeProtocol(
+        let referenceDate = RepositoryCommitmentServiceTestFixtures.referenceDate
+        let recoveryProtocol = RepositoryCommitmentServiceTestFixtures.makeProtocol(
             title: "Recovery Protocol",
             mode: .session,
             frequencyPerWeek: 1,
             state: .recovery,
             completions: [
-                CommitmentSystemStoreTestFixtures.makeCompletion(date: referenceDate, kind: .counted)
+                RepositoryCommitmentServiceTestFixtures.makeCompletion(date: referenceDate, kind: .counted)
             ]
         )
-        let initialSystem = CommitmentSystemStoreTestFixtures.makeSystem(
+        let initialSystem = RepositoryCommitmentServiceTestFixtures.makeSystem(
             nonNegotiables: [recoveryProtocol],
             recoveryCleanDayStreak: 6,
             recoveryEntryPendingResolution: true,
@@ -30,7 +30,7 @@ final class CommitmentSystemStoreBehaviorLockTests: XCTestCase {
         XCTAssertEqual(store.system.recoveryCleanDayStreak, 0)
         XCTAssertEqual(
             store.system.lastRecoveryEvaluationDay,
-            DateRules.startOfDay(referenceDate, calendar: CommitmentSystemStoreTestFixtures.calendar)
+            DateRules.startOfDay(referenceDate, calendar: RepositoryCommitmentServiceTestFixtures.calendar)
         )
         XCTAssertFalse(store.system.recoveryEntryPendingResolution)
         XCTAssertFalse(store.system.recoveryEntryRequiresPauseSelection)
@@ -40,19 +40,19 @@ final class CommitmentSystemStoreBehaviorLockTests: XCTestCase {
     }
 
     func testRecoveryEntryContext_returnsPendingRecoveryCandidatesAndFlags() {
-        let activeProtocol = CommitmentSystemStoreTestFixtures.makeProtocol(
+        let activeProtocol = RepositoryCommitmentServiceTestFixtures.makeProtocol(
             title: "Active",
             state: .active
         )
-        let recoveryProtocol = CommitmentSystemStoreTestFixtures.makeProtocol(
+        let recoveryProtocol = RepositoryCommitmentServiceTestFixtures.makeProtocol(
             title: "Recovery",
             state: .recovery
         )
-        let suspendedProtocol = CommitmentSystemStoreTestFixtures.makeProtocol(
+        let suspendedProtocol = RepositoryCommitmentServiceTestFixtures.makeProtocol(
             title: "Suspended",
             state: .suspended
         )
-        let initialSystem = CommitmentSystemStoreTestFixtures.makeSystem(
+        let initialSystem = RepositoryCommitmentServiceTestFixtures.makeSystem(
             nonNegotiables: [activeProtocol, recoveryProtocol, suspendedProtocol],
             recoveryEntryPendingResolution: true,
             recoveryEntryRequiresPauseSelection: true,
@@ -61,11 +61,11 @@ final class CommitmentSystemStoreBehaviorLockTests: XCTestCase {
         )
         let (store, _) = makeStore(system: initialSystem)
 
-        let context = store.recoveryEntryContext(referenceDate: CommitmentSystemStoreTestFixtures.referenceDate)
+        let context = store.recoveryEntryContext(referenceDate: RepositoryCommitmentServiceTestFixtures.referenceDate)
 
         XCTAssertEqual(
             context,
-            CommitmentSystemStore.RecoveryEntryContext(
+            RecoveryEntryContext(
                 triggerProtocolId: recoveryProtocol.id,
                 pausedProtocolId: suspendedProtocol.id,
                 requiresPauseSelection: true,
@@ -75,15 +75,15 @@ final class CommitmentSystemStoreBehaviorLockTests: XCTestCase {
     }
 
     func testPauseProtocolForRecovery_updatesProtocolStateAndRecoveryFlags() throws {
-        let recoveryProtocol = CommitmentSystemStoreTestFixtures.makeProtocol(
+        let recoveryProtocol = RepositoryCommitmentServiceTestFixtures.makeProtocol(
             title: "Recovery",
             state: .recovery
         )
-        let activeProtocol = CommitmentSystemStoreTestFixtures.makeProtocol(
+        let activeProtocol = RepositoryCommitmentServiceTestFixtures.makeProtocol(
             title: "Active",
             state: .active
         )
-        let initialSystem = CommitmentSystemStoreTestFixtures.makeSystem(
+        let initialSystem = RepositoryCommitmentServiceTestFixtures.makeSystem(
             nonNegotiables: [recoveryProtocol, activeProtocol],
             recoveryEntryPendingResolution: true,
             recoveryEntryRequiresPauseSelection: true,
@@ -93,7 +93,7 @@ final class CommitmentSystemStoreBehaviorLockTests: XCTestCase {
 
         try store.pauseProtocolForRecovery(
             protocolId: activeProtocol.id,
-            referenceDate: CommitmentSystemStoreTestFixtures.referenceDate
+            referenceDate: RepositoryCommitmentServiceTestFixtures.referenceDate
         )
 
         let paused = store.system.nonNegotiables.first { $0.id == activeProtocol.id }
@@ -106,12 +106,12 @@ final class CommitmentSystemStoreBehaviorLockTests: XCTestCase {
     }
 
     func testCompleteRecoveryEntryResolution_clearsPendingFlagsAndTriggerOnly() {
-        let recoveryProtocol = CommitmentSystemStoreTestFixtures.makeProtocol(
+        let recoveryProtocol = RepositoryCommitmentServiceTestFixtures.makeProtocol(
             title: "Recovery",
             state: .recovery
         )
         let pausedProtocolId = UUID()
-        let initialSystem = CommitmentSystemStoreTestFixtures.makeSystem(
+        let initialSystem = RepositoryCommitmentServiceTestFixtures.makeSystem(
             nonNegotiables: [recoveryProtocol],
             recoveryEntryPendingResolution: true,
             recoveryEntryRequiresPauseSelection: true,
@@ -130,22 +130,23 @@ final class CommitmentSystemStoreBehaviorLockTests: XCTestCase {
     }
 }
 
-private extension CommitmentSystemStoreBehaviorLockTests {
+private extension RepositoryCommitmentServiceBehaviorLockTests {
     func makeStore(
         system: CommitmentSystem
-    ) -> (CommitmentSystemStore, RecordingCommitmentSystemRepository) {
+    ) -> (RepositoryCommitmentService, RecordingCommitmentSystemRepository) {
         let repository = RecordingCommitmentSystemRepository(initialSystem: system)
-        let nonNegotiableEngine = NonNegotiableEngine(calendar: CommitmentSystemStoreTestFixtures.calendar)
+        let nonNegotiableEngine = NonNegotiableEngine(calendar: RepositoryCommitmentServiceTestFixtures.calendar)
         let systemEngine = CommitmentSystemEngine(nonNegotiableEngine: nonNegotiableEngine)
-        let store = CommitmentSystemStore(
+        let store = RepositoryCommitmentService(
             repository: repository,
             systemEngine: systemEngine,
             nonNegotiableEngine: nonNegotiableEngine,
-            policy: CommitmentPolicyEngine(calendar: CommitmentSystemStoreTestFixtures.calendar),
-            streakEngine: StreakEngine(calendar: CommitmentSystemStoreTestFixtures.calendar),
-            calendar: CommitmentSystemStoreTestFixtures.calendar
+            policy: CommitmentPolicyEngine(calendar: RepositoryCommitmentServiceTestFixtures.calendar),
+            streakEngine: StreakEngine(calendar: RepositoryCommitmentServiceTestFixtures.calendar),
+            calendar: RepositoryCommitmentServiceTestFixtures.calendar
         )
-        CommitmentSystemStoreTestRetainer.retain(store)
+
+        RepositoryCommitmentServiceTestRetainer.retain(store)
         return (store, repository)
     }
 }

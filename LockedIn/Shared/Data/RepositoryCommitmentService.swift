@@ -7,12 +7,9 @@ enum CommitmentStoreError: Error {
 }
 
 @MainActor
-final class CommitmentSystemStore: ObservableObject {
-    struct RecoveryEntryContext: Equatable {
-        let triggerProtocolId: UUID?
-        let pausedProtocolId: UUID?
-        let requiresPauseSelection: Bool
-        let candidateProtocolIds: [UUID]
+final class RepositoryCommitmentService: ObservableObject, CommitmentActionService {
+    var systemPublisher: AnyPublisher<CommitmentSystem, Never> {
+        $system.eraseToAnyPublisher()
     }
 
     struct DailyLogGroup: Equatable {
@@ -58,10 +55,10 @@ final class CommitmentSystemStore: ObservableObject {
 
         do {
             self.system = try repository.load()
-            print("CommitmentSystemStore load succeeded")
+            print("RepositoryCommitmentService load succeeded")
         } catch {
             self.system = CommitmentSystem(nonNegotiables: [], createdAt: Date())
-            print("CommitmentSystemStore load failed: \(error)")
+            print("RepositoryCommitmentService load failed: \(error)")
         }
     }
 
@@ -626,11 +623,12 @@ final class CommitmentSystemStore: ObservableObject {
     }
 
     private func persistSystem() {
+        let snapshot = system
         do {
-            try repository.save(system)
-            print("CommitmentSystemStore save succeeded")
+            try repository.save(snapshot)
+            print("RepositoryCommitmentService save succeeded")
         } catch {
-            print("CommitmentSystemStore save failed: \(error)")
+            print("RepositoryCommitmentService save failed: \(error)")
         }
     }
 

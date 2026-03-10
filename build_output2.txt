@@ -1,0 +1,452 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -scheme LockedIn -destination "platform=iOS Simulator,name=iPhone 17" build
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'LockedIn' in project 'LockedIn' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk /Users/zackalatrash/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.2-23C53-7d00a8b37fbd7999ea79df8ebc024bf0.sdkstatcache
+    cd /Users/zackalatrash/Desktop/Locked\ IN/LockedIn.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -o /Users/zackalatrash/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.2-23C53-7d00a8b37fbd7999ea79df8ebc024bf0.sdkstatcache
+
+ProcessProductPackaging "" /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/LockedIn.app-Simulated.xcent (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+    Entitlements:
+    
+    {
+    "application-identifier" = "2A6452539P.Epistles-of-Wisdom.LockedIn";
+}
+    
+    builtin-productPackagingUtility -entitlements -format xml -o /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/LockedIn.app-Simulated.xcent
+
+ProcessProductPackagingDER /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/LockedIn.app-Simulated.xcent /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/LockedIn.app-Simulated.xcent.der (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    /usr/bin/derq query -f xml -i /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/LockedIn.app-Simulated.xcent -o /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/LockedIn.app-Simulated.xcent.der --raw
+
+ProcessInfoPlistFile /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Products/Debug-iphonesimulator/LockedIn.app/Info.plist /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Resources/Info.plist (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    builtin-infoPlistUtility /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Resources/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Products/Debug-iphonesimulator/LockedIn.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/assetcatalog_generated_info.plist -o /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Products/Debug-iphonesimulator/LockedIn.app/Info.plist
+
+SwiftDriver LockedIn normal arm64 com.apple.xcode.tools.swift.compiler (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name LockedIn -Onone -enforce-exclusivity\=checked @/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/LockedIn.SwiftFileList -DDEBUG -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /Users/zackalatrash/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Products/Debug-iphonesimulator -F /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64 -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/zackalatrash/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.2-23C53-7d00a8b37fbd7999ea79df8ebc024bf0.sdkstatcache -output-file-map /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/LockedIn-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/zackalatrash/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/zackalatrash/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/LockedIn.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/zackalatrash/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/LockedIn_const_extract_protocols.json -Xcc -iquote -Xcc /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/LockedIn-generated-files.hmap -Xcc -I/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/LockedIn-own-target-headers.hmap -Xcc -I/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/LockedIn-all-target-headers.hmap -Xcc -iquote -Xcc /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/LockedIn-project-headers.hmap -Xcc -I/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/DerivedSources-normal/arm64 -Xcc -I/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/DerivedSources/arm64 -Xcc -I/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/LockedIn-Swift.h -working-directory /Users/zackalatrash/Desktop/Locked\ IN -experimental-emit-module-separately -disable-cmo
+
+SwiftCompile normal arm64 Compiling\ FitnessLiquidGlassNavDemoView.swift,\ CockpitModernView.swift,\ LiquidGlassNavDemos.swift,\ CockpitView.swift,\ CockpitLogsScreen.swift,\ WeeklyActivityDetailView.swift,\ StreakDetailView.swift,\ CapacityDetailView.swift,\ ProfilePlaceholderView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/FitnessLiquidGlassNavDemoView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/CockpitModernView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/LiquidGlassNavDemos.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/CockpitView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/WeeklyActivityDetailView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/StreakDetailView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/CapacityDetailView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift (in target 'LockedIn' from project 'LockedIn')
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/FitnessLiquidGlassNavDemoView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/CockpitModernView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/LiquidGlassNavDemos.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/CockpitView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/WeeklyActivityDetailView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/StreakDetailView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/CapacityDetailView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 Compiling\ PlanScreen.swift,\ PlanRegulatorSheet.swift,\ PlanAllocationEditorSheet.swift,\ ProtocolSchedulingEditorSheet.swift,\ PlanScreenTypes.swift,\ PlanScreenStyling.swift,\ IdentityWarningContentView.swift,\ FailureLoopContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanScreen.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanRegulatorSheet.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanAllocationEditorSheet.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/ProtocolSchedulingEditorSheet.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanScreenTypes.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanScreenStyling.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/IdentityWarning/Views/IdentityWarningContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/FailureLoop/Views/FailureLoopContentView.swift (in target 'LockedIn' from project 'LockedIn')
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanScreen.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanRegulatorSheet.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanAllocationEditorSheet.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/ProtocolSchedulingEditorSheet.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanScreenTypes.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanScreenStyling.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/IdentityWarning/Views/IdentityWarningContentView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/FailureLoop/Views/FailureLoopContentView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ LockedIn (in target 'LockedIn' from project 'LockedIn')
+
+EmitSwiftModule normal arm64 (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Application/DevOptionsController.swift:21:40: warning: main actor-isolated static property 'isoCalendar' can not be referenced from a nonisolated context
+        calendar: Calendar = DateRules.isoCalendar
+                                       ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Shared/Domain/DateRules.swift:13:16: note: static property declared here
+    static var isoCalendar: Calendar {
+               ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:28:48: warning: call to main actor-isolated initializer 'init(calendar:)' in a synchronous nonisolated context
+        regulatorEngine: PlanRegulatorEngine = PlanRegulatorEngine(),
+                                               ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Domain/Engines/PlanRegulatorEngine.swift:6:5: note: calls to initializer 'init(calendar:)' from outside of its actor context are implicitly asynchronous
+    init(calendar: Calendar = DateRules.isoCalendar) {
+    ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:31:40: warning: main actor-isolated static property 'isoCalendar' can not be referenced from a nonisolated context
+        calendar: Calendar = DateRules.isoCalendar
+                                       ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Shared/Domain/DateRules.swift:13:16: note: static property declared here
+    static var isoCalendar: Calendar {
+               ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Domain/Models/Window.swift:15:39: warning: main actor-isolated conformance of 'WeekID' to 'Hashable' cannot be used in nonisolated context; this is an error in the Swift 6 language mode
+        weeksEvaluated: Set<WeekID> = []
+                                      ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Shared/Data/RepositoryCommitmentService.swift:46:42: warning: call to main actor-isolated initializer 'init(calendar:)' in a synchronous nonisolated context
+        policy: CommitmentPolicyEngine = CommitmentPolicyEngine(),
+                                         ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Domain/Policy/CommitmentPolicyEngine.swift:11:5: note: calls to initializer 'init(calendar:)' from outside of its actor context are implicitly asynchronous
+    init(calendar: Calendar = DateRules.isoCalendar) {
+    ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Shared/Data/RepositoryCommitmentService.swift:47:38: warning: call to main actor-isolated initializer 'init(calendar:)' in a synchronous nonisolated context
+        streakEngine: StreakEngine = StreakEngine(),
+                                     ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Domain/Engines/StreakEngine.swift:6:5: note: calls to initializer 'init(calendar:)' from outside of its actor context are implicitly asynchronous
+    init(calendar: Calendar = DateRules.isoCalendar) {
+    ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Shared/Data/RepositoryCommitmentService.swift:48:40: warning: main actor-isolated static property 'isoCalendar' can not be referenced from a nonisolated context
+        calendar: Calendar = DateRules.isoCalendar
+                                       ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Shared/Domain/DateRules.swift:13:16: note: static property declared here
+    static var isoCalendar: Calendar {
+               ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Shared/Data/RepositoryPlanService.swift:88:48: warning: call to main actor-isolated initializer 'init(fileManager:fileName:baseDirectoryURL:)' in a synchronous nonisolated context
+        repository: PlanAllocationRepository = JSONFilePlanAllocationRepository(),
+                                               ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Core/Persistence/JSONFilePlanAllocationRepository.swift:15:5: note: calls to initializer 'init(fileManager:fileName:baseDirectoryURL:)' from outside of its actor context are implicitly asynchronous
+    init(
+    ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Core/Persistence/JSONFilePlanAllocationRepository.swift:15:5: note: main actor isolation inferred from conformance to protocol 'PlanAllocationRepository'
+    init(
+    ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Shared/Data/RepositoryPlanService.swift:89:42: warning: call to main actor-isolated initializer 'init(calendar:)' in a synchronous nonisolated context
+        policy: CommitmentPolicyEngine = CommitmentPolicyEngine(),
+                                         ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Domain/Policy/CommitmentPolicyEngine.swift:11:5: note: calls to initializer 'init(calendar:)' from outside of its actor context are implicitly asynchronous
+    init(calendar: Calendar = DateRules.isoCalendar) {
+    ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Shared/Data/RepositoryPlanService.swift:90:40: warning: main actor-isolated static property 'isoCalendar' can not be referenced from a nonisolated context
+        calendar: Calendar = DateRules.isoCalendar
+                                       ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Shared/Domain/DateRules.swift:13:16: note: static property declared here
+    static var isoCalendar: Calendar {
+               ^
+
+SwiftCompile normal arm64 Compiling\ ReliabilityCalculator.swift,\ WeeklyAllowanceCalculator.swift,\ CommitmentActionService.swift,\ PlanService.swift,\ ToastPresenter.swift,\ RepositoryCommitmentService.swift,\ RepositoryPlanService.swift,\ GeneratedAssetSymbols.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/ReliabilityCalculator.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/WeeklyAllowanceCalculator.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/CommitmentActionService.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/PlanService.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/UI/ToastPresenter.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Data/RepositoryCommitmentService.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Data/RepositoryPlanService.swift /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'LockedIn' from project 'LockedIn')
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/ReliabilityCalculator.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/WeeklyAllowanceCalculator.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/CommitmentActionService.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/PlanService.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/UI/ToastPresenter.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Data/RepositoryCommitmentService.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Data/RepositoryPlanService.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 Compiling\ MainAppView.swift,\ DailyCheckInModels.swift,\ DailyCheckInViewModel.swift,\ DailyCheckInFlowView.swift,\ DailyCheckInCard.swift,\ DailyCheckInProtocolRow.swift,\ DailyCheckInResolutionSheet.swift,\ DailyCheckInCloseDayView.swift,\ RecoveryFlowState.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/AppShell/Views/MainAppView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Models/DailyCheckInModels.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Components/DailyCheckInCard.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Components/DailyCheckInProtocolRow.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Components/DailyCheckInResolutionSheet.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Components/DailyCheckInCloseDayView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Recovery/Models/RecoveryFlowState.swift (in target 'LockedIn' from project 'LockedIn')
+Failed frontend command:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Core/Persistence/CommitmentSystemRepository.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Core/Persistence/InMemoryCommitmentSystemRepository.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Core/Persistence/JSONFileCommitmentSystemRepository.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Core/Persistence/PlanAllocationRepository.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Core/Persistence/JSONFilePlanAllocationRepository.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/UI/LiquidGlassNavBar.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/UI/FitnessLiquidGlassNavStyle.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/CoreUI/Utilities/Haptics.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/CoreUI/Utilities/MotionRuntime.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/AppShell/AppRouter.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/ViewModels/CockpitViewModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Models/CockpitUIModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Components/CockpitNonNegotiableCard.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Components/CockpitKpiCard.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/FitnessLiquidGlassNavDemoView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/CockpitModernView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/LiquidGlassNavDemos.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/CockpitView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/WeeklyActivityDetailView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/StreakDetailView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/CapacityDetailView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Views/ProfilePlaceholderView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Models/CockpitNavigation.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/Models/OnboardingPresentationConfig.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/Flow/OnboardingCoordinator.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/AppClock.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/DevRuntimeState.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/DevOptionsController.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/DevSeedScenario.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/DailyCheckInPolicy.swift -primary-file /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/AppShell/Views/MainAppView.swift -primary-file /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Models/DailyCheckInModels.swift -primary-file /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift -primary-file /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift -primary-file /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Components/DailyCheckInCard.swift -primary-file /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Components/DailyCheckInProtocolRow.swift -primary-file /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Components/DailyCheckInResolutionSheet.swift -primary-file /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Components/DailyCheckInCloseDayView.swift -primary-file /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Recovery/Models/RecoveryFlowState.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Recovery/Views/RecoveryModePopup.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Recovery/Components/RecoveryProtocolSelectionCard.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DevOptions/Views/DevOptionsView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DevOptions/Components/DevOptionsSectionCard.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DevOptions/Components/DevSeedScenarioRow.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Models/PlanModels.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/ViewModels/PlanViewModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Presentation/PlanCoordinator.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanScreen.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanRegulatorSheet.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanAllocationEditorSheet.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/ProtocolSchedulingEditorSheet.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanScreenTypes.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Views/PlanScreenStyling.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Models/PlanRegulation.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Engines/PlanRegulatorEngine.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/DateRules.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Models/Violation.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/NonNegotiableState.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Models/CommitmentSystem.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Models/LockConfiguration.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/CompletionRecord.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Models/Window.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Models/NonNegotiableDefinition.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/NonNegotiable.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Engines/CommitmentSystemEngine.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Engines/NonNegotiableEngine.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/NonNegotiableMode.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Engines/StreakEngine.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Policy/PolicyDecision.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Policy/PolicyReason.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Policy/ProtocolPatch.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Policy/CommitmentPolicyEngine.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/UI/GlassCard.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/CoreUI/Components/ProgressIndicator.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/CoreUI/Components/NonNegotiableCard.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/UI/PrimaryButton.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/CoreUI/Components/ProfileSheetContainer.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/CoreUI/Components/LogsProfileToolbarActions.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/App/Locked_INApp.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/Views/OnboardingShellView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/ViewModels/OnboardingShellViewModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/IdentityWarning/Views/IdentityWarningContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/FailureLoop/Views/FailureLoopContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/CoreDifferentiation/Views/CoreDifferentiationContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/UserHistory/Views/UserHistoryContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/NonNegotiablesContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/AIRegulator/Views/AIRegulatorContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/CommitmentAgreement/Views/CommitmentAgreementContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/Paywall/Views/PaywallContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/UI/Theme.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Models/OnboardingStep.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Models/OnboardingData.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Engines/OnboardingEngine.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Core/Services/AIServiceProtocol.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Engines/OnboardingFlow.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/UserHistory/ViewModels/UserHistoryViewModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/CommitmentAgreement/ViewModels/CommitmentAgreementViewModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/ReliabilityCalculator.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/WeeklyAllowanceCalculator.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/CommitmentActionService.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Domain/PlanService.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/UI/ToastPresenter.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Data/RepositoryCommitmentService.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/Data/RepositoryPlanService.swift /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/DerivedSources/GeneratedAssetSymbols.swift -supplementary-output-file-map /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/supplementaryOutputs-3 -emit-localized-strings -emit-localized-strings-path /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64 -target arm64-apple-ios26.0-simulator -module-can-import-version DeveloperToolsSupport 23.0.4 23.0.4 -module-can-import-version SwiftUI 7.2.5.1 7.2.5 -module-can-import-version UIKit 9126.2.4.1 9126.2.4 -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libFoundationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#FoundationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libObservationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#ObservationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libPreviewsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#PreviewsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftUIMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftUIMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/LockedIn-dependencies-1.json -Xllvm -aarch64-use-tbi -enable-objc-interop -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -I /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Products/Debug-iphonesimulator -F /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Products/Debug-iphonesimulator -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=5 -module-cache-path /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -profile-generate -profile-coverage-mapping -swift-version 5 -enforce-exclusivity\=checked -Onone -D DEBUG -serialize-debugging-options -const-gather-protocols-file /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/LockedIn_const_extract_protocols.json -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -default-isolation\=MainActor -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /Users/zackalatrash/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /Users/zackalatrash/Desktop/Locked\ IN -enable-anonymous-context-mangled-names -file-compilation-dir /Users/zackalatrash/Desktop/Locked\ IN -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /Users/zackalatrash/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.2-23C53-7d00a8b37fbd7999ea79df8ebc024bf0.sdkstatcache -Xcc -I/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/swift-overrides.hmap -Xcc -iquote -Xcc /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/LockedIn-generated-files.hmap -Xcc -I/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/LockedIn-own-target-headers.hmap -Xcc -I/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/LockedIn-all-target-headers.hmap -Xcc -iquote -Xcc /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/LockedIn-project-headers.hmap -Xcc -I/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/DerivedSources-normal/arm64 -Xcc -I/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/DerivedSources/arm64 -Xcc -I/Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/DerivedSources -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name LockedIn -frontend-parseable-output -disable-clang-spi -target-sdk-version 26.2 -target-sdk-name iphonesimulator26.2 -clang-target arm64-apple-ios26.2-simulator -in-process-plugin-server-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -o /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/MainAppView.o -o /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/DailyCheckInModels.o -o /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/DailyCheckInViewModel.o -o /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/DailyCheckInFlowView.o -o /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/DailyCheckInCard.o -o /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/DailyCheckInProtocolRow.o -o /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/DailyCheckInResolutionSheet.o -o /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/DailyCheckInCloseDayView.o -o /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Build/Intermediates.noindex/LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/RecoveryFlowState.o -index-unit-output-path /LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/MainAppView.o -index-unit-output-path /LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/DailyCheckInModels.o -index-unit-output-path /LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/DailyCheckInViewModel.o -index-unit-output-path /LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/DailyCheckInFlowView.o -index-unit-output-path /LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/DailyCheckInCard.o -index-unit-output-path /LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/DailyCheckInProtocolRow.o -index-unit-output-path /LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/DailyCheckInResolutionSheet.o -index-unit-output-path /LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/DailyCheckInCloseDayView.o -index-unit-output-path /LockedIn.build/Debug-iphonesimulator/LockedIn.build/Objects-normal/arm64/RecoveryFlowState.o -index-store-path /Users/zackalatrash/Library/Developer/Xcode/DerivedData/LockedIn-bdpzsjatoytiggcesqyjfjvdfkrh/Index.noindex/DataStore -index-system-modules
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/AppShell/Views/MainAppView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Features/AppShell/Views/MainAppView.swift:154:10: warning: 'onChange(of:perform:)' was deprecated in iOS 17.0: Use `onChange` with a two or zero parameter action closure instead.
+        .onChange(of: scenePhase) { phase in
+         ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Features/AppShell/Views/MainAppView.swift:160:10: warning: 'onChange(of:perform:)' was deprecated in iOS 17.0: Use `onChange` with a two or zero parameter action closure instead.
+        .onChange(of: router.selectedTab) { _ in
+         ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Features/AppShell/Views/MainAppView.swift:165:10: warning: 'onChange(of:perform:)' was deprecated in iOS 17.0: Use `onChange` with a two or zero parameter action closure instead.
+        .onChange(of: appClock.simulatedNow) { _ in
+         ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Features/AppShell/Views/MainAppView.swift:169:10: warning: 'onChange(of:perform:)' was deprecated in iOS 17.0: Use `onChange` with a two or zero parameter action closure instead.
+        .onChange(of: devRuntime.forceShowDailyCheckInToken) { token in
+         ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Features/AppShell/Views/MainAppView.swift:176:10: warning: 'onChange(of:perform:)' was deprecated in iOS 17.0: Use `onChange` with a two or zero parameter action closure instead.
+        .onChange(of: store.system) { system in
+         ^
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Models/DailyCheckInModels.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:28:48: warning: call to main actor-isolated initializer 'init(calendar:)' in a synchronous nonisolated context
+        regulatorEngine: PlanRegulatorEngine = PlanRegulatorEngine(),
+                                               ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Domain/Engines/PlanRegulatorEngine.swift:6:5: note: calls to initializer 'init(calendar:)' from outside of its actor context are implicitly asynchronous
+    init(calendar: Calendar = DateRules.isoCalendar) {
+    ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift:31:40: warning: main actor-isolated static property 'isoCalendar' can not be referenced from a nonisolated context
+        calendar: Calendar = DateRules.isoCalendar
+                                       ^
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Shared/Domain/DateRules.swift:13:16: note: static property declared here
+    static var isoCalendar: Calendar {
+               ^
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+/Users/zackalatrash/Desktop/Locked IN/LockedIn/Features/DailyCheckIn/Views/DailyCheckInFlowView.swift:24:36: error: cannot find 'LegacyCommitmentWrapper' in scope
+                commitmentService: LegacyCommitmentWrapper(store: commitmentStore),
+                                   ^~~~~~~~~~~~~~~~~~~~~~~
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Components/DailyCheckInCard.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Components/DailyCheckInProtocolRow.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Components/DailyCheckInResolutionSheet.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DailyCheckIn/Components/DailyCheckInCloseDayView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Recovery/Models/RecoveryFlowState.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 Compiling\ RecoveryModeViewModel.swift,\ RecoveryModePopup.swift,\ RecoveryProtocolSelectionCard.swift,\ DevOptionsView.swift,\ DevOptionsSectionCard.swift,\ DevSeedScenarioRow.swift,\ PlanModels.swift,\ PlanViewModel.swift,\ PlanCoordinator.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Recovery/Views/RecoveryModePopup.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Recovery/Components/RecoveryProtocolSelectionCard.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DevOptions/Views/DevOptionsView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DevOptions/Components/DevOptionsSectionCard.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DevOptions/Components/DevSeedScenarioRow.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Models/PlanModels.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/ViewModels/PlanViewModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Presentation/PlanCoordinator.swift (in target 'LockedIn' from project 'LockedIn')
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Recovery/Views/RecoveryModePopup.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Recovery/Components/RecoveryProtocolSelectionCard.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DevOptions/Views/DevOptionsView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DevOptions/Components/DevOptionsSectionCard.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/DevOptions/Components/DevSeedScenarioRow.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Models/PlanModels.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/ViewModels/PlanViewModel.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Plan/Presentation/PlanCoordinator.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 Compiling\ CockpitNavigation.swift,\ OnboardingPresentationConfig.swift,\ CreateNonNegotiableView.swift,\ OnboardingCoordinator.swift,\ AppClock.swift,\ DevRuntimeState.swift,\ DevOptionsController.swift,\ DevSeedScenario.swift,\ DailyCheckInPolicy.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Models/CockpitNavigation.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/Models/OnboardingPresentationConfig.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/Flow/OnboardingCoordinator.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/AppClock.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/DevRuntimeState.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/DevOptionsController.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/DevSeedScenario.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/DailyCheckInPolicy.swift (in target 'LockedIn' from project 'LockedIn')
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Cockpit/Models/CockpitNavigation.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/Models/OnboardingPresentationConfig.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/Flow/OnboardingCoordinator.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/AppClock.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/DevRuntimeState.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/DevOptionsController.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/DevSeedScenario.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Application/DailyCheckInPolicy.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 Compiling\ CoreDifferentiationContentView.swift,\ UserHistoryContentView.swift,\ NonNegotiablesContentView.swift,\ CreateNonNegotiableContentView.swift,\ AIRegulatorContentView.swift,\ CommitmentAgreementContentView.swift,\ PaywallContentView.swift,\ Theme.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/CoreDifferentiation/Views/CoreDifferentiationContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/UserHistory/Views/UserHistoryContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/NonNegotiablesContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/AIRegulator/Views/AIRegulatorContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/CommitmentAgreement/Views/CommitmentAgreementContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/Paywall/Views/PaywallContentView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/UI/Theme.swift (in target 'LockedIn' from project 'LockedIn')
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/CoreDifferentiation/Views/CoreDifferentiationContentView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/UserHistory/Views/UserHistoryContentView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/NonNegotiablesContentView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/Views/CreateNonNegotiableContentView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/AIRegulator/Views/AIRegulatorContentView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/CommitmentAgreement/Views/CommitmentAgreementContentView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/Paywall/Views/PaywallContentView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Shared/UI/Theme.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 Compiling\ OnboardingStep.swift,\ OnboardingData.swift,\ OnboardingEngine.swift,\ AIServiceProtocol.swift,\ OnboardingFlow.swift,\ UserHistoryViewModel.swift,\ CreateNonNegotiableViewModel.swift,\ CommitmentAgreementViewModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Models/OnboardingStep.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Models/OnboardingData.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Engines/OnboardingEngine.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Core/Services/AIServiceProtocol.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Engines/OnboardingFlow.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/UserHistory/ViewModels/UserHistoryViewModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/CommitmentAgreement/ViewModels/CommitmentAgreementViewModel.swift (in target 'LockedIn' from project 'LockedIn')
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Models/OnboardingStep.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Models/OnboardingData.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Engines/OnboardingEngine.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Core/Services/AIServiceProtocol.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Domain/Engines/OnboardingFlow.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/UserHistory/ViewModels/UserHistoryViewModel.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/NonNegotiables/ViewModels/CreateNonNegotiableViewModel.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/SubFeatures/CommitmentAgreement/ViewModels/CommitmentAgreementViewModel.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling OnboardingStep.swift, OnboardingData.swift, OnboardingEngine.swift, AIServiceProtocol.swift, OnboardingFlow.swift, UserHistoryViewModel.swift, CreateNonNegotiableViewModel.swift, CommitmentAgreementViewModel.swift (in target 'LockedIn' from project 'LockedIn')
+
+SwiftCompile normal arm64 Compiling\ OnboardingShellView.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/Views/OnboardingShellView.swift (in target 'LockedIn' from project 'LockedIn')
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/Views/OnboardingShellView.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftCompile normal arm64 Compiling\ OnboardingShellViewModel.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/ViewModels/OnboardingShellViewModel.swift (in target 'LockedIn' from project 'LockedIn')
+
+SwiftCompile normal arm64 /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/Features/Onboarding/ViewModels/OnboardingShellViewModel.swift (in target 'LockedIn' from project 'LockedIn')
+    cd /Users/zackalatrash/Desktop/Locked\ IN
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling OnboardingShellView.swift (in target 'LockedIn' from project 'LockedIn')
+
+SwiftCompile normal arm64 Compiling\ Locked_INApp.swift /Users/zackalatrash/Desktop/Locked\ IN/LockedIn/App/Locked_INApp.swift (in target 'LockedIn' from project 'LockedIn')
+

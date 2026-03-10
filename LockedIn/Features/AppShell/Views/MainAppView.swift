@@ -37,8 +37,8 @@ enum AppAppearanceMode: String, CaseIterable, Identifiable {
 }
 
 struct MainAppView: View {
-    @EnvironmentObject private var store: CommitmentSystemStore
-    @EnvironmentObject private var planStore: PlanStore
+    @EnvironmentObject private var store: RepositoryCommitmentService
+    @EnvironmentObject private var planStore: RepositoryPlanService
     @EnvironmentObject private var appClock: AppClock
     @EnvironmentObject private var devRuntime: DevRuntimeState
     @Environment(\.scenePhase) private var scenePhase
@@ -231,8 +231,8 @@ private extension MainAppView {
                 .ignoresSafeArea()
 
             RecoveryModePopup(
-                commitmentService: LegacyCommitmentWrapper(store: store),
-                planService: LegacyPlanWrapper(store: planStore),
+                commitmentService: store,
+                planService: planStore,
                 referenceDateProvider: { appClock.now }
             ) {
                 router.dismissRecoveryEntry()

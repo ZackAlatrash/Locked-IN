@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CockpitLogsScreen: View {
     @Binding var selectedTab: MainTab
-    @EnvironmentObject private var store: CommitmentSystemStore
+    @EnvironmentObject private var store: RepositoryCommitmentService
     @EnvironmentObject private var appClock: AppClock
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

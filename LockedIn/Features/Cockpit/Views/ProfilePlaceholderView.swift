@@ -7,8 +7,8 @@ struct ProfilePlaceholderView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 #if DEBUG
-    @EnvironmentObject private var store: CommitmentSystemStore
-    @EnvironmentObject private var planStore: PlanStore
+    @EnvironmentObject private var store: RepositoryCommitmentService
+    @EnvironmentObject private var planStore: RepositoryPlanService
     @EnvironmentObject private var appClock: AppClock
     @EnvironmentObject private var devRuntime: DevRuntimeState
 #endif

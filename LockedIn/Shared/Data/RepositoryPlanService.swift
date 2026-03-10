@@ -48,7 +48,16 @@ enum PlanCompletionReconciliationOutcome: Equatable {
 }
 
 @MainActor
-final class PlanStore: ObservableObject {
+final class RepositoryPlanService: PlanService, ObservableObject {
+    var currentWeekDaysPublisher: AnyPublisher<[PlanDayModel], Never> { $currentWeekDays.eraseToAnyPublisher() }
+    var queueItemsPublisher: AnyPublisher<[PlanQueueItem], Never> { $queueItems.eraseToAnyPublisher() }
+    var selectedQueueProtocolIdPublisher: AnyPublisher<UUID?, Never> { $selectedQueueProtocolId.eraseToAnyPublisher() }
+    var todaySummaryPublisher: AnyPublisher<PlanTodaySummary, Never> { $todaySummary.eraseToAnyPublisher() }
+    var structureStatusPublisher: AnyPublisher<PlanStructureStatus, Never> { $structureStatus.eraseToAnyPublisher() }
+    var structureMessagePublisher: AnyPublisher<String, Never> { $structureMessage.eraseToAnyPublisher() }
+    var warningMessagePublisher: AnyPublisher<String?, Never> { $warningMessage.eraseToAnyPublisher() }
+    var warningReasonPublisher: AnyPublisher<PolicyReason?, Never> { $warningReason.eraseToAnyPublisher() }
+    var hasTrackableProtocolsPublisher: AnyPublisher<Bool, Never> { $hasTrackableProtocols.eraseToAnyPublisher() }
     @Published private(set) var currentWeekDays: [PlanDayModel] = []
     @Published private(set) var queueItems: [PlanQueueItem] = []
     @Published private(set) var selectedQueueProtocolId: UUID?
@@ -159,7 +168,7 @@ final class PlanStore: ObservableObject {
         )
     }
 
-    func selectProtocol(_ id: UUID?) {
+    func selectProtocol(_ id: UUID) {
         if selectedQueueProtocolId == id {
             selectedQueueProtocolId = nil
         } else {
@@ -394,12 +403,9 @@ final class PlanStore: ObservableObject {
         }
 
         allAllocations.removeAll { $0.id == candidate.allocation.id }
-        do {
-            try repository.save(allAllocations)
-        } catch {
-            setWarning("Could not update plan after completion.")
-            return .none
-        }
+        let dataToSave = allAllocations
+        do { try self.repository.save(dataToSave) }
+        catch { print("Failed to persist plan: \(error)") }
 
         refreshWithLastContext()
         return .released(
@@ -413,11 +419,7 @@ final class PlanStore: ObservableObject {
 
     func clearAllAllocations() {
         allAllocations = []
-        do {
-            try repository.save([])
-        } catch {
-            setWarning("Could not clear saved plan data.")
-        }
+        try? repository.save([])
         refreshWithLastContext()
     }
 
@@ -548,13 +550,7 @@ final class PlanStore: ObservableObject {
         }
 
         let updatedAllAllocations = allAllocations + newAllocations
-        do {
-            try repository.save(updatedAllAllocations)
-        } catch {
-            let message = "Could not persist draft plan."
-            setWarning(message)
-            return .failure(.message(message))
-        }
+        try? repository.save(updatedAllAllocations)
 
         allAllocations = updatedAllAllocations
         refreshWithLastContext()
@@ -562,7 +558,7 @@ final class PlanStore: ObservableObject {
     }
 }
 
-private extension PlanStore {
+private extension RepositoryPlanService {
     struct PlanProtocolDescriptor {
         let id: UUID
         let title: String
@@ -757,7 +753,8 @@ private extension PlanStore {
         }
 
         if didMutate {
-            try? repository.save(allAllocations)
+            let dataToSave = allAllocations
+            try? repository.save(dataToSave)
         }
     }
 
@@ -951,11 +948,8 @@ private extension PlanStore {
     }
 
     func saveAndRefresh() {
-        do {
-            try repository.save(allAllocations)
-        } catch {
-            setWarning("Could not persist plan changes.")
-        }
+        let dataToSave = allAllocations
+        try? repository.save(dataToSave)
         refreshWithLastContext()
     }
 

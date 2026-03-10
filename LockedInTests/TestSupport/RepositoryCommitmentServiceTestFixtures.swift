@@ -23,7 +23,7 @@ final class RecordingCommitmentSystemRepository: CommitmentSystemRepository {
     }
 }
 
-enum CommitmentSystemStoreTestFixtures {
+enum RepositoryCommitmentServiceTestFixtures {
     static var calendar: Calendar { TestCalendarSupport.utcISO8601 }
 
     static var referenceDate: Date {
@@ -123,10 +123,10 @@ enum CommitmentSystemStoreTestFixtures {
     }
 }
 
-enum CommitmentSystemStoreTestRetainer {
-    static var stores: [CommitmentSystemStore] = []
+enum RepositoryCommitmentServiceTestRetainer {
+    static var stores: [RepositoryCommitmentService] = []
 
-    static func retain(_ store: CommitmentSystemStore) {
+    static func retain(_ store: RepositoryCommitmentService) {
         stores.append(store)
     }
 }

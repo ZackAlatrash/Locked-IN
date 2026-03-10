@@ -10,8 +10,8 @@ struct CockpitView: View {
     @Binding var selectedTab: MainTab
     let onRequestDailyCheckIn: () -> Void
 
-    @EnvironmentObject private var store: CommitmentSystemStore
-    @EnvironmentObject private var planStore: PlanStore
+    @EnvironmentObject private var store: RepositoryCommitmentService
+    @EnvironmentObject private var planStore: RepositoryPlanService
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var appClock: AppClock
     @EnvironmentObject private var devRuntime: DevRuntimeState
@@ -27,8 +27,8 @@ struct CockpitView: View {
     @State private var completionToastMessage: String?
 
     init(
-        commitmentStore: CommitmentSystemStore,
-        planStore: PlanStore,
+        commitmentStore: RepositoryCommitmentService,
+        planStore: RepositoryPlanService,
         selectedTab: Binding<MainTab> = .constant(.cockpit),
         onRequestDailyCheckIn: @escaping () -> Void = {},
         nowProvider: @escaping () -> Date = { Date() }
@@ -37,8 +37,8 @@ struct CockpitView: View {
         self.onRequestDailyCheckIn = onRequestDailyCheckIn
         _viewModel = StateObject(
             wrappedValue: CockpitViewModel(
-                commitmentService: LegacyCommitmentWrapper(store: commitmentStore),
-                planService: LegacyPlanWrapper(store: planStore),
+                commitmentService: commitmentStore,
+                planService: planStore,
                 nowProvider: nowProvider
             )
         )
@@ -446,7 +446,7 @@ private extension CockpitView {
 private struct CockpitNonNegotiableDetailsSheet: View {
     let nonNegotiable: NonNegotiable
     let onAction: (CockpitAction) -> Void
-    @EnvironmentObject private var store: CommitmentSystemStore
+    @EnvironmentObject private var store: RepositoryCommitmentService
     @EnvironmentObject private var appClock: AppClock
     @Environment(\.colorScheme) private var colorScheme
 
@@ -702,12 +702,12 @@ private struct CockpitNonNegotiableDetailsSheet: View {
 
 struct CockpitView_Previews: PreviewProvider {
     static var previews: some View {
-        let store = CommitmentSystemStore(
+        let store = RepositoryCommitmentService(
             repository: InMemoryCommitmentSystemRepository(),
             systemEngine: CommitmentSystemEngine(nonNegotiableEngine: NonNegotiableEngine()),
             nonNegotiableEngine: NonNegotiableEngine()
         )
-        let planStore = PlanStore()
+        let planStore = RepositoryPlanService()
         CockpitView(
             commitmentStore: store,
             planStore: planStore,

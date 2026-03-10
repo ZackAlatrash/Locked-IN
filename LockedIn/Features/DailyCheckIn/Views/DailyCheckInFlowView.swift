@@ -10,8 +10,8 @@ struct DailyCheckInFlowView: View {
     @State private var didAppear = false
 
     init(
-        commitmentStore: CommitmentSystemStore,
-        planStore: PlanStore,
+        commitmentStore: RepositoryCommitmentService,
+        planStore: RepositoryPlanService,
         router: AppRouter,
         referenceDateProvider: @escaping () -> Date = { Date() },
         isPopup: Bool = false,
@@ -21,8 +21,8 @@ struct DailyCheckInFlowView: View {
             wrappedValue: DailyCheckInViewModel(
                 commitmentStore: commitmentStore,
                 planStore: planStore,
-                commitmentService: LegacyCommitmentWrapper(store: commitmentStore),
-                planService: LegacyPlanWrapper(store: planStore),
+                commitmentService: commitmentStore,
+                planService: planStore,
                 router: router,
                 referenceDateProvider: referenceDateProvider
             )

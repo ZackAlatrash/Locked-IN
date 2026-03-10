@@ -5,16 +5,16 @@ import Combine
 final class DevOptionsController: ObservableObject {
     @Published private(set) var statusMessage: String?
 
-    private let commitmentStore: CommitmentSystemStore
-    private let planStore: PlanStore
+    private let commitmentStore: RepositoryCommitmentService
+    private let planStore: RepositoryPlanService
     private let appClock: AppClock
     private let devRuntime: DevRuntimeState
     private let userDefaults: UserDefaults
     private let calendar: Calendar
 
     init(
-        commitmentStore: CommitmentSystemStore,
-        planStore: PlanStore,
+        commitmentStore: RepositoryCommitmentService,
+        planStore: RepositoryPlanService,
         appClock: AppClock,
         devRuntime: DevRuntimeState,
         userDefaults: UserDefaults = .standard,

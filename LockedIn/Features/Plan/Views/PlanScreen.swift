@@ -5,8 +5,8 @@ import Combine
 struct PlanScreen: View {
     @Binding var selectedTab: MainTab
 
-    @EnvironmentObject private var commitmentStore: CommitmentSystemStore
-    @EnvironmentObject private var planStore: PlanStore
+    @EnvironmentObject private var commitmentStore: RepositoryCommitmentService
+    @EnvironmentObject private var planStore: RepositoryPlanService
     @EnvironmentObject private var router: AppRouter
     @StateObject private var coordinator = PlanCoordinator()
 
@@ -22,15 +22,15 @@ struct PlanScreen: View {
     @StateObject var viewModel: PlanViewModel
     
     init(
-        commitmentStore: CommitmentSystemStore,
-        planStore: PlanStore,
+        commitmentStore: RepositoryCommitmentService,
+        planStore: RepositoryPlanService,
         selectedTab: Binding<MainTab>
     ) {
         _selectedTab = selectedTab
         _viewModel = StateObject(
             wrappedValue: PlanViewModel(
-                planService: LegacyPlanWrapper(store: planStore),
-                commitmentService: LegacyCommitmentWrapper(store: commitmentStore)
+                planService: planStore,
+                commitmentService: commitmentStore
             )
         )
     }

@@ -2,14 +2,14 @@ import XCTest
 @testable import LockedIn
 
 @MainActor
-final class PlanStoreBehaviorLockTests: XCTestCase {
+final class RepositoryPlanServiceBehaviorLockTests: XCTestCase {
     func testValidateProtocolPlacement_allowsPlacementForAvailableSlot() {
-        let protocolModel = PlanStoreTestFixtures.makeSessionProtocol()
+        let protocolModel = RepositoryPlanServiceTestFixtures.makeSessionProtocol()
         let (store, _) = makeStore(
             protocols: [protocolModel],
             allocations: []
         )
-        let targetDay = PlanStoreTestFixtures.date(year: 2026, month: 1, day: 6)
+        let targetDay = RepositoryPlanServiceTestFixtures.date(year: 2026, month: 1, day: 6)
 
         let result = store.validateProtocolPlacement(
             protocolId: protocolModel.id,
@@ -21,16 +21,16 @@ final class PlanStoreBehaviorLockTests: XCTestCase {
     }
 
     func testValidateMove_blocksWhenProtocolAlreadyScheduledSameDay() {
-        let protocolModel = PlanStoreTestFixtures.makeSessionProtocol()
-        let sourceDay = PlanStoreTestFixtures.date(year: 2026, month: 1, day: 5)
-        let targetDay = PlanStoreTestFixtures.date(year: 2026, month: 1, day: 6)
+        let protocolModel = RepositoryPlanServiceTestFixtures.makeSessionProtocol()
+        let sourceDay = RepositoryPlanServiceTestFixtures.date(year: 2026, month: 1, day: 5)
+        let targetDay = RepositoryPlanServiceTestFixtures.date(year: 2026, month: 1, day: 6)
 
-        let allocationToMove = PlanStoreTestFixtures.makeAllocation(
+        let allocationToMove = RepositoryPlanServiceTestFixtures.makeAllocation(
             protocolId: protocolModel.id,
             day: sourceDay,
             slot: .am
         )
-        let existingSameDayAllocation = PlanStoreTestFixtures.makeAllocation(
+        let existingSameDayAllocation = RepositoryPlanServiceTestFixtures.makeAllocation(
             protocolId: protocolModel.id,
             day: targetDay,
             slot: .pm
@@ -55,10 +55,10 @@ final class PlanStoreBehaviorLockTests: XCTestCase {
     }
 
     func testMoveThenRemove_updatesAndDeletesAllocation() {
-        let protocolModel = PlanStoreTestFixtures.makeSessionProtocol()
-        let originalDay = PlanStoreTestFixtures.date(year: 2026, month: 1, day: 5)
-        let destinationDay = PlanStoreTestFixtures.date(year: 2026, month: 1, day: 7)
-        let allocation = PlanStoreTestFixtures.makeAllocation(
+        let protocolModel = RepositoryPlanServiceTestFixtures.makeSessionProtocol()
+        let originalDay = RepositoryPlanServiceTestFixtures.date(year: 2026, month: 1, day: 5)
+        let destinationDay = RepositoryPlanServiceTestFixtures.date(year: 2026, month: 1, day: 7)
+        let allocation = RepositoryPlanServiceTestFixtures.makeAllocation(
             protocolId: protocolModel.id,
             day: originalDay,
             slot: .am
@@ -80,14 +80,14 @@ final class PlanStoreBehaviorLockTests: XCTestCase {
             return
         }
         XCTAssertEqual(allocationId, allocation.id)
-        XCTAssertEqual(movedDay, DateRules.startOfDay(destinationDay, calendar: PlanStoreTestFixtures.calendar))
+        XCTAssertEqual(movedDay, DateRules.startOfDay(destinationDay, calendar: RepositoryPlanServiceTestFixtures.calendar))
         XCTAssertEqual(movedSlot, .pm)
 
         let movedAllocation = store.currentWeekSnapshot().currentWeekAllocations.first(where: { $0.id == allocation.id })
         XCTAssertEqual(movedAllocation?.slot, .pm)
         XCTAssertEqual(
             movedAllocation?.day,
-            DateRules.startOfDay(destinationDay, calendar: PlanStoreTestFixtures.calendar)
+            DateRules.startOfDay(destinationDay, calendar: RepositoryPlanServiceTestFixtures.calendar)
         )
 
         store.removeAllocation(id: allocation.id)
@@ -97,11 +97,11 @@ final class PlanStoreBehaviorLockTests: XCTestCase {
     }
 
     func testApplyDraft_successAddsAllocationAndReturnsCount() {
-        let protocolModel = PlanStoreTestFixtures.makeSessionProtocol()
-        let draftDay = PlanStoreTestFixtures.date(year: 2026, month: 1, day: 8)
+        let protocolModel = RepositoryPlanServiceTestFixtures.makeSessionProtocol()
+        let draftDay = RepositoryPlanServiceTestFixtures.date(year: 2026, month: 1, day: 8)
         let draft = PlanAllocationDraft(
             protocolId: protocolModel.id,
-            weekId: DateRules.weekID(for: draftDay, calendar: PlanStoreTestFixtures.calendar),
+            weekId: DateRules.weekID(for: draftDay, calendar: RepositoryPlanServiceTestFixtures.calendar),
             day: draftDay,
             slot: .eve,
             durationMinutes: 45
@@ -128,12 +128,12 @@ final class PlanStoreBehaviorLockTests: XCTestCase {
     }
 
     func testApplyDraft_failureForUnknownProtocolLeavesStateUnchanged() {
-        let protocolModel = PlanStoreTestFixtures.makeSessionProtocol()
+        let protocolModel = RepositoryPlanServiceTestFixtures.makeSessionProtocol()
         let unknownProtocolId = UUID()
-        let draftDay = PlanStoreTestFixtures.date(year: 2026, month: 1, day: 8)
+        let draftDay = RepositoryPlanServiceTestFixtures.date(year: 2026, month: 1, day: 8)
         let draft = PlanAllocationDraft(
             protocolId: unknownProtocolId,
-            weekId: DateRules.weekID(for: draftDay, calendar: PlanStoreTestFixtures.calendar),
+            weekId: DateRules.weekID(for: draftDay, calendar: RepositoryPlanServiceTestFixtures.calendar),
             day: draftDay,
             slot: .am,
             durationMinutes: 30
@@ -156,17 +156,17 @@ final class PlanStoreBehaviorLockTests: XCTestCase {
     }
 
     func testReconcileAfterCompletion_releasesNearestFutureAllocation() {
-        let protocolModel = PlanStoreTestFixtures.makeSessionProtocol()
-        let completionDate = PlanStoreTestFixtures.date(year: 2026, month: 1, day: 5, hour: 9)
-        let firstFutureDay = PlanStoreTestFixtures.date(year: 2026, month: 1, day: 6, hour: 6)
-        let secondFutureDay = PlanStoreTestFixtures.date(year: 2026, month: 1, day: 7, hour: 18)
+        let protocolModel = RepositoryPlanServiceTestFixtures.makeSessionProtocol()
+        let completionDate = RepositoryPlanServiceTestFixtures.date(year: 2026, month: 1, day: 5, hour: 9)
+        let firstFutureDay = RepositoryPlanServiceTestFixtures.date(year: 2026, month: 1, day: 6, hour: 6)
+        let secondFutureDay = RepositoryPlanServiceTestFixtures.date(year: 2026, month: 1, day: 7, hour: 18)
 
-        let firstFutureAllocation = PlanStoreTestFixtures.makeAllocation(
+        let firstFutureAllocation = RepositoryPlanServiceTestFixtures.makeAllocation(
             protocolId: protocolModel.id,
             day: firstFutureDay,
             slot: .am
         )
-        let secondFutureAllocation = PlanStoreTestFixtures.makeAllocation(
+        let secondFutureAllocation = RepositoryPlanServiceTestFixtures.makeAllocation(
             protocolId: protocolModel.id,
             day: secondFutureDay,
             slot: .eve
@@ -189,7 +189,7 @@ final class PlanStoreBehaviorLockTests: XCTestCase {
             .released(
                 ReleasedAllocationInfo(
                     protocolId: protocolModel.id,
-                    day: DateRules.startOfDay(firstFutureDay, calendar: PlanStoreTestFixtures.calendar),
+                    day: DateRules.startOfDay(firstFutureDay, calendar: RepositoryPlanServiceTestFixtures.calendar),
                     slot: .am
                 )
             )
@@ -200,24 +200,25 @@ final class PlanStoreBehaviorLockTests: XCTestCase {
     }
 }
 
-private extension PlanStoreBehaviorLockTests {
+private extension RepositoryPlanServiceBehaviorLockTests {
     func makeStore(
         protocols: [NonNegotiable],
         allocations: [PlanAllocation]
-    ) -> (PlanStore, RecordingPlanAllocationRepository) {
+    ) -> (RepositoryPlanService, RecordingPlanAllocationRepository) {
         let repository = RecordingPlanAllocationRepository(initialAllocations: allocations)
-        let store = PlanStore(
+        let store = RepositoryPlanService(
             repository: repository,
-            policy: CommitmentPolicyEngine(calendar: PlanStoreTestFixtures.calendar),
-            calendar: PlanStoreTestFixtures.calendar
+            policy: CommitmentPolicyEngine(calendar: RepositoryPlanServiceTestFixtures.calendar),
+            calendar: RepositoryPlanServiceTestFixtures.calendar
         )
-        PlanStoreTestRetainer.retain(store)
-        let system = PlanStoreTestFixtures.makeSystem(protocols: protocols)
+
+        let system = RepositoryPlanServiceTestFixtures.makeSystem(protocols: protocols)
         store.refresh(
             system: system,
             calendarEvents: [],
-            referenceDate: PlanStoreTestFixtures.referenceDate
+            referenceDate: RepositoryPlanServiceTestFixtures.referenceDate
         )
+        RepositoryPlanServiceTestRetainer.retain(store)
         return (store, repository)
     }
 }

@@ -26,8 +26,8 @@ struct LockedInAppRoot: View {
     @AppStorage("phase1MotionSessionID") private var phase1MotionSessionID = ""
     @StateObject private var appClock = AppClock()
     @StateObject private var devRuntime = DevRuntimeState()
-    @StateObject private var commitmentSystemStore: CommitmentSystemStore
-    @StateObject private var planStore: PlanStore
+    @StateObject private var commitmentSystemStore: RepositoryCommitmentService
+    @StateObject private var planStore: RepositoryPlanService
     @StateObject private var onboardingCoordinator = OnboardingCoordinator(
         flow: OnboardingFlow(),
         engine: OnboardingEngine()
@@ -41,7 +41,7 @@ struct LockedInAppRoot: View {
         let policyEngine = CommitmentPolicyEngine()
 
         _commitmentSystemStore = StateObject(
-            wrappedValue: CommitmentSystemStore(
+            wrappedValue: RepositoryCommitmentService(
                 repository: repository,
                 systemEngine: systemEngine,
                 nonNegotiableEngine: nonNegotiableEngine,
@@ -49,7 +49,7 @@ struct LockedInAppRoot: View {
             )
         )
         _planStore = StateObject(
-            wrappedValue: PlanStore(
+            wrappedValue: RepositoryPlanService(
                 repository: JSONFilePlanAllocationRepository(),
                 policy: policyEngine
             )
@@ -86,12 +86,6 @@ struct LockedInAppRoot: View {
                 commitmentSystemStore.clearAllNonNegotiables()
                 planStore.clearAllAllocations()
                 UserDefaults.standard.set(true, forKey: freshStartResetKey)
-            }
-            let protocolResetKey = "didRunProtocolReset20260303"
-            if UserDefaults.standard.bool(forKey: protocolResetKey) == false {
-                commitmentSystemStore.clearAllNonNegotiables()
-                planStore.clearAllAllocations()
-                UserDefaults.standard.set(true, forKey: protocolResetKey)
             }
             commitmentSystemStore.runDailyIntegrityTick(referenceDate: appClock.now)
         }
