@@ -149,7 +149,7 @@ struct CockpitView: View {
         .overlay(alignment: .top) {
             if let completionToastMessage {
                 Text(completionToastMessage)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundColor(cockpitStyle == .dark ? .white : Color(hex: "0F172A"))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
@@ -514,8 +514,9 @@ private struct CockpitNonNegotiableDetailsSheet: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 18) {
                 Text(nonNegotiable.definition.title)
-                    .font(.system(size: 28, weight: .heavy))
+                    .font(.title2.weight(.heavy))
                     .foregroundColor(textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 VStack(alignment: .leading, spacing: 8) {
                     detailRow("Mode", value: nonNegotiable.definition.mode == .daily ? "Daily" : "Session")
@@ -544,7 +545,7 @@ private struct CockpitNonNegotiableDetailsSheet: View {
                     onAction(.complete(nnId: nonNegotiable.id))
                 } label: {
                     Text(markDoneTitle)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.headline.weight(.bold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                 }
@@ -553,15 +554,16 @@ private struct CockpitNonNegotiableDetailsSheet: View {
 
                 if let markDoneDisabledMessage {
                     Text(markDoneDisabledMessage)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.footnote.weight(.medium))
                         .foregroundColor(textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Button {
                     onAction(.edit(nnId: nonNegotiable.id))
                 } label: {
                     Text("Edit")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.headline.weight(.bold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                 }
@@ -571,7 +573,7 @@ private struct CockpitNonNegotiableDetailsSheet: View {
                     onAction(.retire(nnId: nonNegotiable.id))
                 } label: {
                     Text("Retire")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.headline.weight(.bold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                 }
@@ -580,15 +582,17 @@ private struct CockpitNonNegotiableDetailsSheet: View {
 
                 if !isLockEnded {
                     Text("Locked until \(lockEndDateText) (\(lockDaysRemainingText) left)")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.footnote.weight(.medium))
                         .foregroundColor(textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if nonNegotiable.state == .recovery {
                     Text("Must complete at least 1 protocol/day for 7 clean days.")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.footnote.weight(.semibold))
                         .foregroundColor(textSecondary)
                         .padding(.top, 4)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding(20)
@@ -690,12 +694,14 @@ private struct CockpitNonNegotiableDetailsSheet: View {
     private func detailRow(_ label: String, value: String) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundColor(textMuted)
             Spacer()
             Text(value)
-                .font(.system(size: 14, weight: .bold))
+                .font(.body.weight(.bold))
                 .foregroundColor(textPrimary)
+                .multilineTextAlignment(.trailing)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -722,7 +728,7 @@ private struct CockpitNonNegotiableDetailsSheet: View {
         if reasons.isEmpty == false {
             VStack(alignment: .leading, spacing: 8) {
                 Text("LAW")
-                    .font(.system(size: 10, weight: .black, design: .monospaced))
+                    .font(.caption2.weight(.black))
                     .tracking(1.2)
                     .foregroundColor(textMuted)
 
@@ -731,15 +737,17 @@ private struct CockpitNonNegotiableDetailsSheet: View {
                     let copy = reason.copy()
                     VStack(alignment: .leading, spacing: 2) {
                         Text(copy.title.uppercased())
-                            .font(.system(size: 11, weight: .black, design: .monospaced))
+                            .font(.caption.weight(.black))
                             .foregroundColor(textPrimary)
                         Text(copy.message)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.footnote.weight(.semibold))
                             .foregroundColor(textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
                         if let hint = copy.hint {
                             Text(hint)
-                                .font(.system(size: 11, weight: .medium))
+                                .font(.caption.weight(.medium))
                                 .foregroundColor(textMuted)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 }

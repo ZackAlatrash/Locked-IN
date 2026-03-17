@@ -123,7 +123,7 @@ private extension CockpitLogsScreen {
                             .frame(width: 6, height: 6)
                             .shadow(color: cyanAccent.opacity(0.6), radius: 6, x: 0, y: 0)
                     }
-                    Text("\(adherence)% ADHERENCE")
+                    Text("\(isRecoveryThemeActive ? "RECOVERY" : "STABLE") • \(adherence)% ADHERENCE")
                         .font(.custom("Inter", size: 10).weight(.black))
                         .foregroundColor(adherenceTextColor)
                 }
@@ -172,11 +172,18 @@ private extension CockpitLogsScreen {
                         }
                         .overlay(alignment: .topTrailing) {
                             if let indicatorColor = cornerIndicatorColor(for: point) {
-                                Circle()
-                                    .fill(indicatorColor)
-                                    .frame(width: 6, height: 6)
-                                    .padding(.trailing, 4)
-                                    .padding(.top, 4)
+                                HStack(spacing: 3) {
+                                    Circle()
+                                        .fill(indicatorColor)
+                                        .frame(width: 6, height: 6)
+                                    if let token = matrixToken(for: point) {
+                                        Text(token)
+                                            .font(.custom("Inter", size: 7).weight(.bold))
+                                            .foregroundColor(dayNumberColor(for: point))
+                                    }
+                                }
+                                .padding(.trailing, 4)
+                                .padding(.top, 4)
                             }
                         }
                         .opacity(revealedMatrixCount > index ? 1 : 0)
@@ -629,9 +636,9 @@ private extension CockpitLogsScreen {
     }
 
     var textMain: Color { isDarkMode ? .white : Color(hex: "0B1220") }
-    var textSecondary: Color { isDarkMode ? Color.white.opacity(0.62) : Color(hex: "5B6778") }
-    var textMuted: Color { isDarkMode ? Color.white.opacity(0.48) : Color(hex: "6B7280") }
-    var textSubtle: Color { isDarkMode ? Color.white.opacity(0.36) : Color(hex: "9CA3AF") }
+    var textSecondary: Color { isDarkMode ? Color.white.opacity(0.76) : Color(hex: "4B5563") }
+    var textMuted: Color { isDarkMode ? Color.white.opacity(0.62) : Color(hex: "5B6778") }
+    var textSubtle: Color { isDarkMode ? Color.white.opacity(0.52) : Color(hex: "6B7280") }
     var weekdayHeaders: [String] { ["M", "T", "W", "T", "F", "S", "S"] }
 
     var adherencePillBackground: Color {
@@ -748,6 +755,14 @@ private extension CockpitLogsScreen {
             return Color(hex: "22D3EE").opacity(0.65)
         }
         return .clear
+    }
+
+    func matrixToken(for point: MatrixDay) -> String? {
+        if point.isStrongRed { return "V" }
+        if point.unproductive { return "U" }
+        if point.completionCount == 0 && point.extraCount > 0 { return "E" }
+        if point.isBlueDay { return "C" }
+        return nil
     }
 
     func dayNumberText(for date: Date) -> String {

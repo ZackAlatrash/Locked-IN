@@ -42,6 +42,14 @@ struct CockpitModernView: View {
     @State private var showActiveSection = false
     @State private var revealedProtocolRows = 0
     @State private var animatedReliabilityValue: Double = 0
+    @ScaledMetric(relativeTo: .largeTitle) private var reliabilityScoreFontSize: CGFloat = 58
+    @ScaledMetric(relativeTo: .title2) private var ringSize: CGFloat = 222
+    @ScaledMetric(relativeTo: .headline) private var ringStroke: CGFloat = 14
+    @ScaledMetric(relativeTo: .headline) private var streakBadgeWidth: CGFloat = 68
+    @ScaledMetric(relativeTo: .headline) private var streakBadgeHeight: CGFloat = 84
+    @ScaledMetric(relativeTo: .body) private var weeklyDayCircleSize: CGFloat = 36
+    @ScaledMetric(relativeTo: .caption) private var capacityCapsuleWidth: CGFloat = 22
+    @ScaledMetric(relativeTo: .caption) private var capacityCapsuleHeight: CGFloat = 8
 
     init(
         style: CockpitModernStyle,
@@ -131,11 +139,9 @@ struct CockpitModernView: View {
         return style == .dark ? Color.white.opacity(0.09) : Color(hex: "B9C7D7").opacity(0.78)
     }
     private var textMain: Color { style == .dark ? .white : Color(hex: "0B1220") }
-    private var textSecondary: Color { style == .dark ? Color.white.opacity(0.45) : Color(hex: "5B6778") }
+    private var textSecondary: Color { style == .dark ? Color.white.opacity(0.62) : Color(hex: "4B5563") }
     private var subtleCard: Color { style == .dark ? Color.white.opacity(0.04) : Color.black.opacity(0.035) }
     private var ringTrack: Color { style == .dark ? Color.white.opacity(0.08) : Color(hex: "94A3B8").opacity(0.3) }
-    private var ringSize: CGFloat { 222 }
-    private var ringStroke: CGFloat { 14 }
     private var ringValueTextColor: Color { style == .dark ? primary : Color(hex: "111827") }
     private var ringMetaTextColor: Color { style == .dark ? primary : Color(hex: "374151") }
     private var topPadding: CGFloat { showEmbeddedHeader ? 52 : 8 }
@@ -164,6 +170,9 @@ struct CockpitModernView: View {
     }
     private var systemStateColor: Color {
         capacityStatusText.uppercased() == "STABLE" ? primary : Color(hex: "F87171")
+    }
+    private var systemStateSymbol: String {
+        capacityStatusText.uppercased() == "STABLE" ? "checkmark.shield.fill" : "exclamationmark.triangle.fill"
     }
     private var effectiveMotionSessionID: String {
         motionSessionID.isEmpty ? "launch-pending" : motionSessionID
@@ -295,11 +304,11 @@ private extension CockpitModernView {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("NEURAL INTERFACE")
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .font(.caption2.weight(.medium))
                     .tracking(1.8)
                     .foregroundColor(textSecondary)
                 Text("TACTICAL COCKPIT")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.title3.weight(.bold))
                     .foregroundColor(textMain)
             }
             Spacer()
@@ -312,8 +321,11 @@ private extension CockpitModernView {
                 .fill(systemStateColor)
                 .frame(width: 7, height: 7)
                 .shadow(color: systemStateColor.opacity(0.5), radius: 6, x: 0, y: 0)
+            Image(systemName: systemStateSymbol)
+                .font(.caption2.weight(.bold))
+                .foregroundColor(systemStateColor)
             Text(systemStateText)
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .font(.caption2.weight(.bold))
                 .tracking(1.2)
                 .foregroundColor(systemStateColor)
         }
@@ -344,19 +356,19 @@ private extension CockpitModernView {
 
             VStack(spacing: 8) {
                 Text("RELIABILITY SCORE")
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .font(.caption2.weight(.medium))
                     .tracking(2.0)
                     .foregroundColor(textSecondary)
                 Text("\(Int(animatedReliabilityValue.rounded()))%")
-                    .font(.system(size: 58, weight: .black))
+                    .font(.system(size: reliabilityScoreFontSize, weight: .black))
                     .foregroundColor(ringValueTextColor)
                     .contentTransition(.numericText())
                     .shadow(color: primary.opacity(style == .dark ? 0.4 : 0.15), radius: 8, x: 0, y: 0)
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.up.right")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.caption2.weight(.bold))
                     Text("+2.4%")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .font(.caption2.weight(.bold))
                 }
                 .foregroundColor(ringMetaTextColor)
                 .padding(.horizontal, 10)
@@ -379,16 +391,16 @@ private extension CockpitModernView {
     var streakBadge: some View {
         VStack(spacing: 2) {
             Text("STREAK")
-                .font(.system(size: 8, weight: .medium, design: .monospaced))
+                .font(.caption2.weight(.medium))
                 .foregroundColor(textSecondary)
             Text("\(streakDays)")
-                .font(.system(size: 23, weight: .bold))
+                .font(.title2.weight(.bold))
                 .foregroundColor(textMain)
             Text("DAYS")
-                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                .font(.caption2.weight(.bold))
                 .foregroundColor(streakAccentColor)
         }
-        .frame(width: 68, height: 84)
+        .frame(width: streakBadgeWidth, height: streakBadgeHeight)
         .background(glassCard)
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -414,20 +426,20 @@ private extension CockpitModernView {
                                             lineWidth: isToday ? 2 : 1
                                         )
                                 )
-                                .frame(width: 36, height: 36)
+                                .frame(width: weeklyDayCircleSize, height: weeklyDayCircleSize)
 
                             if isToday {
                                 Text("\(currentDayOfMonth)")
-                                    .font(.system(size: 10, weight: .bold))
+                                    .font(.caption2.weight(.bold))
                                     .foregroundColor(weeklyAccentColor)
                             } else if hasCompleted {
                                 Image(systemName: "checkmark")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.caption.weight(.bold))
                                     .foregroundColor(weeklyAccentColor)
                             }
                         }
                         Text(dayLabel(for: index))
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .font(.caption2.weight(.medium))
                             .foregroundColor(isToday ? weeklyAccentColor : textSecondary)
                     }
                     .frame(maxWidth: .infinity)
@@ -442,13 +454,13 @@ private extension CockpitModernView {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("ACTIVE PROTOCOLS")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .font(.caption2.weight(.bold))
                     .tracking(2.1)
                     .foregroundColor(primary)
                 Spacer()
                 Button(action: onCheckInTap) {
                     Label("CHECK IN", systemImage: "checkmark.seal.fill")
-                        .font(.system(size: 10, weight: .black, design: .monospaced))
+                        .font(.caption2.weight(.black))
                         .tracking(1.1)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 7)
@@ -468,14 +480,21 @@ private extension CockpitModernView {
                 HStack(alignment: .center, spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Capacity \(activeCapacityCountText.replacingOccurrences(of: " ", with: ""))")
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.headline.weight(.bold))
                             .foregroundColor(textMain)
                         Text(directiveTitle)
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .font(.caption2.weight(.medium))
                             .tracking(1.1)
                             .foregroundColor(textSecondary)
-                            .lineLimit(2)
+                            .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if let recoveryProgressText {
+                            Text(recoveryProgressText.uppercased())
+                                .font(.caption2.weight(.bold))
+                                .foregroundColor(primary)
+                        }
                     }
+                    .layoutPriority(1)
 
                     Spacer(minLength: 10)
 
@@ -483,7 +502,7 @@ private extension CockpitModernView {
                         ForEach(0..<totalCount, id: \.self) { index in
                             Capsule(style: .continuous)
                                 .fill(index < activeCount ? primary : (style == .dark ? Color.white.opacity(0.09) : Color.black.opacity(0.08)))
-                                .frame(width: 22, height: 8)
+                                .frame(width: capacityCapsuleWidth, height: capacityCapsuleHeight)
                                 .overlay(
                                     Capsule(style: .continuous)
                                         .stroke(
@@ -531,7 +550,7 @@ private extension CockpitModernView {
         }()
         let showCompletionCheck = task.completionVisual != .none
 
-        return HStack(spacing: 12) {
+        return HStack(spacing: 4) {
             Button {
                 if task.isCtaEnabled {
                     onProtocolComplete(task.nnId)
@@ -551,37 +570,51 @@ private extension CockpitModernView {
                     }
                 }
                 .frame(width: 22, height: 22)
+                .padding(11)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(task.title)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(textMain)
-                Text(task.subtitle.uppercased())
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .tracking(1.2)
-                    .foregroundColor(textSecondary)
+            Button {
+                onProtocolTap(task.nnId)
+            } label: {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(task.title)
+                            .font(.headline.weight(.semibold))
+                            .foregroundColor(textMain)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(task.subtitle.uppercased())
+                            .font(.caption2.weight(.medium))
+                            .tracking(1.2)
+                            .foregroundColor(textSecondary)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .layoutPriority(1)
+
+                    Spacer()
+
+                    Image(systemName: ProtocolIconCatalog.resolvedSymbolName(task.iconSystemName, fallback: "scope"))
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(primary.opacity(0.72))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 6)
+                .padding(.trailing, 14)
+                .padding(.vertical, 14)
+                .contentShape(Rectangle())
             }
-
-            Spacer()
-
-            Image(systemName: ProtocolIconCatalog.resolvedSymbolName(task.iconSystemName, fallback: "scope"))
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(primary.opacity(0.72))
+            .buttonStyle(.plain)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 14)
+        .padding(.leading, 8)
         .background(glassCard)
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(glassStroke, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onProtocolTap(task.nnId)
-        }
     }
 
     func runEntranceIfNeeded() {
@@ -642,7 +675,7 @@ private extension CockpitModernView {
     }
 
     func dayLabel(for index: Int) -> String {
-        let labels = ["M", "T", "W", "T", "F", "S", "S"]
+        let labels = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
         guard labels.indices.contains(index) else { return "" }
         return labels[index]
     }
@@ -658,15 +691,17 @@ private extension CockpitModernView {
 }
 
 private struct CockpitPressScaleButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.985 : 1))
             .shadow(
-                color: Color.black.opacity(configuration.isPressed ? 0.08 : 0),
-                radius: configuration.isPressed ? 4 : 0,
+                color: Color.black.opacity((configuration.isPressed && !reduceMotion) ? 0.08 : 0),
+                radius: (configuration.isPressed && !reduceMotion) ? 4 : 0,
                 x: 0,
-                y: configuration.isPressed ? 1 : 0
+                y: (configuration.isPressed && !reduceMotion) ? 1 : 0
             )
-            .animation(Theme.Animation.micro, value: configuration.isPressed)
+            .animation(reduceMotion ? .none : Theme.Animation.micro, value: configuration.isPressed)
     }
 }

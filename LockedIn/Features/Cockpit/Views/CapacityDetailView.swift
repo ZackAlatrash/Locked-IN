@@ -12,8 +12,8 @@ struct CapacityDetailView: View {
     private var cardBackground: Color { isDarkMode ? Color(hex: "#1C1C1E") : Color.white }
     private var rowBackground: Color { isDarkMode ? Color.white.opacity(0.05) : Color.black.opacity(0.04) }
     private var textMain: Color { isDarkMode ? Color.white : Color(hex: "101827") }
-    private var textSecondary: Color { isDarkMode ? Color.white.opacity(0.72) : Color(hex: "6B7280") }
-    private var textMuted: Color { isDarkMode ? Color.white.opacity(0.48) : Color(hex: "9CA3AF") }
+    private var textSecondary: Color { isDarkMode ? Color.white.opacity(0.78) : Color(hex: "4B5563") }
+    private var textMuted: Color { isDarkMode ? Color.white.opacity(0.62) : Color(hex: "6B7280") }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -22,12 +22,12 @@ struct CapacityDetailView: View {
 
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Protocols")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.subheadline.weight(.semibold))
                         .foregroundColor(textSecondary)
 
                     if visibleProtocols.isEmpty {
                         Text("No active protocols")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.body.weight(.medium))
                             .foregroundColor(textMuted)
                             .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -44,7 +44,7 @@ struct CapacityDetailView: View {
                     onOpenLogs()
                 } label: {
                     Text("Open Logs")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.headline.weight(.bold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                 }
@@ -69,16 +69,17 @@ private extension CapacityDetailView {
     var headerPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("System Capacity")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundColor(textMuted)
 
             Text("\(system.activeNonNegotiables.count) / \(system.allowedCapacity)")
-                .font(.system(size: 32, weight: .heavy))
+                .font(.title2.weight(.heavy))
                 .foregroundColor(textMain)
 
             Text(system.nonNegotiables.contains(where: { $0.state == .recovery }) ? "Recovery constraints active" : "Normal constraints active")
-                .font(.system(size: 13, weight: .medium))
+                .font(.body.weight(.medium))
                 .foregroundColor(textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(16)
         .background(cardBackground)
@@ -92,17 +93,22 @@ private extension CapacityDetailView {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(nn.definition.title)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.body.weight(.bold))
                         .foregroundColor(textMain)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text("\(nn.definition.frequencyPerWeek)/week • \(stateText(nn.state))")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.caption.weight(.medium))
                         .foregroundColor(textSecondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .layoutPriority(1)
 
                 Spacer()
 
                 Text(stateBadge(nn.state))
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.caption2.weight(.bold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 5)
                     .background(badgeBackground(nn.state))
@@ -142,13 +148,13 @@ private extension CapacityDetailView {
     func badgeBackground(_ state: NonNegotiableState) -> Color {
         switch state {
         case .active:
-            return accentColor.opacity(0.18)
+            return accentColor.opacity(0.28)
         case .recovery:
-            return Color.red.opacity(0.18)
+            return Color.red.opacity(0.30)
         case .suspended:
-            return Color.orange.opacity(0.20)
+            return Color.orange.opacity(0.30)
         default:
-            return Color.white.opacity(0.14)
+            return isDarkMode ? Color.white.opacity(0.20) : Color.black.opacity(0.08)
         }
     }
 

@@ -8,6 +8,8 @@ struct WeeklyActivityDetailView: View {
     let accentColor: Color
     let onOpenLogs: () -> Void
     @Environment(\.colorScheme) private var colorScheme
+    @ScaledMetric(relativeTo: .caption) private var chartBarWidth: CGFloat = 22
+    @ScaledMetric(relativeTo: .body) private var chartBarMaxHeight: CGFloat = 72
 
     private var isDarkMode: Bool { colorScheme == .dark }
     private var pageBackground: Color { isDarkMode ? Color.black : Color(hex: "F2F2F7") }
@@ -26,7 +28,7 @@ struct WeeklyActivityDetailView: View {
                     onOpenLogs()
                 } label: {
                     Text("Open Logs")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.headline.weight(.bold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                 }
@@ -45,15 +47,16 @@ private extension WeeklyActivityDetailView {
     var summaryPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("This Week")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundColor(textMuted)
 
             Text("\(weeklyCompletionCount) / \(max(weeklyTargetCount, 1)) completions")
-                .font(.system(size: 24, weight: .heavy))
+                .font(.title3.weight(.heavy))
                 .foregroundColor(textMain)
+                .fixedSize(horizontal: false, vertical: true)
 
             Text("Today: \(todayCompletionCount)")
-                .font(.system(size: 14, weight: .medium))
+                .font(.body.weight(.medium))
                 .foregroundColor(textSecondary)
         }
         .padding(16)
@@ -64,7 +67,7 @@ private extension WeeklyActivityDetailView {
     var barsPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Daily Distribution")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundColor(textSecondary)
 
             HStack(alignment: .bottom, spacing: 10) {
@@ -72,9 +75,9 @@ private extension WeeklyActivityDetailView {
                     VStack(spacing: 6) {
                         RoundedRectangle(cornerRadius: 4, style: .continuous)
                             .fill(index == currentWeekdayIndex ? accentColor : (isDarkMode ? Color.white.opacity(0.14) : Color.black.opacity(0.14)))
-                            .frame(width: 22, height: barHeight(for: value))
+                            .frame(width: chartBarWidth, height: barHeight(for: value))
                         Text(dayLabel(index))
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.caption2.weight(.medium))
                             .foregroundColor(textMuted)
                     }
                 }
@@ -89,11 +92,11 @@ private extension WeeklyActivityDetailView {
     func barHeight(for value: Int) -> CGFloat {
         let maxValue = max(weeklyCompletionByDay.max() ?? 1, 1)
         let ratio = CGFloat(value) / CGFloat(maxValue)
-        return max(16, 72 * ratio)
+        return max(16, chartBarMaxHeight * ratio)
     }
 
     func dayLabel(_ index: Int) -> String {
-        let labels = ["M", "T", "W", "T", "F", "S", "S"]
+        let labels = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
         return labels[index]
     }
 

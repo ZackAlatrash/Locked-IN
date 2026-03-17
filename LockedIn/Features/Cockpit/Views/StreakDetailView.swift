@@ -36,25 +36,37 @@ private extension StreakDetailView {
     var streakPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Current Streak")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundColor(textMuted)
 
-            HStack(alignment: .lastTextBaseline, spacing: 8) {
-                Text("\(currentStreakDays)")
-                    .font(.system(size: 44, weight: .heavy))
-                    .foregroundColor(accentColor)
-                Text("days")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(textSecondary)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .lastTextBaseline, spacing: 8) {
+                    Text("\(currentStreakDays)")
+                        .font(.largeTitle.weight(.heavy))
+                        .foregroundColor(accentColor)
+                    Text("days")
+                        .font(.title3.weight(.semibold))
+                        .foregroundColor(textSecondary)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(currentStreakDays)")
+                        .font(.largeTitle.weight(.heavy))
+                        .foregroundColor(accentColor)
+                    Text("days")
+                        .font(.title3.weight(.semibold))
+                        .foregroundColor(textSecondary)
+                }
             }
 
             if let lastCompletionDate {
                 Text("Last completion: \(dateTitle(lastCompletionDate))")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.body.weight(.medium))
                     .foregroundColor(textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("No completion history yet")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.body.weight(.medium))
                     .foregroundColor(textSecondary)
             }
         }
@@ -66,17 +78,18 @@ private extension StreakDetailView {
     var todayPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Today")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundColor(textMuted)
 
             Text(todayCompleted ? "Completed" : "Not completed")
-                .font(.system(size: 20, weight: .bold))
+                .font(.title3.weight(.bold))
                 .foregroundColor(textMain)
 
             if let firstTask {
                 Text(firstTask.subtitle)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.body.weight(.medium))
                     .foregroundColor(textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(16)
@@ -91,7 +104,7 @@ private extension StreakDetailView {
                     onMarkTodayDone(firstTask.nnId)
                 } label: {
                     Text(firstTask.ctaTitle)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.headline.weight(.bold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                 }
@@ -104,7 +117,7 @@ private extension StreakDetailView {
                 onOpenLogs()
             } label: {
                 Text("Open Logs")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.headline.weight(.bold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
             }
