@@ -33,6 +33,12 @@ struct PlanScreen: View {
     @State private var didRunColumnEntrance = false
     @State private var recentlyLockedAllocationKeys: Set<String> = []
     @State private var lockInPulseActive = false
+    @ScaledMetric(relativeTo: .body) private var compactDayWidth: CGFloat = 80
+    @ScaledMetric(relativeTo: .body) private var regularDayWidth: CGFloat = 194
+    @ScaledMetric(relativeTo: .body) private var todayDayWidth: CGFloat = 198
+    @ScaledMetric(relativeTo: .body) private var compactSlotHeight: CGFloat = 150
+    @ScaledMetric(relativeTo: .body) private var expandedSlotHeight: CGFloat = 188
+    @ScaledMetric(relativeTo: .body) private var queueCardBaseWidth: CGFloat = 228
 
     private var isDarkMode: Bool { colorScheme == .dark }
     private var isRecoveryThemeActive: Bool { commitmentStore.isSystemStable == false }
@@ -57,8 +63,8 @@ struct PlanScreen: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 14) {
-                    planBoardSection
                     queueSection
+                    planBoardSection
                     todayAtGlanceSection
                     distributionStatus
                     legend
@@ -85,6 +91,8 @@ struct PlanScreen: View {
                             .frame(width: 7, height: 7)
                             .offset(x: 5, y: -3)
                     }
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
                     .foregroundColor(navItemColor)
                 }
                 .accessibilityLabel("Open logs")
@@ -95,6 +103,8 @@ struct PlanScreen: View {
                 } label: {
                     Image(systemName: "person.crop.circle")
                         .font(.system(size: 19, weight: .medium))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                         .foregroundColor(navItemColor)
                 }
                 .accessibilityLabel("Open profile")
@@ -117,7 +127,7 @@ struct PlanScreen: View {
                     viewModel.removeAllocation(allocationId: allocation.id)
                 }
             )
-            .presentationDetents([.height(340)])
+            .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $viewModel.showingRegulatorSheet) {
@@ -163,7 +173,7 @@ struct PlanScreen: View {
                     viewModel.dismissProtocolEditor()
                 }
             )
-            .presentationDetents([.height(420)])
+            .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
         .onAppear {
@@ -193,18 +203,19 @@ struct PlanScreen: View {
                 VStack(alignment: .leading, spacing: 3) {
                     if let copy = viewModel.warningCopy {
                         Text(copy.title.uppercased())
-                            .font(.system(size: 10, weight: .black, design: .monospaced))
+                            .font(.caption2.weight(.black))
+                            .fontDesign(.monospaced)
                             .tracking(1.1)
                         Text(copy.message)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.footnote.weight(.semibold))
                         if let hint = copy.hint {
                             Text(hint)
-                                .font(.system(size: 10, weight: .medium))
+                                .font(.caption.weight(.medium))
                                 .foregroundColor((isDarkMode ? Color.white : Color(hex: "111827")).opacity(0.75))
                         }
                     } else {
                         Text(warning)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.footnote.weight(.semibold))
                     }
                 }
                 .foregroundColor(isDarkMode ? .white : Color(hex: "111827"))
@@ -248,11 +259,13 @@ private extension PlanScreen {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("STRUCTURAL PLAN")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .font(.caption.weight(.bold))
+                    .fontDesign(.monospaced)
                     .tracking(2)
                     .foregroundColor(isDarkMode ? Color(hex: "00D9FF") : Color(hex: "334155"))
                 Text(viewModel.weekSubtitle)
-                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .font(.caption.weight(.semibold))
+                    .fontDesign(.monospaced)
                     .tracking(1.2)
                     .foregroundColor(textMuted)
             }
@@ -268,7 +281,8 @@ private extension PlanScreen {
                         Image(systemName: "slider.horizontal.3")
                             .font(.system(size: 12, weight: .bold))
                         Text("REGULATE")
-                            .font(.system(size: 9, weight: .black, design: .monospaced))
+                            .font(.caption2.weight(.black))
+                            .fontDesign(.monospaced)
                     }
                     .foregroundColor(isDarkMode ? Color(hex: "#020617") : Color.white)
                     .padding(.horizontal, 10)
@@ -290,18 +304,22 @@ private extension PlanScreen {
                         boardMode = boardMode == .focusToday ? .expandedWeek : .focusToday
                     }
                 } label: {
-                    Image(systemName: boardMode == .expandedWeek ? "rectangle.split.3x1.fill" : "rectangle.split.3x1")
-                        .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(textMain)
-                    .frame(width: 32, height: 32)
-                    .background(
-                        Circle()
-                            .fill(isDarkMode ? Color.white.opacity(0.08) : Color.white.opacity(0.85))
-                    )
-                    .overlay(
-                        Circle()
-                            .stroke(isDarkMode ? Color.white.opacity(0.12) : Color.black.opacity(0.08), lineWidth: 1)
-                    )
+                    ZStack {
+                        Image(systemName: boardMode == .expandedWeek ? "rectangle.split.3x1.fill" : "rectangle.split.3x1")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(textMain)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                Circle()
+                                    .fill(isDarkMode ? Color.white.opacity(0.08) : Color.white.opacity(0.85))
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(isDarkMode ? Color.white.opacity(0.12) : Color.black.opacity(0.08), lineWidth: 1)
+                            )
+                    }
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(boardMode == .expandedWeek ? "Focus today" : "Expand week")
@@ -322,7 +340,7 @@ private extension PlanScreen {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(viewModel.calendarStatusMessage)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundColor(textMuted)
             }
 
@@ -334,7 +352,8 @@ private extension PlanScreen {
                     handleCalendarButtonTap()
                 } label: {
                     Text(calendarActionLabel)
-                        .font(.system(size: 9, weight: .black, design: .monospaced))
+                        .font(.caption2.weight(.black))
+                        .fontDesign(.monospaced)
                         .foregroundColor(calendarActionForeground)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
@@ -411,7 +430,8 @@ private extension PlanScreen {
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("QUEUE : PROTOCOLS")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .font(.caption.weight(.bold))
+                    .fontDesign(.monospaced)
                     .tracking(1.3)
                     .foregroundColor(textMuted)
 
@@ -422,7 +442,8 @@ private extension PlanScreen {
                         .fill(Color(hex: "FACC15"))
                         .frame(width: 7, height: 7)
                     Text("\(totalAvailable) AVAILABLE")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .font(.caption.weight(.bold))
+                        .fontDesign(.monospaced)
                         .foregroundColor(textMain.opacity(0.78))
                 }
                 .padding(.horizontal, 9)
@@ -431,12 +452,12 @@ private extension PlanScreen {
             }
 
             Text("Drag onto a slot, tap to arm placement, or use ••• to edit time preference and duration.")
-                .font(.system(size: 10, weight: .semibold))
+                .font(.caption.weight(.semibold))
                 .foregroundColor(textSubtle)
 
             if viewModel.queueItems.isEmpty {
                 Text(viewModel.hasTrackableProtocols ? "All scheduled" : "No active protocols")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundColor(textMuted)
                     .padding(.horizontal, 2)
                     .padding(.vertical, 8)
@@ -461,7 +482,7 @@ private extension PlanScreen {
         let payload = PlanDropPayload.queuePayload(for: item.protocolId)
         let isDragging = activeDragPayload == payload
 
-        let card = HStack(spacing: 10) {
+        let primaryContent = HStack(spacing: 10) {
             Image(systemName: resolvedProtocolIcon(item.icon))
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(tone)
@@ -469,40 +490,78 @@ private extension PlanScreen {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.title)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.subheadline.weight(.bold))
                     .foregroundColor(item.isDisabled ? textMuted : textMain)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 6) {
                     Text(item.isDisabled ? "PAUSED" : "\(item.remainingCount) REMAINING")
-                        .font(.system(size: 9, weight: .black, design: .monospaced))
+                        .font(.caption2.weight(.black))
+                        .fontDesign(.monospaced)
                         .foregroundColor(item.isDisabled ? textMuted : tone)
                     Text(item.durationLabel)
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .font(.caption2.weight(.bold))
+                        .fontDesign(.monospaced)
                         .foregroundColor(textMuted)
                 }
             }
 
             Spacer(minLength: 0)
-
-            Menu {
-                Button {
-                    Haptics.selection()
-                    viewModel.openProtocolEditor(protocolId: item.protocolId)
-                } label: {
-                    Label("Edit Protocol", systemImage: "slider.horizontal.3")
-                }
-            } label: {
-                Image(systemName: "ellipsis.circle")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(textMuted)
-                    .frame(width: 24, height: 24)
-            }
-            .buttonStyle(.plain)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 12)
-        .frame(width: 228, alignment: .leading)
+
+        let primaryAction = Button {
+            Haptics.selection()
+            viewModel.selectProtocol(id: item.protocolId)
+        } label: {
+            primaryContent
+                .padding(.horizontal, 12)
+                .padding(.vertical, 12)
+                .padding(.trailing, 52)
+                .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+
+        let secondaryAction = Menu {
+            Button {
+                Haptics.selection()
+                viewModel.openProtocolEditor(protocolId: item.protocolId)
+            } label: {
+                Label("Edit Protocol", systemImage: "slider.horizontal.3")
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(textMuted)
+                .frame(width: 24, height: 24)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+
+        let card = ZStack(alignment: .trailing) {
+            if item.isDisabled {
+                primaryAction
+            } else {
+                primaryAction.draggable(payload) {
+                    queueDragPreview(item: item)
+                        .onAppear {
+                            activeDragPayload = payload
+                            if viewModel.selectedQueueProtocolId != item.protocolId {
+                                viewModel.selectProtocol(id: item.protocolId)
+                            }
+                        }
+                        .onDisappear {
+                            if activeDragPayload == payload {
+                                activeDragPayload = nil
+                            }
+                        }
+                }
+            }
+            secondaryAction
+                .padding(.trailing, 6)
+        }
+        .frame(minWidth: queueCardBaseWidth, maxWidth: queueCardBaseWidth + 32, alignment: .leading)
         .background(glassCard(cornerRadius: 16))
         .scaleEffect(isDragging ? 1.02 : 1)
         .overlay(
@@ -519,11 +578,6 @@ private extension PlanScreen {
             y: 0
         )
         .opacity(item.isDisabled ? 0.65 : 1)
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .onTapGesture {
-            Haptics.selection()
-            viewModel.selectProtocol(id: item.protocolId)
-        }
         .contextMenu {
             Button {
                 Haptics.selection()
@@ -532,31 +586,14 @@ private extension PlanScreen {
                 Label("Edit Protocol", systemImage: "slider.horizontal.3")
             }
         }
-
-        if item.isDisabled {
-            card
-        } else {
-            card.draggable(payload) {
-                queueDragPreview(item: item)
-                    .onAppear {
-                        activeDragPayload = payload
-                        if viewModel.selectedQueueProtocolId != item.protocolId {
-                            viewModel.selectProtocol(id: item.protocolId)
-                        }
-                    }
-                    .onDisappear {
-                        if activeDragPayload == payload {
-                            activeDragPayload = nil
-                        }
-                    }
-            }
-        }
+        card
     }
 
     var todayAtGlanceSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("TODAY AT A GLANCE")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .font(.caption.weight(.bold))
+                .fontDesign(.monospaced)
                 .tracking(1.3)
                 .foregroundColor(textMuted)
 
@@ -574,10 +611,12 @@ private extension PlanScreen {
     func glanceMetric(title: String, value: String, tone: PlanTone) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title.uppercased())
-                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                .font(.caption2.weight(.bold))
+                .fontDesign(.monospaced)
                 .foregroundColor(textSubtle)
             Text(value)
-                .font(.system(size: 13, weight: .black, design: .monospaced))
+                .font(.callout.weight(.black))
+                .fontDesign(.monospaced)
                 .foregroundColor(toneColor(for: tone))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -618,13 +657,6 @@ private extension PlanScreen {
             .onChange(of: boardMode) { _ in
                 centerActiveDay(using: proxy)
             }
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 8).onChanged { value in
-                    guard shouldShowBoardHint else { return }
-                    guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                    didDismissPlanBoardHintSessionID = effectiveMotionSessionID
-                }
-            )
         }
     }
 
@@ -634,10 +666,12 @@ private extension PlanScreen {
             ForEach(PlanSlot.allCases) { slot in
                 VStack(spacing: 3) {
                     Text(slot.title)
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .font(.caption.weight(.bold))
+                        .fontDesign(.monospaced)
                         .foregroundColor(textSubtle)
                     Text(slot.durationHoursLabel)
-                        .font(.system(size: 8, weight: .black, design: .monospaced))
+                        .font(.caption2.weight(.black))
+                        .fontDesign(.monospaced)
                         .foregroundColor(textSubtle.opacity(0.72))
                 }
                 .frame(width: 30, height: slotHeight(isCompact: false))
@@ -652,12 +686,14 @@ private extension PlanScreen {
         return VStack(spacing: 6) {
             VStack(spacing: 1) {
                 Text(day.weekdayLabel)
-                    .font(.system(size: day.isToday ? 12 : 10, weight: .bold, design: .monospaced))
+                    .font(day.isToday ? .footnote.weight(.bold) : .caption.weight(.bold))
+                    .fontDesign(.monospaced)
                     .tracking(0.8)
                     .foregroundColor(day.isToday ? todayAccent : textSubtle)
                 if day.isCompactEligible == false || boardMode == .expandedWeek {
                     Text(day.dayNumberLabel)
-                        .font(.system(size: day.isToday ? 13 : 10, weight: .black, design: .monospaced))
+                        .font(day.isToday ? .callout.weight(.black) : .caption.weight(.black))
+                        .fontDesign(.monospaced)
                         .foregroundColor(day.isToday ? todayAccent : textMuted)
                 }
             }
@@ -682,7 +718,8 @@ private extension PlanScreen {
 
             if day.isToday {
                 Text("TODAY")
-                    .font(.system(size: 9, weight: .black, design: .monospaced))
+                    .font(.caption2.weight(.black))
+                    .fontDesign(.monospaced)
                     .foregroundColor(isDarkMode ? Color(hex: "020617") : .white)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
@@ -702,11 +739,12 @@ private extension PlanScreen {
                 expandedSlotCard(day: day, slot: slot, feedback: dropFeedback, draftItems: draftItems)
             }
         }
-        .frame(height: slotHeight(isCompact: isCompact))
+        .frame(minHeight: slotHeight(isCompact: isCompact), alignment: .top)
         .overlay(alignment: .topLeading) {
             if let message = dropFeedback.message {
                 Text(message)
-                    .font(.system(size: 7, weight: .black, design: .monospaced))
+                    .font(.caption2.weight(.black))
+                    .fontDesign(.monospaced)
                     .foregroundColor(dropFeedback.isAllowed ? toneColor(for: .cyan) : Color(hex: "EF4444"))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 4)
@@ -731,10 +769,12 @@ private extension PlanScreen {
                     .overlay(alignment: .center) {
                         VStack(spacing: 4) {
                             Text(preview.title.uppercased())
-                                .font(.system(size: isCompact ? 8 : 9, weight: .black))
-                                .lineLimit(1)
+                                .font(.caption2.weight(.black))
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
                             Text(preview.durationLabel)
-                                .font(.system(size: isCompact ? 7 : 8, weight: .bold, design: .monospaced))
+                                .font(.caption2.weight(.bold))
+                                .fontDesign(.monospaced)
                         }
                         .foregroundColor(dropFeedback.isAllowed ? toneColor(for: preview.tone) : Color(hex: "EF4444"))
                     }
@@ -801,7 +841,8 @@ private extension PlanScreen {
                         .overlay(alignment: .topTrailing) {
                             if slot.allocations.count > 1 {
                                 Text("\(slot.allocations.count)")
-                                    .font(.system(size: 8, weight: .black, design: .monospaced))
+                                    .font(.caption2.weight(.black))
+                                    .fontDesign(.monospaced)
                                     .foregroundColor(allocationTextColor)
                                     .padding(.horizontal, 4)
                                     .padding(.vertical, 2)
@@ -830,7 +871,8 @@ private extension PlanScreen {
                 .overlay(alignment: .bottomLeading) {
                     if first.status.isInteractive == false {
                         Text(first.status == .paused ? "PAUSED" : "SKIPPED")
-                            .font(.system(size: 7, weight: .black, design: .monospaced))
+                            .font(.caption2.weight(.black))
+                            .fontDesign(.monospaced)
                             .foregroundColor(allocationTextColor.opacity(0.9))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 3)
@@ -872,8 +914,11 @@ private extension PlanScreen {
                     Image(systemName: "plus")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(feedback.isAllowed ? todayAccent.opacity(0.75) : todayAccent.opacity(0.45))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .allowsHitTesting(activeDragPayload == nil)
             }
         }
         .shadow(
@@ -894,21 +939,25 @@ private extension PlanScreen {
             HStack {
                 HStack(spacing: 5) {
                     Text(slot.slot.title)
-                        .font(.system(size: 9, weight: .black, design: .monospaced))
+                        .font(.caption2.weight(.black))
+                        .fontDesign(.monospaced)
                         .foregroundColor(textSubtle)
                     Text(slot.slot.durationHoursLabel)
-                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .font(.caption2.weight(.bold))
+                        .fontDesign(.monospaced)
                         .foregroundColor(textSubtle.opacity(0.7))
                 }
                 Spacer()
                 Text(slot.availableLabel)
-                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+                    .font(.caption2.weight(.bold))
+                    .fontDesign(.monospaced)
                     .foregroundColor(slot.freeMinutes > 0 ? textMuted : Color(hex: "F59E0B"))
             }
 
             if slot.busyMinutes > 0 {
                 Text("BUSY \(minutesString(slot.busyMinutes))")
-                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+                    .font(.caption2.weight(.bold))
+                    .fontDesign(.monospaced)
                     .foregroundColor(textMuted)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 4)
@@ -948,6 +997,7 @@ private extension PlanScreen {
             }
 
             if slot.freeMinutes > 0 {
+                let isDragInProgress = activeDragPayload != nil
                 Button {
                     if let mutation = viewModel.placeSelectedProtocol(day: day.date, slot: slot.slot) {
                         Haptics.success()
@@ -959,8 +1009,15 @@ private extension PlanScreen {
                     HStack(spacing: 6) {
                         Image(systemName: "plus")
                             .font(.system(size: 9, weight: .bold))
-                        Text(feedback.message == nil ? "DROP OR TAP TO PLACE" : "UNAVAILABLE")
-                            .font(.system(size: 8, weight: .black, design: .monospaced))
+                        Text(
+                            feedback.message == nil
+                                ? (isDragInProgress ? "DROP HERE" : "TAP TO PLACE")
+                                : "UNAVAILABLE"
+                        )
+                            .font(.caption2.weight(.black))
+                            .fontDesign(.monospaced)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .foregroundColor(
                         feedback.message == nil
@@ -969,6 +1026,7 @@ private extension PlanScreen {
                     )
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
+                    .frame(minHeight: 44)
                     .background(availableBackground)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -980,9 +1038,11 @@ private extension PlanScreen {
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
+                .allowsHitTesting(isDragInProgress == false)
             } else if slot.allocations.isEmpty {
                 Text("FULL")
-                    .font(.system(size: 8, weight: .black, design: .monospaced))
+                    .font(.caption2.weight(.black))
+                    .fontDesign(.monospaced)
                     .foregroundColor(textSubtle)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
@@ -1016,10 +1076,12 @@ private extension PlanScreen {
                     .font(.system(size: 10, weight: .bold))
                 VStack(alignment: .leading, spacing: 3) {
                     Text(allocation.title.uppercased())
-                        .font(.system(size: 9, weight: .black))
-                        .lineLimit(1)
+                        .font(.caption.weight(.black))
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(allocation.durationLabel)
-                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .font(.caption2.weight(.bold))
+                        .fontDesign(.monospaced)
                 }
                 Spacer(minLength: 0)
             }
@@ -1040,7 +1102,8 @@ private extension PlanScreen {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 8, weight: .black))
                         Text("LOCKED")
-                            .font(.system(size: 7, weight: .black, design: .monospaced))
+                            .font(.caption2.weight(.black))
+                            .fontDesign(.monospaced)
                     }
                     .foregroundColor(allocationTextColor.opacity(0.95))
                     .padding(.horizontal, 6)
@@ -1064,7 +1127,8 @@ private extension PlanScreen {
             .overlay(alignment: .bottomLeading) {
                 if isInteractive == false {
                     Text(allocation.status == .paused ? "PAUSED" : "SKIPPED")
-                        .font(.system(size: 7, weight: .black, design: .monospaced))
+                        .font(.caption2.weight(.black))
+                        .fontDesign(.monospaced)
                         .foregroundColor(allocationTextColor.opacity(0.9))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
@@ -1089,7 +1153,8 @@ private extension PlanScreen {
                     Image(systemName: icon)
                         .font(.system(size: 9, weight: .bold))
                     Text(title)
-                        .font(.system(size: 8, weight: .black, design: .monospaced))
+                        .font(.caption2.weight(.black))
+                        .fontDesign(.monospaced)
                 }
                 .foregroundColor(tone.opacity(0.9))
             )
@@ -1105,10 +1170,12 @@ private extension PlanScreen {
                 .font(.system(size: 10, weight: .bold))
             VStack(alignment: .leading, spacing: 3) {
                 Text((viewModel.protocolTitle(for: draft.protocolId)).uppercased())
-                    .font(.system(size: 9, weight: .black))
-                    .lineLimit(1)
+                    .font(.caption.weight(.black))
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text("\(draft.durationMinutes)m DRAFT")
-                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+                    .font(.caption2.weight(.bold))
+                    .fontDesign(.monospaced)
             }
             Spacer(minLength: 0)
         }
@@ -1132,11 +1199,15 @@ private extension PlanScreen {
                 .foregroundColor(Color.white.opacity(0.88))
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.title.uppercased())
-                    .font(.system(size: 8, weight: .black, design: .monospaced))
-                    .lineLimit(1)
+                    .font(.caption2.weight(.black))
+                    .fontDesign(.monospaced)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(eventTimeRangeLabel(entry.event))
-                    .font(.system(size: 8, weight: .bold, design: .monospaced))
-                    .lineLimit(1)
+                    .font(.caption2.weight(.bold))
+                    .fontDesign(.monospaced)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                     .foregroundColor(Color.white.opacity(0.7))
             }
             Spacer(minLength: 0)
@@ -1144,7 +1215,7 @@ private extension PlanScreen {
         .foregroundColor(Color.white.opacity(0.94))
         .padding(.horizontal, 8)
         .padding(.vertical, 9)
-        .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .fill(
@@ -1184,12 +1255,13 @@ private extension PlanScreen {
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(structureColor)
                 Text(viewModel.structureStatus.title)
-                    .font(.system(size: 11, weight: .black, design: .monospaced))
+                    .font(.footnote.weight(.black))
+                    .fontDesign(.monospaced)
                     .tracking(1.1)
                     .foregroundColor(textMain.opacity(0.85))
             }
             Text(viewModel.structureMessage)
-                .font(.system(size: 9, weight: .semibold))
+                .font(.caption.weight(.semibold))
                 .foregroundColor(textMuted)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
@@ -1214,7 +1286,8 @@ private extension PlanScreen {
         HStack(spacing: 5) {
             Circle().fill(color).frame(width: 6, height: 6)
             Text(label.uppercased())
-                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                .font(.caption2.weight(.bold))
+                .fontDesign(.monospaced)
                 .foregroundColor(textMuted)
         }
         .frame(maxWidth: .infinity)
@@ -1225,7 +1298,8 @@ private extension PlanScreen {
             Image(systemName: "arrow.left.and.right")
                 .font(.system(size: 10, weight: .bold))
             Text("Swipe left or right to see all days")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .font(.caption.weight(.bold))
+                .fontDesign(.monospaced)
                 .tracking(0.5)
         }
         .foregroundColor(textMuted)
@@ -1236,6 +1310,9 @@ private extension PlanScreen {
             Capsule()
                 .stroke(isDarkMode ? Color.white.opacity(0.12) : Color.black.opacity(0.08), lineWidth: 1)
         )
+        .onTapGesture {
+            didDismissPlanBoardHintSessionID = effectiveMotionSessionID
+        }
     }
 
     func queueDragPreview(item: PlanQueueItem) -> some View {
@@ -1245,9 +1322,10 @@ private extension PlanScreen {
                 .foregroundColor(toneColor(for: item.tone))
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.title.uppercased())
-                    .font(.system(size: 9, weight: .black))
+                    .font(.caption2.weight(.black))
                 Text(item.durationLabel)
-                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+                    .font(.caption2.weight(.bold))
+                    .fontDesign(.monospaced)
             }
             .foregroundColor(textMain)
         }
@@ -1263,9 +1341,10 @@ private extension PlanScreen {
                 .foregroundColor(toneColor(for: allocation.tone))
             VStack(alignment: .leading, spacing: 2) {
                 Text(allocation.title.uppercased())
-                    .font(.system(size: 9, weight: .black))
+                    .font(.caption2.weight(.black))
                 Text(allocation.durationLabel)
-                    .font(.system(size: 8, weight: .bold, design: .monospaced))
+                    .font(.caption2.weight(.bold))
+                    .fontDesign(.monospaced)
             }
             .foregroundColor(textMain)
         }
@@ -1438,11 +1517,11 @@ private extension PlanScreen {
     func planToastView(_ toast: PlanToast) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 14, weight: .bold))
+                .font(.callout.weight(.bold))
                 .foregroundColor(toneColor(for: .cyan))
 
             Text(toast.message)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.footnote.weight(.semibold))
                 .foregroundColor(textMain)
                 .lineLimit(2)
 
@@ -1452,7 +1531,8 @@ private extension PlanScreen {
                 Haptics.selection()
                 applyUndo()
             }
-            .font(.system(size: 10, weight: .black, design: .monospaced))
+            .font(.caption.weight(.black))
+            .fontDesign(.monospaced)
             .foregroundColor(toneColor(for: .cyan))
         }
         .padding(.horizontal, 12)
@@ -1571,14 +1651,14 @@ private extension PlanScreen {
     }
 
     func dayWidth(for day: PlanDayModel, isCompact: Bool) -> CGFloat {
-        if isCompact { return 80 }
-        if boardMode == .expandedWeek { return 194 }
-        if day.isToday { return 198 }
-        return 80
+        if isCompact { return compactDayWidth }
+        if boardMode == .expandedWeek { return regularDayWidth }
+        if day.isToday { return todayDayWidth }
+        return compactDayWidth
     }
 
     func slotHeight(isCompact: Bool) -> CGFloat {
-        isCompact ? 150 : 188
+        isCompact ? compactSlotHeight : expandedSlotHeight
     }
 
     func allocationFill(for tone: PlanTone) -> Color {
@@ -1907,16 +1987,16 @@ private struct PlanRegulatorSheet: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
                     Text("Preview Draft")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.title3.weight(.bold))
                     Spacer()
                     Text("\(draftCount) placements ready")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.footnote.weight(.semibold))
                         .foregroundColor(.secondary)
                 }
 
                 if suggestions.isEmpty {
                     Text("No recommendations available for this week.")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.body.weight(.medium))
                         .foregroundColor(.secondary)
                         .padding(.vertical, 6)
                 } else {
@@ -1925,17 +2005,19 @@ private struct PlanRegulatorSheet: View {
                             VStack(alignment: .leading, spacing: 5) {
                                 HStack {
                                     Text(suggestion.protocolTitle)
-                                        .font(.system(size: 13, weight: .bold))
+                                        .font(.headline.weight(.bold))
                                     Spacer()
                                     Text(suggestion.kindLabel)
-                                        .font(.system(size: 9, weight: .black, design: .monospaced))
+                                        .font(.caption2.weight(.black))
+                                        .fontDesign(.monospaced)
                                         .foregroundColor(kindColor(suggestion.kind))
                                 }
                                 Text("\(suggestion.dayLabel) \(suggestion.slotLabel) • \(suggestion.confidenceLabel)")
-                                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                                    .font(.caption.weight(.semibold))
+                                    .fontDesign(.monospaced)
                                     .foregroundColor(.secondary)
                                 Text(suggestion.reason)
-                                    .font(.system(size: 11, weight: .regular))
+                                    .font(.footnote)
                                     .foregroundColor(.secondary)
                             }
                             .padding(.vertical, 3)
@@ -2020,7 +2102,7 @@ private struct PlanAllocationEditorSheet: View {
             Form {
                 Section("Protocol") {
                     Text(titleForProtocol(allocation.protocolId))
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.headline.weight(.bold))
                 }
 
                 Section("Move") {
@@ -2154,10 +2236,10 @@ private struct ProtocolSchedulingEditorSheet: View {
                                 .frame(width: 30, height: 30)
                                 .background(Circle().fill(accent.opacity(0.15)))
                             Text("Change Protocol Icon")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.body.weight(.semibold))
                             Spacer()
                             Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .bold))
+                                .font(.footnote.weight(.bold))
                                 .foregroundColor(.secondary)
                         }
                     }
@@ -2268,13 +2350,13 @@ private struct ProtocolSchedulingEditorSheet: View {
                 if let localErrorMessage {
                     Section {
                         Text(localErrorMessage)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.body.weight(.semibold))
                             .foregroundColor(.red)
                     }
                 } else if let errorMessage {
                     Section {
                         Text(errorMessage)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.body.weight(.semibold))
                             .foregroundColor(.red)
                     }
                 }
@@ -2365,7 +2447,7 @@ private struct ProtocolSchedulingEditorSheet: View {
 
     private func caption(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 12, weight: .semibold))
+            .font(.footnote.weight(.semibold))
             .foregroundColor(.secondary)
     }
 }

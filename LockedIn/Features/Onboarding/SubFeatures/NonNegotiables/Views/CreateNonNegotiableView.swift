@@ -1029,7 +1029,7 @@ struct ProtocolIconPickerSheet: View {
                     applySelection()
                 } label: {
                     Text("Apply Icon")
-                        .font(.system(size: 16, weight: .black))
+                        .font(.headline.weight(.black))
                         .foregroundColor(colorScheme == .dark ? Color.black : Color.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -1056,10 +1056,12 @@ struct ProtocolIconPickerSheet: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(protocolTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "New Protocol" : protocolTitle)
-                    .font(.system(size: 17, weight: .bold))
-                    .lineLimit(1)
+                    .font(.headline.weight(.bold))
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(selectedSymbol)
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(.caption.weight(.semibold))
+                    .fontDesign(.monospaced)
                     .foregroundColor(.secondary)
             }
             Spacer()
@@ -1102,7 +1104,8 @@ struct ProtocolIconPickerSheet: View {
         if recentSymbols.isEmpty == false && searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Recent")
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .font(.footnote.weight(.bold))
+                    .fontDesign(.monospaced)
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 16)
 
@@ -1128,7 +1131,8 @@ struct ProtocolIconPickerSheet: View {
                         selectedCategory = category
                     } label: {
                         Text(category.title)
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .font(.caption.weight(.bold))
+                            .fontDesign(.monospaced)
                             .foregroundColor(selectedCategory == category ? (colorScheme == .dark ? Color.black : Color.white) : .secondary)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
