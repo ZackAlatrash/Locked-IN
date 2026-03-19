@@ -17,6 +17,12 @@ struct CockpitLogsScreen: View {
     @State private var metricsAnimatedIn = false
     @State private var revealedHistoryCount = 0
     @State private var showAllHistory = false
+    @State private var showFiltersSheet = false
+    @State private var selectedEventTypes: Set<LogFilterEventType> = []
+    @State private var selectedTimeRange: LogTimeRange = .allTime
+    @State private var customStartDate = DateRules.isoCalendar.date(byAdding: .day, value: -6, to: Date()) ?? Date()
+    @State private var customEndDate = Date()
+    @State private var selectedProtocolId: UUID?
 
     @ScaledMetric(relativeTo: .caption2) private var microDotSize = 6
     @ScaledMetric(relativeTo: .body) private var timelineIconSize = 32
@@ -65,6 +71,10 @@ struct CockpitLogsScreen: View {
         .onAppear {
             runEntranceIfNeeded()
         }
+        .onChange(of: filteredLogEntries.count) { _, newValue in
+            let target = showAllHistory ? newValue : min(historyPreviewCount, newValue)
+            revealedHistoryCount = max(target, 0)
+        }
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
@@ -103,6 +113,9 @@ struct CockpitLogsScreen: View {
             NavigationStack {
                 ProfilePlaceholderView()
             }
+        }
+        .sheet(isPresented: $showFiltersSheet) {
+            filterSheet
         }
     }
 }
@@ -333,15 +346,57 @@ private extension CockpitLogsScreen {
 
     var sessionHistory: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Session History")
-                .font(.custom("Inter", size: isDarkMode ? 14 : 22, relativeTo: .title3).weight(.bold))
-                .tracking(isDarkMode ? 1.1 : 0)
-                .textCase(isDarkMode ? .uppercase : nil)
-                .foregroundColor(textMain)
-                .padding(.horizontal, 2)
+            HStack(alignment: .center, spacing: 12) {
+                Text("Session History")
+                    .font(.custom("Inter", size: isDarkMode ? 14 : 22, relativeTo: .title3).weight(.bold))
+                    .tracking(isDarkMode ? 1.1 : 0)
+                    .textCase(isDarkMode ? .uppercase : nil)
+                    .foregroundColor(textMain)
+                    .padding(.horizontal, 2)
+                Spacer(minLength: 0)
+                Button {
+                    Haptics.selection()
+                    showFiltersSheet = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                        Text("Filter")
+                        if filterSummary.isActive {
+                            Circle()
+                                .fill(activeAccent)
+                                .frame(width: 6, height: 6)
+                        }
+                    }
+                    .font(.custom("Inter", size: 12, relativeTo: .subheadline).weight(.semibold))
+                    .foregroundColor(textMain)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 44)
+                    .background(glassCard(cornerRadius: 14))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Open log filters")
+            }
 
-            if recentEntries.isEmpty {
+            if filterSummary.isActive {
+                HStack(spacing: 8) {
+                    Text(filterSummary.label)
+                        .font(.custom("Inter", size: 12, relativeTo: .subheadline).weight(.semibold))
+                        .foregroundColor(textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
+                    Text("\(filteredLogEntries.count) results")
+                        .font(.custom("Inter", size: 11, relativeTo: .caption).weight(.bold))
+                        .foregroundColor(textMuted)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(glassCard(cornerRadius: 14, muted: true))
+            }
+
+            if allLogEntries.isEmpty {
                 emptyHistoryState
+            } else if filteredLogEntries.isEmpty {
+                emptyFilteredHistoryState
             } else {
                 ForEach(Array(visibleHistoryEntries.enumerated()), id: \.element.id) { index, entry in
                     if shouldShowDayHeader(for: index) {
@@ -358,14 +413,14 @@ private extension CockpitLogsScreen {
                         .offset(y: revealedHistoryCount > index ? 0 : 10)
                 }
 
-                if recentEntries.count > historyPreviewCount {
+                if filteredLogEntries.count > historyPreviewCount {
                     Button {
                         Haptics.selection()
                         let expanding = showAllHistory == false
                         withAnimation(Theme.Animation.content) {
                             showAllHistory.toggle()
                             if expanding {
-                                revealedHistoryCount = max(revealedHistoryCount, recentEntries.count)
+                                revealedHistoryCount = max(revealedHistoryCount, filteredLogEntries.count)
                             } else {
                                 revealedHistoryCount = max(revealedHistoryCount, historyPreviewCount)
                             }
@@ -373,7 +428,7 @@ private extension CockpitLogsScreen {
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: showAllHistory ? "chevron.up" : "chevron.down")
-                            Text(showAllHistory ? "Show fewer sessions" : "View all \(recentEntries.count) sessions")
+                            Text(showAllHistory ? "Show fewer sessions" : "View all \(filteredLogEntries.count) sessions")
                         }
                         .font(.custom("Inter", size: 13, relativeTo: .subheadline).weight(.semibold))
                         .foregroundColor(textMain)
@@ -399,6 +454,32 @@ private extension CockpitLogsScreen {
             Text("Complete a protocol from Cockpit or Planning to create your first log entry.")
                 .font(.custom("Inter", size: 13, relativeTo: .body).weight(.medium))
                 .foregroundColor(textSecondary)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(glassCard(cornerRadius: 24))
+    }
+
+    var emptyFilteredHistoryState: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("No matching logs")
+                .font(.custom("Inter", size: 17, relativeTo: .headline).weight(.semibold))
+                .foregroundColor(textMain)
+            Text("Try adjusting or clearing filters.")
+                .font(.custom("Inter", size: 13, relativeTo: .body).weight(.medium))
+                .foregroundColor(textSecondary)
+            Button {
+                Haptics.selection()
+                resetFilters()
+            } label: {
+                Text("Clear filters")
+                    .font(.custom("Inter", size: 13, relativeTo: .body).weight(.semibold))
+                    .foregroundColor(textMain)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 44)
+                    .background(glassCard(cornerRadius: 12, muted: true))
+            }
+            .buttonStyle(.plain)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -584,6 +665,123 @@ private extension CockpitLogsScreen {
             return "YESTERDAY"
         }
         return CockpitLogsDateFormatters.dayHeader.string(from: date).uppercased()
+    }
+
+    var filterSheet: some View {
+        NavigationStack {
+            Form {
+                Section("Event / State") {
+                    allEventChip
+                    eventChips
+                }
+
+                Section("Time Range") {
+                    Picker("Time Range", selection: $selectedTimeRange) {
+                        ForEach(LogTimeRange.allCases, id: \.self) { range in
+                            Text(range.title).tag(range)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    if selectedTimeRange == .custom {
+                        DatePicker("Start", selection: $customStartDate, displayedComponents: [.date])
+                            .onChange(of: customStartDate) { _, newValue in
+                                if customEndDate < newValue {
+                                    customEndDate = newValue
+                                }
+                            }
+                        DatePicker("End", selection: $customEndDate, in: customStartDate..., displayedComponents: [.date])
+                    }
+                }
+
+                Section("Protocol") {
+                    Picker("Protocol", selection: $selectedProtocolId) {
+                        Text("All protocols").tag(Optional<UUID>.none)
+                        ForEach(protocolFilterOptions) { option in
+                            Text(option.title).tag(Optional(option.id))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+
+                Section {
+                    Button("Reset all filters", role: .destructive) {
+                        Haptics.selection()
+                        resetFilters()
+                    }
+                }
+            }
+            .navigationTitle("Filters")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        showFiltersSheet = false
+                    }
+                }
+            }
+        }
+    }
+
+    var allEventChip: some View {
+        Button {
+            Haptics.selection()
+            selectedEventTypes = []
+        } label: {
+            Text("All")
+                .font(.custom("Inter", size: 13, relativeTo: .body).weight(.semibold))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .frame(minHeight: 44)
+                .background(selectedEventTypes.isEmpty ? activeAccent.opacity(0.2) : Color.clear)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(selectedEventTypes.isEmpty ? activeAccent : textSubtle.opacity(0.3), lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    var eventChips: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), spacing: 8)], alignment: .leading, spacing: 8) {
+            ForEach(LogFilterEventType.allCases, id: \.self) { type in
+                eventChip(for: type)
+            }
+        }
+    }
+
+    func eventChip(for type: LogFilterEventType) -> some View {
+        let isSelected = selectedEventTypes.contains(type)
+        return Button {
+            Haptics.selection()
+            if isSelected {
+                selectedEventTypes.remove(type)
+            } else {
+                selectedEventTypes.insert(type)
+            }
+        } label: {
+            Text(type.title)
+                .font(.custom("Inter", size: 13, relativeTo: .body).weight(.semibold))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .center)
+                .background(isSelected ? activeAccent.opacity(0.2) : Color.clear)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(isSelected ? activeAccent : textSubtle.opacity(0.3), lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    func resetFilters() {
+        selectedEventTypes = []
+        selectedTimeRange = .allTime
+        selectedProtocolId = nil
+        showAllHistory = false
+        revealedHistoryCount = min(historyPreviewCount, filteredLogEntries.count)
     }
 }
 
@@ -787,7 +985,7 @@ private extension CockpitLogsScreen {
     var textSubtle: Color { isDarkMode ? Color.white.opacity(0.68) : Color(hex: "546174") }
     var historyPreviewCount: Int { 6 }
     var visibleHistoryEntries: [LogEntry] {
-        Array(recentEntries.prefix(showAllHistory ? recentEntries.count : historyPreviewCount))
+        Array(filteredLogEntries.prefix(showAllHistory ? filteredLogEntries.count : historyPreviewCount))
     }
     var weekdayHeaders: [String] { ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] }
 
@@ -1003,14 +1201,17 @@ private extension CockpitLogsScreen {
         }
     }
 
-    var recentEntries: [LogEntry] {
+    var allLogEntries: [LogEntry] {
         let completionEntries = visibleCompletions.map { completion in
             let goal = 68 + (abs(Int(completion.date.timeIntervalSince1970 / 60)) % 31)
             let isExtra = completion.kind == .extra
+            let owner = owner(for: completion)
             return LogEntry(
                 type: .completion,
                 date: completion.date,
                 title: title(for: completion),
+                protocolId: owner?.id,
+                protocolTitle: owner?.definition.title ?? "Protocol Session",
                 badge: isExtra ? "EXTRA" : (isDarkMode ? "SYNCED" : "COMPLETED"),
                 badgeColor: isExtra
                     ? (isDarkMode ? Color(hex: "FDE047") : Color(hex: "A16207"))
@@ -1030,15 +1231,20 @@ private extension CockpitLogsScreen {
                 distractions: deterministicDistractions(for: completion.date),
                 output: deterministicOutput(for: completion.date),
                 goalPercent: goal,
-                violationReason: ""
+                violationReason: "",
+                eventType: isExtra ? .extra : .completed,
+                isRecoveryRelated: owner.map(isRecoveryRelated(owner:)) ?? false
             )
         }
 
         let violationEntries = visibleViolations.map { violation in
-            LogEntry(
+            let owner = owner(for: violation)
+            return LogEntry(
                 type: .violation,
                 date: violation.date,
                 title: title(for: violation),
+                protocolId: owner?.id,
+                protocolTitle: owner?.definition.title ?? "Review Cycle",
                 badge: "ABORTED",
                 badgeColor: isDarkMode ? Color(hex: "F87171") : Color(hex: "DC2626"),
                 badgeBackground: isDarkMode ? Color.red.opacity(0.12) : Color.red.opacity(0.08),
@@ -1050,12 +1256,95 @@ private extension CockpitLogsScreen {
                 distractions: 0,
                 output: "",
                 goalPercent: 0,
-                violationReason: violationReason(violation.kind)
+                violationReason: violationReason(violation.kind),
+                eventType: .violated,
+                isRecoveryRelated: owner.map(isRecoveryRelated(owner:)) ?? false
             )
         }
 
         return (completionEntries + violationEntries)
             .sorted { $0.date > $1.date }
+    }
+
+    var filteredLogEntries: [LogEntry] {
+        allLogEntries.filter { entry in
+            matchesEventFilter(entry)
+                && matchesTimeFilter(entry.date)
+                && matchesProtocolFilter(entry)
+        }
+    }
+
+    var protocolFilterOptions: [ProtocolFilterOption] {
+        var optionsById: [UUID: String] = [:]
+        for entry in allLogEntries {
+            guard let id = entry.protocolId else { continue }
+            if optionsById[id] == nil {
+                optionsById[id] = entry.protocolTitle
+            }
+        }
+        return optionsById
+            .map { ProtocolFilterOption(id: $0.key, title: $0.value) }
+            .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+    }
+
+    var filterSummary: LogFilterSummary {
+        var parts: [String] = []
+        if selectedEventTypes.isEmpty == false {
+            let eventText = selectedEventTypes
+                .sorted { $0.title < $1.title }
+                .map(\.title)
+                .joined(separator: ", ")
+            parts.append(eventText)
+        }
+        if selectedTimeRange != .allTime {
+            parts.append(selectedTimeRange.summaryText(start: customStartDate, end: customEndDate))
+        }
+        if let selectedProtocolId,
+           let protocolTitle = protocolFilterOptions.first(where: { $0.id == selectedProtocolId })?.title {
+            parts.append(protocolTitle)
+        }
+        return LogFilterSummary(isActive: parts.isEmpty == false, label: parts.joined(separator: " · "))
+    }
+
+    func matchesEventFilter(_ entry: LogEntry) -> Bool {
+        if selectedEventTypes.isEmpty {
+            return true
+        }
+        if selectedEventTypes.contains(entry.eventType) {
+            return true
+        }
+        if selectedEventTypes.contains(.recoveryRelated), entry.isRecoveryRelated {
+            return true
+        }
+        return false
+    }
+
+    func matchesTimeFilter(_ date: Date) -> Bool {
+        switch selectedTimeRange {
+        case .allTime:
+            return true
+        case .today:
+            return DateRules.isoCalendar.isDateInToday(date)
+        case .last7Days:
+            guard let start = DateRules.isoCalendar.date(byAdding: .day, value: -6, to: DateRules.startOfDay(appClock.now, calendar: DateRules.isoCalendar)) else {
+                return true
+            }
+            return date >= start && date <= appClock.now
+        case .last30Days:
+            guard let start = DateRules.isoCalendar.date(byAdding: .day, value: -29, to: DateRules.startOfDay(appClock.now, calendar: DateRules.isoCalendar)) else {
+                return true
+            }
+            return date >= start && date <= appClock.now
+        case .custom:
+            let start = DateRules.startOfDay(customStartDate, calendar: DateRules.isoCalendar)
+            let dayAfterEnd = DateRules.isoCalendar.date(byAdding: .day, value: 1, to: DateRules.startOfDay(customEndDate, calendar: DateRules.isoCalendar)) ?? customEndDate
+            return date >= start && date < dayAfterEnd
+        }
+    }
+
+    func matchesProtocolFilter(_ entry: LogEntry) -> Bool {
+        guard let selectedProtocolId else { return true }
+        return entry.protocolId == selectedProtocolId
     }
 
     // Keep Logs aligned with "today" by hiding future-dated records.
@@ -1077,24 +1366,36 @@ private extension CockpitLogsScreen {
     }
 
     func completionIcon(for completion: CompletionRecord) -> String {
-        if let owner = store.system.nonNegotiables.first(where: { $0.completions.contains(completion) }) {
+        if let owner = owner(for: completion) {
             return ProtocolIconCatalog.resolvedSymbolName(owner.definition.iconSystemName, fallback: "waveform.path.ecg")
         }
         return "waveform.path.ecg"
     }
 
     func title(for completion: CompletionRecord) -> String {
-        if let owner = store.system.nonNegotiables.first(where: { $0.completions.contains(completion) }) {
+        if let owner = owner(for: completion) {
             return owner.definition.title
         }
         return "Protocol Session"
     }
 
     func title(for violation: Violation) -> String {
-        if let owner = store.system.nonNegotiables.first(where: { $0.violations.contains(violation) }) {
+        if let owner = owner(for: violation) {
             return owner.definition.title
         }
         return "Review Cycle"
+    }
+
+    func owner(for completion: CompletionRecord) -> NonNegotiable? {
+        store.system.nonNegotiables.first(where: { $0.completions.contains(completion) })
+    }
+
+    func owner(for violation: Violation) -> NonNegotiable? {
+        store.system.nonNegotiables.first(where: { $0.violations.contains(violation) })
+    }
+
+    func isRecoveryRelated(owner: NonNegotiable) -> Bool {
+        owner.state == .recovery || owner.state == .suspended
     }
 
     func violationReason(_ kind: ViolationKind) -> String {
@@ -1150,6 +1451,8 @@ private struct LogEntry: Identifiable {
     let type: EntryType
     let date: Date
     let title: String
+    let protocolId: UUID?
+    let protocolTitle: String
     let badge: String
     let badgeColor: Color
     let badgeBackground: Color
@@ -1162,10 +1465,80 @@ private struct LogEntry: Identifiable {
     let output: String
     let goalPercent: Int
     let violationReason: String
+    let eventType: LogFilterEventType
+    let isRecoveryRelated: Bool
 
     var id: String {
         "\(date.timeIntervalSince1970)-\(title)-\(badge)"
     }
+}
+
+private enum LogFilterEventType: CaseIterable, Hashable {
+    case completed
+    case violated
+    case extra
+    case recoveryRelated
+
+    var title: String {
+        switch self {
+        case .completed:
+            return "Completed"
+        case .violated:
+            return "Missed / Violated"
+        case .extra:
+            return "Extra"
+        case .recoveryRelated:
+            return "Recovery-related"
+        }
+    }
+}
+
+private enum LogTimeRange: CaseIterable, Hashable {
+    case allTime
+    case today
+    case last7Days
+    case last30Days
+    case custom
+
+    var title: String {
+        switch self {
+        case .allTime:
+            return "All time"
+        case .today:
+            return "Today"
+        case .last7Days:
+            return "Last 7 days"
+        case .last30Days:
+            return "Last 30 days"
+        case .custom:
+            return "Custom range"
+        }
+    }
+
+    func summaryText(start: Date, end: Date) -> String {
+        switch self {
+        case .allTime:
+            return "All time"
+        case .today:
+            return "Today"
+        case .last7Days:
+            return "Last 7 days"
+        case .last30Days:
+            return "Last 30 days"
+        case .custom:
+            return "\(CockpitLogsDateFormatters.shortDay.string(from: start))-\(CockpitLogsDateFormatters.shortDay.string(from: end))"
+        }
+    }
+}
+
+private struct ProtocolFilterOption: Identifiable, Hashable {
+    let id: UUID
+    let title: String
+}
+
+private struct LogFilterSummary: Equatable {
+    let isActive: Bool
+    let label: String
 }
 
 private enum CockpitLogsDateFormatters {
@@ -1180,6 +1553,13 @@ private enum CockpitLogsDateFormatters {
         let formatter = DateFormatter()
         formatter.locale = .current
         formatter.dateFormat = "EEE, MMM d"
+        return formatter
+    }()
+
+    static let shortDay: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.dateFormat = "MMM d"
         return formatter
     }()
 }
