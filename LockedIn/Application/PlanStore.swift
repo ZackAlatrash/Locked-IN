@@ -966,15 +966,10 @@ private extension PlanStore {
 
     func busyEvents(for day: Date, slot: PlanSlot) -> [PlanCalendarEvent] {
         guard let slotInterval = slot.interval(on: day, calendar: calendar) else { return [] }
-        let dayStart = DateRules.startOfDay(day, calendar: calendar)
-        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { return [] }
-        let dayInterval = DateInterval(start: dayStart, end: dayEnd)
 
         return calendarEvents.filter { event in
+            guard event.isAllDay == false else { return false }
             let eventInterval = DateInterval(start: event.startDateTime, end: event.endDateTime)
-            if event.isAllDay {
-                return slot == .am && eventInterval.intersects(dayInterval)
-            }
             if eventInterval.intersects(slotInterval) {
                 return true
             }
@@ -984,20 +979,12 @@ private extension PlanStore {
 
     func busyMinutes(for day: Date, slot: PlanSlot) -> Int {
         guard let slotInterval = slot.interval(on: day, calendar: calendar) else { return 0 }
-        let dayStart = DateRules.startOfDay(day, calendar: calendar)
-        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { return 0 }
-        let dayInterval = DateInterval(start: dayStart, end: dayEnd)
 
         var totalBusyMinutes = 0
 
         for event in calendarEvents {
+            guard event.isAllDay == false else { continue }
             let eventInterval = DateInterval(start: event.startDateTime, end: event.endDateTime)
-            if event.isAllDay {
-                if eventInterval.intersects(dayInterval) {
-                    return slot.durationMinutes
-                }
-                continue
-            }
             let overlap = overlapMinutes(slotInterval, eventInterval)
             if overlap > 0 {
                 totalBusyMinutes += overlap

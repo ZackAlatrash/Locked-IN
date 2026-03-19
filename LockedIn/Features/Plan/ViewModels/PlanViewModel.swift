@@ -437,16 +437,9 @@ private extension PlanViewModel {
         for day in days {
             for slot in PlanSlot.allCases {
                 let hasEvent = events.contains { event in
+                    guard event.isAllDay == false else { return false }
                     guard let slotInterval = slot.interval(on: day, calendar: DateRules.isoCalendar) else {
                         return false
-                    }
-                    if event.isAllDay {
-                        guard let dayEnd = DateRules.isoCalendar.date(byAdding: .day, value: 1, to: day) else {
-                            return false
-                        }
-                        let dayInterval = DateInterval(start: day, end: dayEnd)
-                        let eventInterval = DateInterval(start: event.startDateTime, end: event.endDateTime)
-                        return eventInterval.intersects(dayInterval)
                     }
                     let eventInterval = DateInterval(start: event.startDateTime, end: event.endDateTime)
                     return eventInterval.intersects(slotInterval)

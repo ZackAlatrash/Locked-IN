@@ -251,7 +251,7 @@ private extension PlanRegulatorEngine {
         guard let slotInterval = slot.interval(on: day, calendar: calendar) else { return false }
 
         return events.contains { event in
-            guard event.isAllDay == false else { return true }
+            guard event.isAllDay == false else { return false }
             let eventInterval = DateInterval(start: event.startDateTime, end: event.endDateTime)
             return eventInterval.intersects(slotInterval)
         }
