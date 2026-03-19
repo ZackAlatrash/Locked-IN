@@ -116,6 +116,7 @@ struct CockpitLogsScreen: View {
         }
         .sheet(isPresented: $showFiltersSheet) {
             filterSheet
+                .presentationSizing(.fitted)
         }
     }
 }
