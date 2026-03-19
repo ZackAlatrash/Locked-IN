@@ -83,6 +83,8 @@ final class DevOptionsController: ObservableObject {
                 try seedOverloadedWeek(weekStart: weekStart)
             case .checkInDueTonight:
                 try seedCheckInDueTonight(weekStart: weekStart, referenceNow: referenceNow)
+            case .usedForAWhile:
+                try seedUsedForAWhile(referenceNow: referenceNow)
             }
 
             commitmentStore.runDailyIntegrityTick(referenceDate: referenceNow)
@@ -229,6 +231,73 @@ final class DevOptionsController: ObservableObject {
         userDefaults.set(0, forKey: DailyCheckInPolicy.Keys.deferredUntilTimestamp)
     }
 
+    private func seedUsedForAWhile(referenceNow: Date) throws {
+        let deepWorkId = try createProtocol(
+            title: "Deep Work",
+            mode: .session,
+            frequencyPerWeek: 4,
+            preferredSlot: .am,
+            durationMinutes: 90,
+            iconSystemName: "bolt.fill"
+        )
+        let neuralDrillId = try createProtocol(
+            title: "Neural Drill",
+            mode: .session,
+            frequencyPerWeek: 3,
+            preferredSlot: .eve,
+            durationMinutes: 60,
+            iconSystemName: "brain.head.profile"
+        )
+        let hydrationId = try createProtocol(
+            title: "Hydration",
+            mode: .daily,
+            frequencyPerWeek: 7,
+            preferredSlot: .am,
+            durationMinutes: 15,
+            iconSystemName: "drop.fill"
+        )
+
+        let referenceDay = DateRules.startOfDay(referenceNow, calendar: calendar)
+        let startDay = calendar.date(byAdding: .day, value: -19, to: referenceDay) ?? referenceDay
+
+        for offset in 0..<20 {
+            guard let day = calendar.date(byAdding: .day, value: offset, to: startDay) else { continue }
+
+            // Pattern: full, partial, partial, missed, minimal.
+            switch offset % 5 {
+            case 0:
+                try? logCompletion(protocolId: hydrationId, on: day, hour: 7)
+                try? logCompletion(protocolId: deepWorkId, on: day, hour: 8)
+                try? logCompletion(protocolId: neuralDrillId, on: day, hour: 19)
+            case 1:
+                try? logCompletion(protocolId: hydrationId, on: day, hour: 7)
+                try? logCompletion(protocolId: deepWorkId, on: day, hour: 8)
+            case 2:
+                try? logCompletion(protocolId: hydrationId, on: day, hour: 7)
+                try? logCompletion(protocolId: neuralDrillId, on: day, hour: 19)
+            case 3:
+                break
+            default:
+                try? logCompletion(protocolId: hydrationId, on: day, hour: 7)
+            }
+
+            let tickTime = calendar.date(bySettingHour: 23, minute: 0, second: 0, of: day) ?? day
+            commitmentStore.runDailyIntegrityTick(referenceDate: tickTime)
+        }
+
+        planStore.refresh(system: commitmentStore.system, calendarEvents: [], referenceDate: referenceNow)
+        let weekStart = DateRules.startOfDay(
+            DateRules.weekInterval(containing: referenceNow, calendar: calendar).start,
+            calendar: calendar
+        )
+        _ = planStore.applyDraft([
+            PlanAllocationDraft(protocolId: deepWorkId, weekId: DateRules.weekID(for: day(1, weekStart: weekStart), calendar: calendar), day: day(1, weekStart: weekStart), slot: .am, durationMinutes: 90),
+            PlanAllocationDraft(protocolId: neuralDrillId, weekId: DateRules.weekID(for: day(2, weekStart: weekStart), calendar: calendar), day: day(2, weekStart: weekStart), slot: .eve, durationMinutes: 60),
+            PlanAllocationDraft(protocolId: hydrationId, weekId: DateRules.weekID(for: day(3, weekStart: weekStart), calendar: calendar), day: day(3, weekStart: weekStart), slot: .am, durationMinutes: 15),
+        ])
+        statusMessage = "Applied Used For A While scenario (3 protocols, 20 days with full/partial/missed outcomes)."
+    }
+
     private func createProtocol(
         title: String,
         mode: NonNegotiableMode,
@@ -247,7 +316,7 @@ final class DevOptionsController: ObservableObject {
             iconSystemName: iconSystemName
         )
 
-        try commitmentStore.createNonNegotiable(definition: definition, totalLockDays: 56)
+        try commitmentStore.createNonNegotiable(definition: definition, totalLockDays: 28)
 
         guard let created = commitmentStore.system.nonNegotiables
             .sorted(by: { $0.createdAt > $1.createdAt })
@@ -287,6 +356,9 @@ final class DevOptionsController: ObservableObject {
         case .checkInDueTonight:
             target = day(3, weekStart: weekStart)
             return calendar.date(bySettingHour: 19, minute: 15, second: 0, of: target) ?? target
+        case .usedForAWhile:
+            let future = calendar.date(byAdding: .day, value: 19, to: weekStart) ?? weekStart
+            return calendar.date(bySettingHour: 20, minute: 0, second: 0, of: future) ?? future
         }
     }
 

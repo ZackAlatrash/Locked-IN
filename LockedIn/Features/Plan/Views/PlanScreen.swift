@@ -63,7 +63,11 @@ struct PlanScreen: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 14) {
-                    queueSection
+                    if shouldShowQueueSection {
+                        queueSection
+                    } else {
+                        allScheduledCue
+                    }
                     planBoardSection
                     todayAtGlanceSection
                     distributionStatus
@@ -244,6 +248,27 @@ struct PlanScreen: View {
 }
 
 private extension PlanScreen {
+    var shouldShowQueueSection: Bool {
+        viewModel.queueItems.isEmpty == false || viewModel.hasTrackableProtocols == false
+    }
+
+    var allScheduledCue: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.callout.weight(.bold))
+                .foregroundColor(toneColor(for: .cyan))
+
+            Text("All protocols are scheduled.")
+                .font(.footnote.weight(.semibold))
+                .foregroundColor(textMain)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(glassCard(cornerRadius: 14))
+    }
+
     var planBoardSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             planBoardHeader
@@ -485,7 +510,7 @@ private extension PlanScreen {
         let primaryContent = HStack(spacing: 10) {
             Image(systemName: resolvedProtocolIcon(item.icon))
                 .font(.system(size: 13, weight: .bold))
-                .foregroundColor(tone)
+                .foregroundColor(item.isDisabled ? textMuted : tone)
                 .frame(width: 18)
 
             VStack(alignment: .leading, spacing: 4) {
@@ -813,15 +838,16 @@ private extension PlanScreen {
 
             if let first = slot.allocations.first {
                 let isRecentlyLocked = isRecentlyLockedAllocation(protocolId: first.protocolId, day: day.date, slot: slot.slot)
+                let isPaused = first.status == .paused
                 let baseChip = Button {
                     viewModel.editAllocation(allocationId: first.id)
                 } label: {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(allocationFill(for: first.tone))
+                        .fill(isPaused ? pausedAllocationFill : allocationFill(for: first.tone))
                         .overlay(
                             Image(systemName: first.icon)
                                 .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(allocationTextColor)
+                                .foregroundColor(isPaused ? textMuted : allocationTextColor)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -843,7 +869,7 @@ private extension PlanScreen {
                                 Text("\(slot.allocations.count)")
                                     .font(.caption2.weight(.black))
                                     .fontDesign(.monospaced)
-                                    .foregroundColor(allocationTextColor)
+                                    .foregroundColor(isPaused ? textMuted : allocationTextColor)
                                     .padding(.horizontal, 4)
                                     .padding(.vertical, 2)
                                     .background(Capsule().fill(Color.black.opacity(0.2)))
@@ -854,7 +880,7 @@ private extension PlanScreen {
                             if isRecentlyLocked {
                                 Image(systemName: "lock.fill")
                                     .font(.system(size: 8, weight: .black))
-                                    .foregroundColor(allocationTextColor)
+                                    .foregroundColor(isPaused ? textMuted : allocationTextColor)
                                     .padding(4)
                                     .background(
                                         Circle()
@@ -1068,6 +1094,7 @@ private extension PlanScreen {
     func allocationChip(_ allocation: PlanAllocationDisplay, day: Date, slot: PlanSlot) -> some View {
         let isRecentlyLocked = isRecentlyLockedAllocation(protocolId: allocation.protocolId, day: day, slot: slot)
         let isInteractive = allocation.status.isInteractive
+        let isPaused = allocation.status == .paused
         return Button {
             viewModel.editAllocation(allocationId: allocation.id)
         } label: {
@@ -1085,14 +1112,15 @@ private extension PlanScreen {
                 }
                 Spacer(minLength: 0)
             }
-            .foregroundColor(allocationTextColor)
+            .foregroundColor(isPaused ? textMuted : allocationTextColor)
             .padding(.horizontal, 8)
             .padding(.vertical, 7)
-            .background(allocationBackground(tone: allocation.tone))
+            .background(allocationBackground(tone: allocation.tone, isPaused: isPaused))
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(
-                        toneColor(for: allocation.tone).opacity(isRecentlyLocked ? (lockInPulseActive ? 0.96 : 0.68) : (isDarkMode ? 0.6 : 0.45)),
+                        (isPaused ? pausedAllocationStroke : toneColor(for: allocation.tone))
+                            .opacity(isRecentlyLocked ? (lockInPulseActive ? 0.96 : 0.68) : (isDarkMode ? 0.6 : 0.45)),
                         lineWidth: isRecentlyLocked ? (lockInPulseActive ? 1.9 : 1.3) : 1
                     )
             )
@@ -1921,15 +1949,25 @@ private extension PlanScreen {
         }
     }
 
-    func allocationBackground(tone: PlanTone) -> some View {
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(toneColor(for: tone).opacity(isDarkMode ? 0.16 : 0.14))
+    func allocationBackground(tone: PlanTone, isPaused: Bool = false) -> some View {
+        let fill = isPaused ? pausedAllocationFill : toneColor(for: tone).opacity(isDarkMode ? 0.16 : 0.14)
+        let shadowColor = isPaused ? Color.clear : toneColor(for: tone).opacity(isDarkMode ? 0.28 : 0.18)
+        return RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(fill)
             .shadow(
-                color: toneColor(for: tone).opacity(isDarkMode ? 0.28 : 0.18),
+                color: shadowColor,
                 radius: isDarkMode ? 10 : 6,
                 x: 0,
                 y: 0
             )
+    }
+
+    var pausedAllocationFill: Color {
+        isDarkMode ? Color.white.opacity(0.08) : Color.black.opacity(0.07)
+    }
+
+    var pausedAllocationStroke: Color {
+        isDarkMode ? Color.white.opacity(0.3) : Color.black.opacity(0.24)
     }
 
     var allocationTextColor: Color {

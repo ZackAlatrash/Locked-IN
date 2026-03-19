@@ -776,7 +776,7 @@ private extension PlanStore {
                 remaining = max(0, descriptor.frequencyPerWeek - descriptor.completionsThisWeek - plannedThisWeek)
             }
 
-            guard remaining > 0 else { return nil }
+            guard remaining > 0 || descriptor.state == .suspended else { return nil }
 
             return PlanQueueItem(
                 id: descriptor.id,

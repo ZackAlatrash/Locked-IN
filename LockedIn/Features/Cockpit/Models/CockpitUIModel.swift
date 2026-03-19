@@ -127,6 +127,7 @@ struct TodayTask: Identifiable, Equatable {
     let modeLabel: ModeLabel
     let isCompleteToday: Bool
     let isExtraToday: Bool
+    let isPaused: Bool
     let isRequiredToday: Bool
     let completionVisual: CompletionVisual
     let ctaTitle: String

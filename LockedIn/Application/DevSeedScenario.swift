@@ -5,6 +5,7 @@ enum DevSeedScenario: String, CaseIterable, Identifiable {
     case stableWeek
     case overloadedWeek
     case checkInDueTonight
+    case usedForAWhile
 
     var id: String { rawValue }
 
@@ -18,6 +19,8 @@ enum DevSeedScenario: String, CaseIterable, Identifiable {
             return "Overloaded Week"
         case .checkInDueTonight:
             return "Check-In Due Tonight"
+        case .usedForAWhile:
+            return "Used For A While"
         }
     }
 
@@ -31,6 +34,8 @@ enum DevSeedScenario: String, CaseIterable, Identifiable {
             return "Heavy load with unresolved pressure"
         case .checkInDueTonight:
             return "Evening state with pending check-in"
+        case .usedForAWhile:
+            return "3 protocols, 20 days mixed full/partial/missed"
         }
     }
 }

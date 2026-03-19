@@ -16,6 +16,13 @@ struct CockpitLogsScreen: View {
     @State private var revealedMatrixCount = 0
     @State private var metricsAnimatedIn = false
     @State private var revealedHistoryCount = 0
+    @State private var showAllHistory = false
+
+    @ScaledMetric(relativeTo: .caption2) private var microDotSize = 6
+    @ScaledMetric(relativeTo: .body) private var timelineIconSize = 32
+    @ScaledMetric(relativeTo: .caption2) private var progressBarHeight = 8
+    @ScaledMetric(relativeTo: .caption2) private var badgeHorizontalPadding = 8
+    @ScaledMetric(relativeTo: .caption2) private var badgeVerticalPadding = 4
 
     private var matrixColumns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
@@ -74,6 +81,8 @@ struct CockpitLogsScreen: View {
                             .offset(x: 5, y: -3)
                     }
                     .foregroundColor(navItemColor)
+                    .frame(width: 44, height: 44, alignment: .center)
+                    .contentShape(Rectangle())
                 }
                 .accessibilityLabel("Open logs")
 
@@ -84,6 +93,8 @@ struct CockpitLogsScreen: View {
                     Image(systemName: "person.crop.circle")
                         .font(.system(size: 19, weight: .medium))
                         .foregroundColor(navItemColor)
+                        .frame(width: 44, height: 44, alignment: .center)
+                        .contentShape(Rectangle())
                 }
                 .accessibilityLabel("Open profile")
             }
@@ -99,7 +110,7 @@ struct CockpitLogsScreen: View {
 private extension CockpitLogsScreen {
     var header: some View {
         Text("LOCKEDIN: NEURAL INTERFACE")
-            .font(.custom("Inter", size: 12).weight(.semibold))
+            .font(.custom("Inter", size: 12, relativeTo: .caption).weight(.semibold))
             .tracking(1.3)
             .foregroundColor(textMuted)
             .padding(.horizontal, 2)
@@ -110,7 +121,7 @@ private extension CockpitLogsScreen {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center) {
                 Text("28-DAY INTEGRITY MATRIX")
-                    .font(.custom("Inter", size: 10).weight(.bold))
+                    .font(.custom("Inter", size: 10, relativeTo: .caption2).weight(.bold))
                     .tracking(1.4)
                     .foregroundColor(textMuted)
 
@@ -120,11 +131,11 @@ private extension CockpitLogsScreen {
                     if isDarkMode {
                         Circle()
                             .fill(cyanAccent)
-                            .frame(width: 6, height: 6)
+                            .frame(width: microDotSize, height: microDotSize)
                             .shadow(color: cyanAccent.opacity(0.6), radius: 6, x: 0, y: 0)
                     }
                     Text("\(isRecoveryThemeActive ? "RECOVERY" : "STABLE") • \(adherence)% ADHERENCE")
-                        .font(.custom("Inter", size: 10).weight(.black))
+                        .font(.custom("Inter", size: 10, relativeTo: .caption2).weight(.black))
                         .foregroundColor(adherenceTextColor)
                 }
                 .padding(.horizontal, 8)
@@ -142,7 +153,7 @@ private extension CockpitLogsScreen {
             HStack {
                 ForEach(weekdayHeaders, id: \.self) { weekday in
                     Text(weekday)
-                        .font(.custom("Inter", size: 9).weight(.bold))
+                        .font(.custom("Inter", size: 9, relativeTo: .caption2).weight(.bold))
                         .tracking(0.8)
                         .foregroundColor(textSubtle)
                         .frame(maxWidth: .infinity)
@@ -165,23 +176,26 @@ private extension CockpitLogsScreen {
                         )
                         .overlay(alignment: .topLeading) {
                             Text(dayNumberText(for: point.day))
-                                .font(.custom("Inter", size: 8).weight(.bold))
+                                .font(.custom("Inter", size: 8, relativeTo: .caption2).weight(.bold))
                                 .foregroundColor(dayNumberColor(for: point))
                                 .padding(.leading, 4)
                                 .padding(.top, 3)
                         }
                         .overlay(alignment: .topTrailing) {
-                            if let indicatorColor = cornerIndicatorColor(for: point) {
+                            if let token = matrixToken(for: point) {
                                 HStack(spacing: 3) {
-                                    Circle()
-                                        .fill(indicatorColor)
-                                        .frame(width: 6, height: 6)
-                                    if let token = matrixToken(for: point) {
-                                        Text(token)
-                                            .font(.custom("Inter", size: 7).weight(.bold))
-                                            .foregroundColor(dayNumberColor(for: point))
+                                    if let indicatorColor = cornerIndicatorColor(for: point) {
+                                        Circle()
+                                            .fill(indicatorColor)
+                                            .frame(width: microDotSize, height: microDotSize)
                                     }
+                                    Text(token)
+                                        .font(.custom("Inter", size: 9, relativeTo: .caption2).weight(.bold))
+                                        .foregroundColor(dayNumberColor(for: point))
                                 }
+                                .padding(.horizontal, 3)
+                                .padding(.vertical, 2)
+                                .background(.thinMaterial, in: Capsule(style: .continuous))
                                 .padding(.trailing, 4)
                                 .padding(.top, 4)
                             }
@@ -200,28 +214,39 @@ private extension CockpitLogsScreen {
 
     var matrixLegend: some View {
         VStack(alignment: .leading, spacing: 6) {
+            Text("TOKEN KEY")
+                .font(.custom("Inter", size: 10, relativeTo: .caption2).weight(.black))
+                .tracking(0.8)
+                .foregroundColor(textMuted)
+
             HStack(spacing: 10) {
-                legendItem(label: "Soft Red", description: "Unproductive day", color: matrixUnproductiveFill)
-                legendItem(label: "Strong Red", description: "Violation / Inevitable miss", color: matrixViolationFill)
+                legendItem(token: "U", label: "Unproductive", description: "required work not completed", color: matrixUnproductiveFill)
+                legendItem(token: "V", label: "Violation", description: "violation or inevitable miss", color: matrixViolationFill)
             }
             HStack(spacing: 10) {
-                legendItem(label: "Blue", description: "Counted or no work required", color: matrixHighFill)
-                legendItem(label: "Yellow", description: "Extra only", color: isDarkMode ? Color(hex: "FDE047") : Color(hex: "FDE68A"))
+                legendItem(token: "C", label: "Completed", description: "counted or no work required", color: matrixHighFill)
+                legendItem(token: "E", label: "Extra", description: "extra only", color: isDarkMode ? Color(hex: "FDE047") : Color(hex: "FDE68A"))
             }
         }
         .padding(.top, 6)
     }
 
-    func legendItem(label: String, description: String, color: Color) -> some View {
+    func legendItem(token: String, label: String, description: String, color: Color) -> some View {
         HStack(spacing: 6) {
             Circle()
                 .fill(color)
-                .frame(width: 6, height: 6)
+                .frame(width: microDotSize, height: microDotSize)
+            Text(token)
+                .font(.custom("Inter", size: 9, relativeTo: .caption2).weight(.black))
+                .foregroundColor(textMain)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 1)
+                .background(.thinMaterial, in: Capsule(style: .continuous))
             Text(label)
-                .font(.custom("Inter", size: 9).weight(.bold))
+                .font(.custom("Inter", size: 9, relativeTo: .caption2).weight(.bold))
                 .foregroundColor(textMuted)
             Text("= \(description)")
-                .font(.custom("Inter", size: 9).weight(.medium))
+                .font(.custom("Inter", size: 9, relativeTo: .caption2).weight(.medium))
                 .foregroundColor(textSubtle)
         }
     }
@@ -259,7 +284,7 @@ private extension CockpitLogsScreen {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
                 Text(title)
-                    .font(.custom("Inter", size: 12).weight(.semibold))
+                    .font(.custom("Inter", size: 12, relativeTo: .subheadline).weight(.semibold))
                     .foregroundColor(textMain)
                 Spacer(minLength: 8)
                 Image(systemName: icon)
@@ -269,10 +294,10 @@ private extension CockpitLogsScreen {
 
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
-                    .font(.custom("Inter", size: isDarkMode ? 34 : 30).weight(.black))
+                    .font(.custom("Inter", size: isDarkMode ? 34 : 30, relativeTo: .largeTitle).weight(.black))
                     .foregroundColor(textMain)
                 Text(unit)
-                    .font(.custom("Inter", size: 11).weight(.semibold))
+                    .font(.custom("Inter", size: 11, relativeTo: .caption).weight(.semibold))
                     .foregroundColor(textMuted)
             }
 
@@ -309,7 +334,7 @@ private extension CockpitLogsScreen {
     var sessionHistory: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Session History")
-                .font(.custom("Inter", size: isDarkMode ? 14 : 22).weight(.bold))
+                .font(.custom("Inter", size: isDarkMode ? 14 : 22, relativeTo: .title3).weight(.bold))
                 .tracking(isDarkMode ? 1.1 : 0)
                 .textCase(isDarkMode ? .uppercase : nil)
                 .foregroundColor(textMain)
@@ -318,10 +343,46 @@ private extension CockpitLogsScreen {
             if recentEntries.isEmpty {
                 emptyHistoryState
             } else {
-                ForEach(Array(recentEntries.prefix(3).enumerated()), id: \.element.id) { index, entry in
-                    sessionCard(entry, index: index)
+                ForEach(Array(visibleHistoryEntries.enumerated()), id: \.element.id) { index, entry in
+                    if shouldShowDayHeader(for: index) {
+                        timelineDayHeader(for: entry.date)
+                            .transition(.opacity)
+                    }
+
+                    sessionCard(
+                        entry,
+                        index: index,
+                        showsConnector: shouldShowConnector(for: index)
+                    )
                         .opacity(revealedHistoryCount > index ? 1 : 0)
                         .offset(y: revealedHistoryCount > index ? 0 : 10)
+                }
+
+                if recentEntries.count > historyPreviewCount {
+                    Button {
+                        Haptics.selection()
+                        let expanding = showAllHistory == false
+                        withAnimation(Theme.Animation.content) {
+                            showAllHistory.toggle()
+                            if expanding {
+                                revealedHistoryCount = max(revealedHistoryCount, recentEntries.count)
+                            } else {
+                                revealedHistoryCount = max(revealedHistoryCount, historyPreviewCount)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: showAllHistory ? "chevron.up" : "chevron.down")
+                            Text(showAllHistory ? "Show fewer sessions" : "View all \(recentEntries.count) sessions")
+                        }
+                        .font(.custom("Inter", size: 13, relativeTo: .subheadline).weight(.semibold))
+                        .foregroundColor(textMain)
+                        .padding(.horizontal, 14)
+                        .frame(minHeight: 44)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .background(glassCard(cornerRadius: 16))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -330,10 +391,13 @@ private extension CockpitLogsScreen {
     var emptyHistoryState: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("No sessions logged yet")
-                .font(.custom("Inter", size: 17).weight(.semibold))
+                .font(.custom("Inter", size: 17, relativeTo: .headline).weight(.semibold))
                 .foregroundColor(textMain)
-            Text("Completions and violations will appear here as your timeline fills in.")
-                .font(.custom("Inter", size: 13).weight(.medium))
+            Text("No completions or violations have been recorded.")
+                .font(.custom("Inter", size: 13, relativeTo: .body).weight(.medium))
+                .foregroundColor(textSecondary)
+            Text("Complete a protocol from Cockpit or Planning to create your first log entry.")
+                .font(.custom("Inter", size: 13, relativeTo: .body).weight(.medium))
                 .foregroundColor(textSecondary)
         }
         .padding(16)
@@ -341,19 +405,34 @@ private extension CockpitLogsScreen {
         .background(glassCard(cornerRadius: 24))
     }
 
-    func sessionCard(_ entry: LogEntry, index: Int) -> some View {
+    func timelineDayHeader(for date: Date) -> some View {
+        HStack(spacing: 8) {
+            Text(dayHeaderLabel(for: date))
+                .font(.custom("Inter", size: 11, relativeTo: .caption).weight(.black))
+                .tracking(0.6)
+                .foregroundColor(textMuted)
+
+            Rectangle()
+                .fill(isDarkMode ? Color.white.opacity(0.14) : Color.black.opacity(0.14))
+                .frame(height: 1)
+        }
+        .padding(.horizontal, 2)
+        .padding(.top, 6)
+    }
+
+    func sessionCard(_ entry: LogEntry, index: Int, showsConnector: Bool) -> some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(entry.iconTint.opacity(isDarkMode ? 0.18 : 0.2))
-                    .frame(width: 32, height: 32)
+                    .frame(width: timelineIconSize, height: timelineIconSize)
                     .overlay(
                         Image(systemName: entry.icon)
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(entry.iconTint)
                     )
 
-                if index < max(0, min(recentEntries.count, 3) - 1) {
+                if showsConnector {
                     RoundedRectangle(cornerRadius: 2, style: .continuous)
                         .fill(isDarkMode ? Color.white.opacity(0.09) : Color.black.opacity(0.08))
                         .frame(width: 1, height: 38)
@@ -361,30 +440,9 @@ private extension CockpitLogsScreen {
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .top, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(entry.title)
-                            .font(.custom("Inter", size: 17).weight(.bold))
-                            .foregroundColor(textMain)
-
-                        Text(entry.timeLabel)
-                            .font(.custom("Inter", size: 11).weight(.medium))
-                            .foregroundColor(textMuted)
-                    }
-
-                    Spacer(minLength: 6)
-
-                    Text(entry.badge)
-                        .font(.custom("Inter", size: 9).weight(.black))
-                        .tracking(0.5)
-                        .foregroundColor(entry.badgeColor)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(entry.badgeBackground)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .stroke(entry.badgeStroke, lineWidth: 1)
-                        )
+                ViewThatFits(in: .horizontal) {
+                    timelineHeader(entry: entry, stacked: false)
+                    timelineHeader(entry: entry, stacked: true)
                 }
 
                 if entry.type == .completion {
@@ -397,24 +455,14 @@ private extension CockpitLogsScreen {
                     } else {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Progress")
-                                .font(.custom("Inter", size: 10).weight(.bold))
+                                .font(.custom("Inter", size: 10, relativeTo: .caption2).weight(.bold))
                                 .foregroundColor(textMuted)
-                            ZStack(alignment: .leading) {
-                                Capsule(style: .continuous)
-                                    .fill(isDarkMode ? Color.white.opacity(0.07) : Color.black.opacity(0.06))
-                                    .frame(height: 8)
-
-                                Capsule(style: .continuous)
-                                    .fill(entry.badgeColor)
-                                    .frame(width: CGFloat(entry.goalPercent) / 100 * 180, height: 8)
-                                    .shadow(color: entry.badgeColor.opacity(isDarkMode ? 0.4 : 0.22), radius: 6, x: 0, y: 0)
-                            }
-                            .frame(height: 8)
+                            progressBar(percent: entry.goalPercent, accent: entry.badgeColor)
                         }
                     }
                 } else if !entry.violationReason.isEmpty {
                     Text(entry.violationReason)
-                        .font(.custom("Inter", size: 12).weight(.semibold))
+                        .font(.custom("Inter", size: 12, relativeTo: .subheadline).weight(.semibold))
                         .foregroundColor(textSecondary)
                 }
             }
@@ -427,10 +475,10 @@ private extension CockpitLogsScreen {
     func metricPill(label: String, value: String, accent: Color) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label.uppercased())
-                .font(.custom("Inter", size: 8).weight(.bold))
+                .font(.custom("Inter", size: 8, relativeTo: .caption2).weight(.bold))
                 .foregroundColor(textMuted)
             Text(value)
-                .font(.custom("Inter", size: 12).weight(.bold))
+                .font(.custom("Inter", size: 12, relativeTo: .subheadline).weight(.bold))
                 .foregroundColor(accent)
         }
         .padding(.horizontal, 8)
@@ -438,6 +486,104 @@ private extension CockpitLogsScreen {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(metricPillBackground)
         .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+    }
+
+    func timelineHeader(entry: LogEntry, stacked: Bool) -> some View {
+        Group {
+            if stacked {
+                VStack(alignment: .leading, spacing: 8) {
+                    timelineTitleTime(entry: entry)
+                    timelineBadge(entry: entry)
+                }
+            } else {
+                HStack(alignment: .top, spacing: 8) {
+                    timelineTitleTime(entry: entry)
+                    Spacer(minLength: 6)
+                    timelineBadge(entry: entry)
+                }
+            }
+        }
+    }
+
+    func timelineTitleTime(entry: LogEntry) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(entry.title)
+                .font(.custom("Inter", size: 17, relativeTo: .headline).weight(.bold))
+                .foregroundColor(textMain)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(entry.timeLabel)
+                .font(.custom("Inter", size: 11, relativeTo: .caption).weight(.medium))
+                .foregroundColor(textMuted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    func timelineBadge(entry: LogEntry) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: badgeSymbol(for: entry))
+                .font(.system(size: 10, weight: .black))
+            Text(entry.badge)
+                .font(.custom("Inter", size: 9, relativeTo: .caption2).weight(.black))
+                .tracking(0.5)
+        }
+        .foregroundColor(entry.badgeColor)
+        .padding(.horizontal, badgeHorizontalPadding)
+        .padding(.vertical, badgeVerticalPadding)
+        .background(entry.badgeBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .stroke(entry.badgeStroke, lineWidth: 1)
+        )
+    }
+
+    func badgeSymbol(for entry: LogEntry) -> String {
+        if entry.type == .violation {
+            return "xmark.octagon.fill"
+        }
+        return entry.badge == "EXTRA" ? "plus.circle.fill" : "checkmark.circle.fill"
+    }
+
+    func progressBar(percent: Int, accent: Color) -> some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule(style: .continuous)
+                    .fill(isDarkMode ? Color.white.opacity(0.07) : Color.black.opacity(0.06))
+
+                Capsule(style: .continuous)
+                    .fill(accent)
+                    .frame(width: max(0, min(1, CGFloat(percent) / 100)) * proxy.size.width)
+                    .shadow(color: accent.opacity(isDarkMode ? 0.4 : 0.22), radius: 6, x: 0, y: 0)
+            }
+        }
+        .frame(height: progressBarHeight)
+    }
+
+    func shouldShowDayHeader(for index: Int) -> Bool {
+        guard visibleHistoryEntries.indices.contains(index) else { return false }
+        if index == 0 { return true }
+        let current = visibleHistoryEntries[index].date
+        let previous = visibleHistoryEntries[index - 1].date
+        return DateRules.isoCalendar.isDate(current, inSameDayAs: previous) == false
+    }
+
+    func shouldShowConnector(for index: Int) -> Bool {
+        guard visibleHistoryEntries.indices.contains(index) else { return false }
+        let nextIndex = index + 1
+        guard visibleHistoryEntries.indices.contains(nextIndex) else { return false }
+        let current = visibleHistoryEntries[index].date
+        let next = visibleHistoryEntries[nextIndex].date
+        return DateRules.isoCalendar.isDate(current, inSameDayAs: next)
+    }
+
+    func dayHeaderLabel(for date: Date) -> String {
+        if DateRules.isoCalendar.isDateInToday(date) {
+            return "TODAY"
+        }
+        if DateRules.isoCalendar.isDateInYesterday(date) {
+            return "YESTERDAY"
+        }
+        return CockpitLogsDateFormatters.dayHeader.string(from: date).uppercased()
     }
 }
 
@@ -452,7 +598,7 @@ private extension CockpitLogsScreen {
             showHistorySection = true
             revealedMatrixCount = matrixDays.count
             metricsAnimatedIn = true
-            revealedHistoryCount = 3
+            revealedHistoryCount = historyPreviewCount
             didAnimateLogsPhase1SessionID = effectiveMotionSessionID
             return
         }
@@ -487,7 +633,7 @@ private extension CockpitLogsScreen {
             }
         }
 
-        for index in 0..<3 {
+        for index in 0..<historyPreviewCount {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.36 + (Double(index) * 0.06)) {
                 MotionRuntime.runMotion(reduceMotion, animation: Theme.Animation.content) {
                     revealedHistoryCount = max(revealedHistoryCount, index + 1)
@@ -636,10 +782,14 @@ private extension CockpitLogsScreen {
     }
 
     var textMain: Color { isDarkMode ? .white : Color(hex: "0B1220") }
-    var textSecondary: Color { isDarkMode ? Color.white.opacity(0.76) : Color(hex: "4B5563") }
-    var textMuted: Color { isDarkMode ? Color.white.opacity(0.62) : Color(hex: "5B6778") }
-    var textSubtle: Color { isDarkMode ? Color.white.opacity(0.52) : Color(hex: "6B7280") }
-    var weekdayHeaders: [String] { ["M", "T", "W", "T", "F", "S", "S"] }
+    var textSecondary: Color { isDarkMode ? Color.white.opacity(0.84) : Color(hex: "374151") }
+    var textMuted: Color { isDarkMode ? Color.white.opacity(0.74) : Color(hex: "475569") }
+    var textSubtle: Color { isDarkMode ? Color.white.opacity(0.68) : Color(hex: "546174") }
+    var historyPreviewCount: Int { 6 }
+    var visibleHistoryEntries: [LogEntry] {
+        Array(recentEntries.prefix(showAllHistory ? recentEntries.count : historyPreviewCount))
+    }
+    var weekdayHeaders: [String] { ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] }
 
     var adherencePillBackground: Color {
         if isRecoveryThemeActive {
@@ -1023,6 +1173,13 @@ private enum CockpitLogsDateFormatters {
         let formatter = DateFormatter()
         formatter.locale = .current
         formatter.dateFormat = "MMM d • h:mm a"
+        return formatter
+    }()
+
+    static let dayHeader: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.dateFormat = "EEE, MMM d"
         return formatter
     }()
 }

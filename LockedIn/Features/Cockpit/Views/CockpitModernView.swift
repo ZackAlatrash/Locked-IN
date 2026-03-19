@@ -28,6 +28,7 @@ struct CockpitModernView: View {
     let onWeeklyActivityTap: () -> Void
     let onStreakTap: () -> Void
     let onCapacityTap: () -> Void
+    let onCreateTap: () -> Void
     let onCheckInTap: () -> Void
     let onProtocolComplete: (UUID) -> Void
     let onProtocolTap: (UUID) -> Void
@@ -50,6 +51,9 @@ struct CockpitModernView: View {
     @ScaledMetric(relativeTo: .body) private var weeklyDayCircleSize: CGFloat = 36
     @ScaledMetric(relativeTo: .caption) private var capacityCapsuleWidth: CGFloat = 22
     @ScaledMetric(relativeTo: .caption) private var capacityCapsuleHeight: CGFloat = 8
+    @ScaledMetric(relativeTo: .caption) private var pausedBadgeHorizontalPadding: CGFloat = 10
+    @ScaledMetric(relativeTo: .caption) private var pausedBadgeVerticalPadding: CGFloat = 6
+    @ScaledMetric(relativeTo: .caption) private var pausedBadgeMinHeight: CGFloat = 26
 
     init(
         style: CockpitModernStyle,
@@ -74,6 +78,7 @@ struct CockpitModernView: View {
         onWeeklyActivityTap: @escaping () -> Void = {},
         onStreakTap: @escaping () -> Void = {},
         onCapacityTap: @escaping () -> Void = {},
+        onCreateTap: @escaping () -> Void = {},
         onCheckInTap: @escaping () -> Void = {},
         onProtocolComplete: @escaping (UUID) -> Void = { _ in },
         onProtocolTap: @escaping (UUID) -> Void = { _ in }
@@ -100,6 +105,7 @@ struct CockpitModernView: View {
         self.onWeeklyActivityTap = onWeeklyActivityTap
         self.onStreakTap = onStreakTap
         self.onCapacityTap = onCapacityTap
+        self.onCreateTap = onCreateTap
         self.onCheckInTap = onCheckInTap
         self.onProtocolComplete = onProtocolComplete
         self.onProtocolTap = onProtocolTap
@@ -452,29 +458,7 @@ private extension CockpitModernView {
 
     var activeProtocolsSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("ACTIVE PROTOCOLS")
-                    .font(.caption2.weight(.bold))
-                    .tracking(2.1)
-                    .foregroundColor(primary)
-                Spacer()
-                Button(action: onCheckInTap) {
-                    Label("CHECK IN", systemImage: "checkmark.seal.fill")
-                        .font(.caption2.weight(.black))
-                        .tracking(1.1)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 7)
-                        .background(
-                            Capsule(style: .continuous)
-                                .fill(primary.opacity(style == .dark ? 0.16 : 0.12))
-                        )
-                        .overlay(
-                            Capsule(style: .continuous)
-                                .stroke(primary.opacity(0.36), lineWidth: 1)
-                        )
-                }
-                .buttonStyle(CockpitPressScaleButtonStyle())
-            }
+            activeProtocolsHeader
 
             Button(action: onCapacityTap) {
                 HStack(alignment: .center, spacing: 12) {
@@ -527,6 +511,10 @@ private extension CockpitModernView {
             }
             .buttonStyle(CockpitPressScaleButtonStyle())
 
+            if todayCompleted == false {
+                checkInInlineCard
+            }
+
             VStack(spacing: 10) {
                 ForEach(Array(capacityProtocols.prefix(3).enumerated()), id: \.element.id) { index, task in
                     protocolRow(task)
@@ -537,8 +525,128 @@ private extension CockpitModernView {
         }
     }
 
+    var activeProtocolsHeader: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                headerTitle
+                Spacer(minLength: 0)
+                createProtocolButton
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    headerTitle
+                    Spacer(minLength: 0)
+                    createProtocolButton
+                }
+            }
+        }
+    }
+
+    var headerTitle: some View {
+        Text("ACTIVE PROTOCOLS")
+            .font(.caption2.weight(.bold))
+            .tracking(2.1)
+            .foregroundColor(primary)
+            .lineLimit(1)
+    }
+
+    var createProtocolButton: some View {
+        Button(action: onCreateTap) {
+            Label("ADD PROTOCOL", systemImage: "plus.circle.fill")
+                .font(.caption2.weight(.black))
+                .tracking(1.1)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .frame(minHeight: 44)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(primary.opacity(style == .dark ? 0.2 : 0.14))
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(primary.opacity(0.42), lineWidth: 1)
+                )
+        }
+        .buttonStyle(CockpitPressScaleButtonStyle())
+        .accessibilityLabel("Create protocol")
+    }
+
+    var checkInButton: some View {
+        Button(action: onCheckInTap) {
+            Label("CHECK IN", systemImage: "checkmark.seal.fill")
+                .font(.caption2.weight(.black))
+                .tracking(1.1)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .frame(minHeight: 44)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(primary.opacity(style == .dark ? 0.16 : 0.12))
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(primary.opacity(0.36), lineWidth: 1)
+                )
+        }
+        .buttonStyle(CockpitPressScaleButtonStyle())
+    }
+
+    var checkInInlineCard: some View {
+        Button(action: onCheckInTap) {
+            HStack(spacing: 12) {
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.system(size: 15, weight: .black))
+                    .foregroundColor(primary)
+                    .frame(width: 24, height: 24)
+                    .background(
+                        Circle()
+                            .fill(primary.opacity(style == .dark ? 0.16 : 0.12))
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("CHECK IN")
+                        .font(.caption.weight(.black))
+                        .tracking(1.2)
+                        .foregroundColor(textMain)
+                    Text("Complete today’s review")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(textSecondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundColor(primary.opacity(0.92))
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(minHeight: 52)
+            .background(glassCard)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(primary.opacity(0.3), lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(CockpitPressScaleButtonStyle())
+        .accessibilityLabel("Check in")
+        .accessibilityHint("Opens the daily check-in flow")
+    }
+
     func protocolRow(_ task: TodayTask) -> some View {
+        let paused = task.isPaused
         let completionTint: Color = {
+            if paused {
+                return style == .dark ? Color.white.opacity(0.5) : Color.black.opacity(0.42)
+            }
             switch task.completionVisual {
             case .none:
                 return primary
@@ -582,13 +690,13 @@ private extension CockpitModernView {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(task.title)
                             .font(.headline.weight(.semibold))
-                            .foregroundColor(textMain)
+                            .foregroundColor(paused ? textSecondary : textMain)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                         Text(task.subtitle.uppercased())
                             .font(.caption2.weight(.medium))
                             .tracking(1.2)
-                            .foregroundColor(textSecondary)
+                            .foregroundColor(paused ? textSecondary.opacity(0.86) : textSecondary)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -596,9 +704,25 @@ private extension CockpitModernView {
 
                     Spacer()
 
+                    if paused {
+                        Text("PAUSED")
+                            .font(.caption.weight(.black))
+                            .tracking(0.8)
+                            .foregroundColor(textSecondary)
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .padding(.horizontal, pausedBadgeHorizontalPadding)
+                            .padding(.vertical, pausedBadgeVerticalPadding)
+                            .frame(minHeight: pausedBadgeMinHeight)
+                            .background(
+                                Capsule(style: .continuous)
+                                    .fill(style == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08))
+                            )
+                    }
+
                     Image(systemName: ProtocolIconCatalog.resolvedSymbolName(task.iconSystemName, fallback: "scope"))
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(primary.opacity(0.72))
+                        .foregroundColor(paused ? textSecondary : primary.opacity(0.72))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.leading, 6)
@@ -615,6 +739,7 @@ private extension CockpitModernView {
                 .stroke(glassStroke, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .opacity(paused ? 0.72 : 1)
     }
 
     func runEntranceIfNeeded() {

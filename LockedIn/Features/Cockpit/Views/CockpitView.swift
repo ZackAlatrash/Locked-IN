@@ -67,21 +67,6 @@ struct CockpitView: View {
                         .foregroundColor(navItemColor)
                 }
                 .accessibilityLabel("Open profile")
-
-                Button {
-                    perform(.openCreate)
-                } label: {
-                    Circle()
-                        .fill(navAvatarBackground)
-                        .frame(width: 32, height: 32)
-                        .overlay(
-                            Text("+")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(navItemColor)
-                        )
-                        .overlay(Circle().stroke(navAvatarStroke, lineWidth: 1))
-                }
-                .accessibilityLabel("Create non-negotiable")
             }
         }
         .navigationDestination(item: $activeRoute) { route in
@@ -224,6 +209,7 @@ private extension CockpitView {
             onWeeklyActivityTap: { perform(.openWeeklyActivity) },
             onStreakTap: { perform(.openStreak) },
             onCapacityTap: { perform(.openCapacity) },
+            onCreateTap: { perform(.openCreate) },
             onCheckInTap: {
                 Haptics.selection()
                 onRequestDailyCheckIn()
