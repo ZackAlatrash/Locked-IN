@@ -44,22 +44,6 @@ struct CockpitView: View {
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
-                    perform(.openLogs)
-                } label: {
-                    ZStack(alignment: .topTrailing) {
-                        Image(systemName: "bell")
-                            .font(.system(size: 18, weight: .medium))
-
-                        Circle()
-                            .fill(accentColor)
-                            .frame(width: 7, height: 7)
-                            .offset(x: 5, y: -3)
-                    }
-                    .foregroundColor(navItemColor)
-                }
-                .accessibilityLabel("Open logs")
-
-                Button {
                     perform(.openProfile)
                 } label: {
                     Image(systemName: "person.crop.circle")

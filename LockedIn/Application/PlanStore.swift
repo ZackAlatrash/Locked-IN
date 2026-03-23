@@ -342,7 +342,10 @@ final class PlanStore: ObservableObject {
         saveAndRefresh()
     }
 
-    func finalizeRecoveryAllocationStatuses(referenceDate: Date = Date()) {
+    func finalizeRecoveryAllocationStatuses(
+        referenceDate: Date = Date(),
+        restorableProtocolIds: Set<UUID>
+    ) {
         let now = referenceDate
         var didMutate = false
 
@@ -350,7 +353,13 @@ final class PlanStore: ObservableObject {
             guard allAllocations[index].status == .paused else { continue }
             guard let effectiveStart = effectiveAllocationStartDate(allAllocations[index]) else { continue }
 
-            let nextStatus: PlanAllocationStatus = effectiveStart >= now ? .active : .skippedDueToRecovery
+            let protocolId = allAllocations[index].protocolId
+            let nextStatus: PlanAllocationStatus
+            if restorableProtocolIds.contains(protocolId) {
+                nextStatus = effectiveStart >= now ? .active : .skippedDueToRecovery
+            } else {
+                nextStatus = .skippedDueToRecovery
+            }
             guard allAllocations[index].status != nextStatus else { continue }
 
             allAllocations[index].status = nextStatus
@@ -569,6 +578,7 @@ private extension PlanStore {
         let mode: NonNegotiableMode
         let frequencyPerWeek: Int
         let state: NonNegotiableState
+        let createdAt: Date
         let estimatedDurationMinutes: Int
         let tone: PlanTone
         let icon: String
@@ -691,6 +701,7 @@ private extension PlanStore {
                 mode: nn.definition.mode,
                 frequencyPerWeek: nn.definition.frequencyPerWeek,
                 state: nn.state,
+                createdAt: nn.createdAt,
                 estimatedDurationMinutes: nn.definition.estimatedDurationMinutes,
                 tone: tone,
                 icon: nn.definition.iconSystemName,
@@ -768,12 +779,13 @@ private extension PlanStore {
                 $0.protocolId == descriptor.id && $0.status == .active
             }.count
 
+            let weeklyTarget = effectiveWeeklyTarget(for: descriptor, in: weekInterval)
             let remaining: Int
             switch descriptor.mode {
             case .daily:
-                remaining = max(0, 7 - descriptor.completionsThisWeek - plannedThisWeek)
+                remaining = max(0, weeklyTarget - descriptor.completionsThisWeek - plannedThisWeek)
             case .session:
-                remaining = max(0, descriptor.frequencyPerWeek - descriptor.completionsThisWeek - plannedThisWeek)
+                remaining = max(0, weeklyTarget - descriptor.completionsThisWeek - plannedThisWeek)
             }
 
             guard remaining > 0 || descriptor.state == .suspended else { return nil }
@@ -1158,6 +1170,29 @@ private extension PlanStore {
             return true
         }
         return protocolsById.values.contains(where: { $0.state == .recovery })
+    }
+
+    func effectiveWeeklyTarget(for descriptor: PlanProtocolDescriptor, in week: DateInterval) -> Int {
+        switch descriptor.mode {
+        case .daily:
+            return 7
+        case .session:
+            guard isInitialPartialGraceWeek(for: descriptor, in: week) == false else {
+                return 0
+            }
+            return descriptor.frequencyPerWeek
+        }
+    }
+
+    func isInitialPartialGraceWeek(for descriptor: PlanProtocolDescriptor, in week: DateInterval) -> Bool {
+        guard descriptor.mode == .session else { return false }
+
+        let creationWeekId = DateRules.weekID(for: descriptor.createdAt, calendar: calendar)
+        let weekId = DateRules.weekID(for: week.start, calendar: calendar)
+        guard creationWeekId == weekId else { return false }
+
+        // Increment 4 keeps current normalized createdAt semantics.
+        return descriptor.createdAt > week.start
     }
 
     func availabilityLabel(_ freeMinutes: Int) -> String {

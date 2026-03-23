@@ -84,25 +84,6 @@ struct PlanScreen: View {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
                     Haptics.selection()
-                    selectedTab = .logs
-                } label: {
-                    ZStack(alignment: .topTrailing) {
-                        Image(systemName: "bell")
-                            .font(.system(size: 18, weight: .medium))
-
-                        Circle()
-                            .fill(accentColor)
-                            .frame(width: 7, height: 7)
-                            .offset(x: 5, y: -3)
-                    }
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-                    .foregroundColor(navItemColor)
-                }
-                .accessibilityLabel("Open logs")
-
-                Button {
-                    Haptics.selection()
                     showProfile = true
                 } label: {
                     Image(systemName: "person.crop.circle")

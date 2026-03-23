@@ -151,8 +151,7 @@ final class CommitmentSystemStore: ObservableObject {
 
         var updated = system
         updated.nonNegotiables[index].state = .retired
-        system = updated
-        persistSystem()
+        applyPostMutationRecoveryNormalization(updated, referenceDate: referenceDate)
     }
 
     func removeNonNegotiable(id: UUID) throws {
@@ -343,6 +342,12 @@ final class CommitmentSystemStore: ObservableObject {
 
         let candidateIds = system.nonNegotiables
             .filter { $0.state == .active || $0.state == .recovery }
+            .sorted { lhs, rhs in
+                if lhs.createdAt != rhs.createdAt {
+                    return lhs.createdAt < rhs.createdAt
+                }
+                return lhs.id.uuidString < rhs.id.uuidString
+            }
             .map(\.id)
 
         return RecoveryEntryContext(
@@ -433,7 +438,14 @@ final class CommitmentSystemStore: ObservableObject {
     }
 
     func currentStreakDays(referenceDate: Date) -> Int {
-        streakEngine.currentStreakDays(from: countedCompletionLog, referenceDate: referenceDate)
+        let completionsUpToNow = countedCompletionLog.filter { $0.date <= referenceDate }
+        let violationsUpToNow = violationLog.filter { $0.date <= referenceDate }
+        return streakEngine.currentStreakDays(
+            from: completionsUpToNow,
+            violations: violationsUpToNow,
+            referenceDate: referenceDate,
+            trackingStartDate: streakTrackingStartDate(referenceDate: referenceDate)
+        )
     }
 
     func countedCompletions(for nnId: UUID, weekId: WeekID) -> Int {
@@ -471,6 +483,16 @@ final class CommitmentSystemStore: ObservableObject {
                 violations: violationByDay[day] ?? []
             )
         }
+    }
+
+    func streakTrackingStartDate(referenceDate: Date) -> Date? {
+        let completionStarts = countedCompletionLog
+            .filter { $0.date <= referenceDate }
+            .map { DateRules.startOfDay($0.date, calendar: calendar) }
+        let violationStarts = violationLog
+            .filter { $0.date <= referenceDate }
+            .map { DateRules.startOfDay($0.date, calendar: calendar) }
+        return (completionStarts + violationStarts).min()
     }
 
     func logsCalendarSignals(lastDays: Int, referenceDate: Date) -> [LogsCalendarDaySignal] {
@@ -653,6 +675,15 @@ final class CommitmentSystemStore: ObservableObject {
         persistSystem()
     }
 
+    private func applyPostMutationRecoveryNormalization(
+        _ updatedSystem: CommitmentSystem,
+        referenceDate: Date
+    ) {
+        var normalized = updatedSystem
+        _ = systemEngine.normalizeRecoveryDomain(in: &normalized)
+        applySystemUpdate(normalized, referenceDate: referenceDate)
+    }
+
     private func handleRecoveryTransition(
         from previous: CommitmentSystem,
         to updated: inout CommitmentSystem,
@@ -722,10 +753,7 @@ final class CommitmentSystemStore: ObservableObject {
             guard isWithinLockInterval(day: day, lock: nonNegotiable.lock) else { return false }
             guard lockIntervalIntersectsWeek(nonNegotiable.lock, week: week) else { return false }
 
-            let weeklyTarget = NonNegotiableDefinition.normalizedFrequency(
-                nonNegotiable.definition.frequencyPerWeek,
-                mode: nonNegotiable.definition.mode
-            )
+            let weeklyTarget = effectiveWeeklyTarget(for: nonNegotiable, in: week)
             guard weeklyTarget > 0 else { return false }
 
             let countedSoFar = nonNegotiable.completions.reduce(into: 0) { partial, completion in
@@ -776,10 +804,7 @@ final class CommitmentSystemStore: ObservableObject {
                 return hasCountedToday == false
 
             case .session:
-                let weeklyTarget = NonNegotiableDefinition.normalizedFrequency(
-                    nonNegotiable.definition.frequencyPerWeek,
-                    mode: nonNegotiable.definition.mode
-                )
+                let weeklyTarget = effectiveWeeklyTarget(for: nonNegotiable, in: week)
                 guard weeklyTarget > 0 else { return false }
 
                 let countedSoFarWeek = nonNegotiable.completions.reduce(into: 0) { partial, completion in
@@ -801,6 +826,29 @@ final class CommitmentSystemStore: ObservableObject {
                 return remainingNeeded > feasibleFutureDays
             }
         }
+    }
+
+    private func effectiveWeeklyTarget(for nonNegotiable: NonNegotiable, in week: DateInterval) -> Int {
+        let normalizedTarget = NonNegotiableDefinition.normalizedFrequency(
+            nonNegotiable.definition.frequencyPerWeek,
+            mode: nonNegotiable.definition.mode
+        )
+        guard normalizedTarget > 0 else { return 0 }
+        guard isInitialPartialGraceWeek(for: nonNegotiable, in: week) == false else {
+            return 0
+        }
+        return normalizedTarget
+    }
+
+    private func isInitialPartialGraceWeek(for nonNegotiable: NonNegotiable, in week: DateInterval) -> Bool {
+        guard nonNegotiable.definition.mode == .session else { return false }
+
+        let creationWeekId = DateRules.weekID(for: nonNegotiable.createdAt, calendar: calendar)
+        let weekId = DateRules.weekID(for: week.start, calendar: calendar)
+        guard creationWeekId == weekId else { return false }
+
+        // Increment 4 keeps current normalized createdAt semantics.
+        return nonNegotiable.createdAt > week.start
     }
 
     private func feasibleCompletionDays(

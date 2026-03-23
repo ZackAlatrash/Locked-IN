@@ -13,6 +13,22 @@ struct CompletionWriteOutcome: Equatable {
     let kind: CompletionKind
 }
 
+struct RecoveryNormalizationDecision: Equatable {
+    let shouldContinueRecovery: Bool
+    let exitedRecovery: Bool
+    let recoveryEligibleCount: Int
+    let runnableCount: Int
+    let clearedPausedProtocolId: Bool
+    let clearedPendingState: Bool
+}
+
+struct RecoveryEntryPendingDecision: Equatable {
+    let pendingResolution: Bool
+    let requiresPauseSelection: Bool
+    let triggerProtocolId: UUID?
+    let candidateProtocolIds: [UUID]
+}
+
 final class CommitmentSystemEngine {
     private let nonNegotiableEngine: NonNegotiableEngine
     private let requireCompletionForCleanDay: Bool
@@ -139,6 +155,81 @@ final class CommitmentSystemEngine {
         system.lastRecoveryEvaluationDay = evaluationDay
     }
 
+    @discardableResult
+    func normalizeRecoveryDomain(in system: inout CommitmentSystem) -> RecoveryNormalizationDecision {
+        var clearedPausedProtocolId = false
+        var clearedPendingState = false
+        var exitedRecovery = false
+
+        if let pausedId = system.recoveryPausedProtocolId {
+            let pausedProtocolState = system.nonNegotiables.first(where: { $0.id == pausedId })?.state
+            if pausedProtocolState != .suspended {
+                system.recoveryPausedProtocolId = nil
+                clearedPausedProtocolId = true
+            }
+        }
+
+        let recoveryEligibleIds = recoveryEligibleProtocolIds(in: system)
+        let recoveryEligibleCount = recoveryEligibleIds.count
+
+        let hasRecovery = system.nonNegotiables.contains(where: { $0.state == .recovery })
+        if hasRecovery && recoveryEligibleCount < 2 {
+            for index in system.nonNegotiables.indices where system.nonNegotiables[index].state == .recovery {
+                system.nonNegotiables[index].state = .active
+            }
+
+            resumeSuspendedIfCapacityAllows(in: &system)
+            system.recoveryCleanDayStreak = 0
+            exitedRecovery = true
+        }
+
+        let stillInRecovery = system.nonNegotiables.contains(where: { $0.state == .recovery })
+
+        if stillInRecovery {
+            let pendingDecision = recomputeRecoveryEntryPendingDecision(in: system)
+
+            if system.recoveryEntryPendingResolution != pendingDecision.pendingResolution {
+                system.recoveryEntryPendingResolution = pendingDecision.pendingResolution
+                clearedPendingState = true
+            }
+            if system.recoveryEntryRequiresPauseSelection != pendingDecision.requiresPauseSelection {
+                system.recoveryEntryRequiresPauseSelection = pendingDecision.requiresPauseSelection
+                clearedPendingState = true
+            }
+            if system.recoveryEntryTriggerProtocolId != pendingDecision.triggerProtocolId {
+                system.recoveryEntryTriggerProtocolId = pendingDecision.triggerProtocolId
+                clearedPendingState = true
+            }
+        } else if system.recoveryEntryPendingResolution ||
+                    system.recoveryEntryRequiresPauseSelection ||
+                    system.recoveryEntryTriggerProtocolId != nil ||
+                    system.recoveryPausedProtocolId != nil {
+            system.recoveryEntryPendingResolution = false
+            system.recoveryEntryRequiresPauseSelection = false
+            system.recoveryEntryTriggerProtocolId = nil
+            system.recoveryPausedProtocolId = nil
+            clearedPendingState = true
+            if clearedPausedProtocolId == false {
+                clearedPausedProtocolId = true
+            }
+        }
+
+        let runnableCount = system.nonNegotiables.reduce(into: 0) { partial, nonNegotiable in
+            if isRunnable(nonNegotiable) {
+                partial += 1
+            }
+        }
+
+        return RecoveryNormalizationDecision(
+            shouldContinueRecovery: stillInRecovery,
+            exitedRecovery: exitedRecovery,
+            recoveryEligibleCount: recoveryEligibleCount,
+            runnableCount: runnableCount,
+            clearedPausedProtocolId: clearedPausedProtocolId,
+            clearedPendingState: clearedPendingState
+        )
+    }
+
     func evaluateDailyCompliance(currentDate: Date, in system: inout CommitmentSystem) {
         for index in system.nonNegotiables.indices {
             let state = system.nonNegotiables[index].state
@@ -228,6 +319,73 @@ final class CommitmentSystemEngine {
         system.nonNegotiables.contains(where: { $0.state == .recovery })
     }
 
+    private func recoveryEligibleProtocolIds(in system: CommitmentSystem) -> [UUID] {
+        system.nonNegotiables
+            .filter { isRecoveryEligible($0) }
+            .sorted { lhs, rhs in
+                if lhs.createdAt != rhs.createdAt {
+                    return lhs.createdAt < rhs.createdAt
+                }
+                return lhs.id.uuidString < rhs.id.uuidString
+            }
+            .map(\.id)
+    }
+
+    private func recomputeRecoveryEntryPendingDecision(in system: CommitmentSystem) -> RecoveryEntryPendingDecision {
+        let candidateIds = recoveryEligibleProtocolIds(in: system)
+
+        guard system.recoveryEntryPendingResolution else {
+            return RecoveryEntryPendingDecision(
+                pendingResolution: false,
+                requiresPauseSelection: false,
+                triggerProtocolId: nil,
+                candidateProtocolIds: candidateIds
+            )
+        }
+
+        let needsUserDecision = system.recoveryPausedProtocolId == nil && candidateIds.count > 1
+        if needsUserDecision == false {
+            return RecoveryEntryPendingDecision(
+                pendingResolution: false,
+                requiresPauseSelection: false,
+                triggerProtocolId: nil,
+                candidateProtocolIds: candidateIds
+            )
+        }
+
+        let nextTriggerProtocolId: UUID?
+        if let triggerId = system.recoveryEntryTriggerProtocolId,
+           system.nonNegotiables.contains(where: { $0.id == triggerId && $0.state == .recovery }) {
+            nextTriggerProtocolId = triggerId
+        } else {
+            nextTriggerProtocolId = system.nonNegotiables
+                .filter { $0.state == .recovery }
+                .sorted { lhs, rhs in
+                    if lhs.createdAt != rhs.createdAt {
+                        return lhs.createdAt < rhs.createdAt
+                    }
+                    return lhs.id.uuidString < rhs.id.uuidString
+                }
+                .first?
+                .id
+        }
+
+        return RecoveryEntryPendingDecision(
+            pendingResolution: true,
+            requiresPauseSelection: true,
+            triggerProtocolId: nextTriggerProtocolId,
+            candidateProtocolIds: candidateIds
+        )
+    }
+
+    private func isRecoveryEligible(_ nonNegotiable: NonNegotiable) -> Bool {
+        nonNegotiable.state == .active || nonNegotiable.state == .recovery
+    }
+
+    private func isRunnable(_ nonNegotiable: NonNegotiable) -> Bool {
+        nonNegotiable.state == .active || nonNegotiable.state == .recovery
+    }
+
     private func isCleanRecoveryDay(
         _ day: Date,
         in system: CommitmentSystem,
@@ -300,9 +458,10 @@ final class CommitmentSystemEngine {
                 return hasCountedToday == false
 
             case .session:
-                let weeklyTarget = NonNegotiableDefinition.normalizedFrequency(
-                    nonNegotiable.definition.frequencyPerWeek,
-                    mode: nonNegotiable.definition.mode
+                let weeklyTarget = effectiveWeeklyTarget(
+                    for: nonNegotiable,
+                    in: week,
+                    calendar: calendar
                 )
                 guard weeklyTarget > 0 else { return false }
 
@@ -326,6 +485,37 @@ final class CommitmentSystemEngine {
                 return remainingNeeded > feasibleFutureDays
             }
         }
+    }
+
+    private func effectiveWeeklyTarget(
+        for nonNegotiable: NonNegotiable,
+        in week: DateInterval,
+        calendar: Calendar
+    ) -> Int {
+        let normalizedTarget = NonNegotiableDefinition.normalizedFrequency(
+            nonNegotiable.definition.frequencyPerWeek,
+            mode: nonNegotiable.definition.mode
+        )
+        guard normalizedTarget > 0 else { return 0 }
+        guard isInitialPartialGraceWeek(for: nonNegotiable, in: week, calendar: calendar) == false else {
+            return 0
+        }
+        return normalizedTarget
+    }
+
+    private func isInitialPartialGraceWeek(
+        for nonNegotiable: NonNegotiable,
+        in week: DateInterval,
+        calendar: Calendar
+    ) -> Bool {
+        guard nonNegotiable.definition.mode == .session else { return false }
+
+        let creationWeekId = DateRules.weekID(for: nonNegotiable.createdAt, calendar: calendar)
+        let weekId = DateRules.weekID(for: week.start, calendar: calendar)
+        guard creationWeekId == weekId else { return false }
+
+        // Increment 4 keeps current normalized createdAt semantics.
+        return nonNegotiable.createdAt > week.start
     }
 
     private func feasibleCompletionDays(

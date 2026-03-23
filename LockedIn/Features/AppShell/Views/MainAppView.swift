@@ -169,7 +169,10 @@ struct MainAppView: View {
         .onChange(of: store.system) { system in
             let isRecoveryActive = system.nonNegotiables.contains(where: { $0.state == .recovery })
             if wasRecoveryActive && isRecoveryActive == false {
-                planStore.finalizeRecoveryAllocationStatuses(referenceDate: appClock.now)
+                planStore.finalizeRecoveryAllocationStatuses(
+                    referenceDate: appClock.now,
+                    restorableProtocolIds: activeProtocolIdsForRecoveryRestoration()
+                )
             }
             wasRecoveryActive = isRecoveryActive
             evaluateRecoveryEntryPresentation(now: appClock.now)
@@ -258,10 +261,21 @@ private extension MainAppView {
             router.dismissDailyCheckIn()
         } else {
             if store.system.nonNegotiables.contains(where: { $0.state == .recovery }) == false {
-                planStore.finalizeRecoveryAllocationStatuses(referenceDate: now)
+                planStore.finalizeRecoveryAllocationStatuses(
+                    referenceDate: now,
+                    restorableProtocolIds: activeProtocolIdsForRecoveryRestoration()
+                )
             }
             router.dismissRecoveryEntry()
         }
+    }
+
+    func activeProtocolIdsForRecoveryRestoration() -> Set<UUID> {
+        Set(
+            store.system.nonNegotiables
+                .filter { $0.state == .active }
+                .map(\.id)
+        )
     }
 
     func evaluateDailyCheckInAutoPresentation(now: Date = Date()) {

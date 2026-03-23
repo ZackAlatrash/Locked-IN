@@ -79,25 +79,6 @@ struct CockpitLogsScreen: View {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
                     Haptics.selection()
-                    selectedTab = .logs
-                } label: {
-                    ZStack(alignment: .topTrailing) {
-                        Image(systemName: "bell")
-                            .font(.system(size: 18, weight: .medium))
-
-                        Circle()
-                            .fill(activeAccent)
-                            .frame(width: 7, height: 7)
-                            .offset(x: 5, y: -3)
-                    }
-                    .foregroundColor(navItemColor)
-                    .frame(width: 44, height: 44, alignment: .center)
-                    .contentShape(Rectangle())
-                }
-                .accessibilityLabel("Open logs")
-
-                Button {
-                    Haptics.selection()
                     showProfile = true
                 } label: {
                     Image(systemName: "person.crop.circle")

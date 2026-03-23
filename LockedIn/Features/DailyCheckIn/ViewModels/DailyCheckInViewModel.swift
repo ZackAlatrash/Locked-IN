@@ -47,6 +47,7 @@ final class DailyCheckInViewModel: ObservableObject {
     func refresh() {
         let now = referenceDateProvider()
         let weekId = DateRules.weekID(for: now, calendar: calendar)
+        let weekInterval = DateRules.weekInterval(containing: now, calendar: calendar)
         let today = DateRules.startOfDay(now, calendar: calendar)
         let snapshot = planStore.currentWeekSnapshot()
 
@@ -68,12 +69,14 @@ final class DailyCheckInViewModel: ObservableObject {
                 $0.kind == .extra && DateRules.startOfDay($0.date, calendar: calendar) == today
             }
 
+            let weeklyTarget = effectiveWeeklyTarget(for: protocolModel, in: weekInterval)
+            let isSessionGraceWeek = protocolModel.definition.mode == .session && weeklyTarget == 0
             let remainingWeek: Int
             switch protocolModel.definition.mode {
             case .daily:
-                remainingWeek = max(0, 7 - completionsThisWeek - plannedThisWeek)
+                remainingWeek = max(0, weeklyTarget - completionsThisWeek - plannedThisWeek)
             case .session:
-                remainingWeek = max(0, protocolModel.definition.frequencyPerWeek - completionsThisWeek - plannedThisWeek)
+                remainingWeek = max(0, weeklyTarget - completionsThisWeek - plannedThisWeek)
             }
 
             let needsAttention: Bool
@@ -81,17 +84,18 @@ final class DailyCheckInViewModel: ObservableObject {
             case .daily:
                 needsAttention = completedToday == false
             case .session:
-                needsAttention = completedToday == false && remainingWeek > 0
+                needsAttention = isSessionGraceWeek == false && completedToday == false && remainingWeek > 0
             }
 
             let isSuspended = protocolModel.state == .suspended
             let canLogExtraSession = protocolModel.definition.mode == .session
+                && isSessionGraceWeek == false
                 && remainingWeek == 0
                 && completedToday == false
                 && extraLoggedToday == false
                 && isSuspended == false
             let canMarkDone = isSuspended == false && (
-                (completedToday == false && remainingWeek > 0) || canLogExtraSession
+                (completedToday == false && (remainingWeek > 0 || isSessionGraceWeek)) || canLogExtraSession
             )
             let canResolve = needsAttention && isSuspended == false
 
@@ -108,6 +112,10 @@ final class DailyCheckInViewModel: ObservableObject {
                 actionDisabledReason = "Already completed today."
             } else if protocolModel.definition.mode == .daily {
                 statusText = "Due today"
+                actionTitle = "Mark Done"
+                actionDisabledReason = nil
+            } else if isSessionGraceWeek {
+                statusText = "Grace week"
                 actionTitle = "Mark Done"
                 actionDisabledReason = nil
             } else if remainingWeek > 0 {
@@ -134,7 +142,7 @@ final class DailyCheckInViewModel: ObservableObject {
                 modeLabel: protocolModel.definition.mode == .daily ? "DAILY" : "SESSION",
                 statusText: statusText,
                 remainingWeekText: protocolModel.definition.mode == .session
-                    ? "\(remainingWeek) remaining this week"
+                    ? (isSessionGraceWeek ? "Grace week" : "\(remainingWeek) remaining this week")
                     : nil,
                 completedToday: completedToday,
                 isExtraToday: extraLoggedToday,
@@ -438,13 +446,18 @@ private extension DailyCheckInViewModel {
         guard tracked.isEmpty == false else { return 92 }
 
         let weekId = DateRules.weekID(for: referenceDate, calendar: calendar)
-        let target = max(1, tracked.reduce(0) { $0 + $1.definition.frequencyPerWeek })
+        let weekInterval = DateRules.weekInterval(containing: referenceDate, calendar: calendar)
+        let rawTarget = tracked.reduce(into: 0) { partial, nonNegotiable in
+            partial += effectiveWeeklyTarget(for: nonNegotiable, in: weekInterval)
+        }
+        guard rawTarget > 0 else { return 92 }
+
         let completions = tracked.reduce(0) { partial, item in
             partial + item.completions.filter {
                 $0.weekId == weekId && $0.kind == .counted
             }.count
         }
-        let completionRate = min(1.0, Double(completions) / Double(target))
+        let completionRate = min(1.0, Double(completions) / Double(rawTarget))
         var score = Int((completionRate * 40.0) + 58.0)
 
         let suspendedCount = tracked.filter { $0.state == .suspended }.count
@@ -462,6 +475,29 @@ private extension DailyCheckInViewModel {
         case .session:
             return 60
         }
+    }
+
+    func effectiveWeeklyTarget(for nonNegotiable: NonNegotiable, in week: DateInterval) -> Int {
+        switch nonNegotiable.definition.mode {
+        case .daily:
+            return 7
+        case .session:
+            guard isInitialPartialGraceWeek(for: nonNegotiable, in: week) == false else {
+                return 0
+            }
+            return nonNegotiable.definition.frequencyPerWeek
+        }
+    }
+
+    func isInitialPartialGraceWeek(for nonNegotiable: NonNegotiable, in week: DateInterval) -> Bool {
+        guard nonNegotiable.definition.mode == .session else { return false }
+
+        let creationWeekId = DateRules.weekID(for: nonNegotiable.createdAt, calendar: calendar)
+        let weekId = DateRules.weekID(for: week.start, calendar: calendar)
+        guard creationWeekId == weekId else { return false }
+
+        // Increment 4 keeps current normalized createdAt semantics.
+        return nonNegotiable.createdAt > week.start
     }
 }
 

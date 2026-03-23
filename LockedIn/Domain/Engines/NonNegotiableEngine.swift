@@ -33,10 +33,20 @@ struct CompletionDecision: Equatable {
 }
 
 struct NonNegotiableEngine {
+    private struct InitialPartialWeeklyGraceEvaluation {
+        let shouldSuppressShortfall: Bool
+        let creationWeekId: WeekID
+    }
+
     private let calendar: Calendar
+    private let graceDebugDateFormatter: ISO8601DateFormatter
 
     init(calendar: Calendar = DateRules.isoCalendar) {
         self.calendar = calendar
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        formatter.timeZone = calendar.timeZone
+        self.graceDebugDateFormatter = formatter
     }
 
     func create(definition: NonNegotiableDefinition, startDate: Date, totalLockDays: Int = 14) throws -> NonNegotiable {
@@ -154,7 +164,17 @@ struct NonNegotiableEngine {
         )
 
         let expected = expectedCompletionsPerWeek(for: nn.definition)
-        if completionCount < expected {
+        let graceEvaluation = evaluateInitialPartialWeeklyGrace(
+            for: nn,
+            weekId: weekId,
+            weekInterval: weekInterval
+        )
+        let shouldSuppressShortfall = graceEvaluation.shouldSuppressShortfall
+        let stateBefore = nn.state
+        let weeklyViolationCountBefore = nn.windows[windowIndex].weeklyViolationCount
+        let shouldAppendMissedWeekly = completionCount < expected && shouldSuppressShortfall == false
+
+        if shouldAppendMissedWeekly {
             nn.windows[windowIndex].weeklyViolationCount += 1
             nn.violations.append(
                 Violation(
@@ -168,6 +188,29 @@ struct NonNegotiableEngine {
 
         nn.windows[windowIndex].weeksEvaluated.insert(weekId)
         updateRecoveryState(&nn, windowIndex: windowIndex)
+
+        if shouldEmitGraceWeeklyDebugLog(
+            for: nn,
+            evaluatedWeekId: weekId,
+            creationWeekId: graceEvaluation.creationWeekId,
+            missedWeeklyAppended: shouldAppendMissedWeekly
+        ) {
+            emitGraceWeeklyDebugLog(
+                nonNegotiable: nn,
+                evaluatedDate: date,
+                weekId: weekId,
+                weekInterval: weekInterval,
+                creationWeekId: graceEvaluation.creationWeekId,
+                completionCount: completionCount,
+                expected: expected,
+                shouldSuppressShortfall: shouldSuppressShortfall,
+                missedWeeklyAppended: shouldAppendMissedWeekly,
+                weeklyViolationCountBefore: weeklyViolationCountBefore,
+                weeklyViolationCountAfter: nn.windows[windowIndex].weeklyViolationCount,
+                stateBefore: stateBefore,
+                stateAfter: nn.state
+            )
+        }
     }
 
     func advanceWindowIfNeeded(_ nn: inout NonNegotiable, currentDate: Date) {
@@ -238,6 +281,96 @@ struct NonNegotiableEngine {
 
     private func expectedCompletionsPerWeek(for definition: NonNegotiableDefinition) -> Int {
         NonNegotiableDefinition.normalizedFrequency(definition.frequencyPerWeek, mode: definition.mode)
+    }
+
+    private func shouldSuppressInitialPartialWeeklyShortfall(
+        for nn: NonNegotiable,
+        weekId: WeekID,
+        weekInterval: DateInterval
+    ) -> Bool {
+        evaluateInitialPartialWeeklyGrace(
+            for: nn,
+            weekId: weekId,
+            weekInterval: weekInterval
+        ).shouldSuppressShortfall
+    }
+
+    private func evaluateInitialPartialWeeklyGrace(
+        for nn: NonNegotiable,
+        weekId: WeekID,
+        weekInterval: DateInterval
+    ) -> InitialPartialWeeklyGraceEvaluation {
+        let creationWeekId = DateRules.weekID(for: nn.createdAt, calendar: calendar)
+        guard isQuotaWeekBased(nn.definition.mode) else {
+            return InitialPartialWeeklyGraceEvaluation(
+                shouldSuppressShortfall: false,
+                creationWeekId: creationWeekId
+            )
+        }
+        guard weekId == creationWeekId else {
+            return InitialPartialWeeklyGraceEvaluation(
+                shouldSuppressShortfall: false,
+                creationWeekId: creationWeekId
+            )
+        }
+
+        // Increment 3/4 uses current normalized createdAt semantics.
+        return InitialPartialWeeklyGraceEvaluation(
+            shouldSuppressShortfall: nn.createdAt > weekInterval.start,
+            creationWeekId: creationWeekId
+        )
+    }
+
+    private func isQuotaWeekBased(_ mode: NonNegotiableMode) -> Bool {
+        mode == .session
+    }
+
+    private func shouldEmitGraceWeeklyDebugLog(
+        for nn: NonNegotiable,
+        evaluatedWeekId: WeekID,
+        creationWeekId: WeekID,
+        missedWeeklyAppended: Bool
+    ) -> Bool {
+        guard nn.definition.mode == .session else { return false }
+        return evaluatedWeekId == creationWeekId || missedWeeklyAppended
+    }
+
+    private func emitGraceWeeklyDebugLog(
+        nonNegotiable: NonNegotiable,
+        evaluatedDate: Date,
+        weekId: WeekID,
+        weekInterval: DateInterval,
+        creationWeekId: WeekID,
+        completionCount: Int,
+        expected: Int,
+        shouldSuppressShortfall: Bool,
+        missedWeeklyAppended: Bool,
+        weeklyViolationCountBefore: Int,
+        weeklyViolationCountAfter: Int,
+        stateBefore: NonNegotiableState,
+        stateAfter: NonNegotiableState
+    ) {
+        let title = nonNegotiable.definition.title.replacingOccurrences(of: "\"", with: "'")
+        print(
+            "[GraceWeeklyDebug] " +
+            "protocolId=\(nonNegotiable.id.uuidString) " +
+            "title=\"\(title)\" " +
+            "mode=\(nonNegotiable.definition.mode.rawValue) " +
+            "createdAt=\(graceDebugDateFormatter.string(from: nonNegotiable.createdAt)) " +
+            "tickDate=\(graceDebugDateFormatter.string(from: evaluatedDate)) " +
+            "evaluatedWeekId=\(weekId.description) " +
+            "weekStart=\(graceDebugDateFormatter.string(from: weekInterval.start)) " +
+            "weekEnd=\(graceDebugDateFormatter.string(from: weekInterval.end)) " +
+            "creationWeekId=\(creationWeekId.description) " +
+            "completionCount=\(completionCount) " +
+            "expected=\(expected) " +
+            "shouldSuppressShortfall=\(shouldSuppressShortfall) " +
+            "missedWeeklyAppended=\(missedWeeklyAppended) " +
+            "weeklyViolationCountBefore=\(weeklyViolationCountBefore) " +
+            "weeklyViolationCountAfter=\(weeklyViolationCountAfter) " +
+            "stateBefore=\(stateBefore.rawValue) " +
+            "stateAfter=\(stateAfter.rawValue)"
+        )
     }
 
     private func windowIndex(for nn: NonNegotiable, date: Date) -> Int? {

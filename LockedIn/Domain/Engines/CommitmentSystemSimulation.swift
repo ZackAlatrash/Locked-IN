@@ -178,3 +178,403 @@ func runCommitmentSystemSimulation() {
         print("Simulation failed with error: \(error)")
     }
 }
+
+@MainActor
+func runRecoveryRetirementNormalizationSimulation() {
+    let calendar = DateRules.isoCalendar
+    let startDate = DateRules.date(year: 2026, month: 1, day: 1, hour: 0, calendar: calendar)
+    let retirementDate = DateRules.date(year: 2026, month: 2, day: 10, hour: 9, calendar: calendar)
+
+    func makeDefinition(title: String) -> NonNegotiableDefinition {
+        NonNegotiableDefinition(
+            title: title,
+            frequencyPerWeek: 3,
+            mode: .session,
+            goalId: UUID()
+        )
+    }
+
+    func makeNonNegotiable(
+        title: String,
+        state: NonNegotiableState,
+        createdAtOffset: Int,
+        engine: NonNegotiableEngine
+    ) -> NonNegotiable {
+        var nonNegotiable = try! engine.create(
+            definition: makeDefinition(title: title),
+            startDate: startDate,
+            totalLockDays: 14
+        )
+        nonNegotiable.state = state
+        nonNegotiable = NonNegotiable(
+            id: nonNegotiable.id,
+            goalId: nonNegotiable.goalId,
+            definition: nonNegotiable.definition,
+            state: nonNegotiable.state,
+            lock: nonNegotiable.lock,
+            createdAt: DateRules.addingDays(createdAtOffset, to: startDate, calendar: calendar),
+            windows: nonNegotiable.windows,
+            completions: nonNegotiable.completions,
+            violations: nonNegotiable.violations,
+            lastDailyComplianceCheckedDay: nonNegotiable.lastDailyComplianceCheckedDay
+        )
+        return nonNegotiable
+    }
+
+    func makeStore(system: CommitmentSystem) -> CommitmentSystemStore {
+        let repository = InMemoryCommitmentSystemRepository(initialSystem: system)
+        let nonNegotiableEngine = NonNegotiableEngine(calendar: calendar)
+        let commitmentEngine = CommitmentSystemEngine(nonNegotiableEngine: nonNegotiableEngine)
+        return CommitmentSystemStore(
+            repository: repository,
+            systemEngine: commitmentEngine,
+            nonNegotiableEngine: nonNegotiableEngine,
+            policy: CommitmentPolicyEngine(calendar: calendar),
+            streakEngine: StreakEngine(),
+            calendar: calendar
+        )
+    }
+
+    @discardableResult
+    func verify(_ label: String, _ condition: @autoclosure () -> Bool) -> Bool {
+        let passed = condition()
+        print("Recovery-Retirement Simulation - \(label): \(passed ? "PASS" : "FAIL")")
+        return passed
+    }
+
+    let engine = NonNegotiableEngine(calendar: calendar)
+
+    // Case 1: Paused protocol retires during recovery.
+    do {
+        let recovering = makeNonNegotiable(title: "Recovering", state: .recovery, createdAtOffset: 0, engine: engine)
+        let active = makeNonNegotiable(title: "Active", state: .active, createdAtOffset: 1, engine: engine)
+        let paused = makeNonNegotiable(title: "Paused", state: .suspended, createdAtOffset: 2, engine: engine)
+
+        var system = CommitmentSystem(nonNegotiables: [recovering, active, paused], createdAt: startDate)
+        system.recoveryPausedProtocolId = paused.id
+        let store = makeStore(system: system)
+
+        try store.retireNonNegotiable(id: paused.id, referenceDate: retirementDate)
+
+        verify("Case 1 - paused protocol retired", store.nonNegotiable(id: paused.id)?.state == .retired)
+        verify("Case 1 - stale paused id cleared", store.system.recoveryPausedProtocolId == nil)
+        verify("Case 1 - recovery continues when eligible set is still >= 2", store.system.nonNegotiables.contains(where: { $0.state == .recovery }))
+    } catch {
+        print("Recovery-Retirement Simulation - Case 1 threw error: \(error)")
+    }
+
+    // Case 2: Non-paused protocol retires during recovery and exits.
+    do {
+        let recovering = makeNonNegotiable(title: "Recovering", state: .recovery, createdAtOffset: 0, engine: engine)
+        let active = makeNonNegotiable(title: "Active", state: .active, createdAtOffset: 1, engine: engine)
+        let paused = makeNonNegotiable(title: "Paused", state: .suspended, createdAtOffset: 2, engine: engine)
+
+        var system = CommitmentSystem(nonNegotiables: [recovering, active, paused], createdAt: startDate)
+        system.recoveryPausedProtocolId = paused.id
+        let store = makeStore(system: system)
+
+        try store.retireNonNegotiable(id: active.id, referenceDate: retirementDate)
+
+        verify("Case 2 - recovery exits below threshold", store.system.nonNegotiables.contains(where: { $0.state == .recovery }) == false)
+        verify("Case 2 - pending flag cleared on exit", store.system.recoveryEntryPendingResolution == false)
+        verify("Case 2 - paused id cleared on exit", store.system.recoveryPausedProtocolId == nil)
+    } catch {
+        print("Recovery-Retirement Simulation - Case 2 threw error: \(error)")
+    }
+
+    // Case 3: All active protocols retire during recovery.
+    do {
+        let recovering = makeNonNegotiable(title: "Recovering", state: .recovery, createdAtOffset: 0, engine: engine)
+        let active = makeNonNegotiable(title: "Active", state: .active, createdAtOffset: 1, engine: engine)
+
+        let system = CommitmentSystem(nonNegotiables: [recovering, active], createdAt: startDate)
+        let store = makeStore(system: system)
+
+        try store.retireNonNegotiable(id: recovering.id, referenceDate: retirementDate)
+        try store.retireNonNegotiable(id: active.id, referenceDate: retirementDate)
+
+        verify("Case 3 - no recovery remains", store.system.nonNegotiables.contains(where: { $0.state == .recovery }) == false)
+        verify("Case 3 - all protocols retired", store.system.nonNegotiables.allSatisfy { $0.state == .retired })
+    } catch {
+        print("Recovery-Retirement Simulation - Case 3 threw error: \(error)")
+    }
+
+    // Case 4: Retirement outside recovery has no recovery side effects.
+    do {
+        let first = makeNonNegotiable(title: "First", state: .active, createdAtOffset: 0, engine: engine)
+        let second = makeNonNegotiable(title: "Second", state: .active, createdAtOffset: 1, engine: engine)
+
+        let system = CommitmentSystem(nonNegotiables: [first, second], createdAt: startDate)
+        let store = makeStore(system: system)
+
+        try store.retireNonNegotiable(id: first.id, referenceDate: retirementDate)
+
+        verify("Case 4 - no recovery activated", store.system.nonNegotiables.contains(where: { $0.state == .recovery }) == false)
+        verify("Case 4 - pending recovery remains false", store.system.recoveryEntryPendingResolution == false)
+        verify("Case 4 - paused id remains nil", store.system.recoveryPausedProtocolId == nil)
+    } catch {
+        print("Recovery-Retirement Simulation - Case 4 threw error: \(error)")
+    }
+
+    // Case 5: Stale paused id is cleared safely.
+    do {
+        let recovering = makeNonNegotiable(title: "Recovering", state: .recovery, createdAtOffset: 0, engine: engine)
+        let activeA = makeNonNegotiable(title: "ActiveA", state: .active, createdAtOffset: 1, engine: engine)
+        let activeB = makeNonNegotiable(title: "ActiveB", state: .active, createdAtOffset: 2, engine: engine)
+
+        var system = CommitmentSystem(nonNegotiables: [recovering, activeA, activeB], createdAt: startDate)
+        system.recoveryPausedProtocolId = UUID()
+        let store = makeStore(system: system)
+
+        try store.retireNonNegotiable(id: activeB.id, referenceDate: retirementDate)
+
+        verify("Case 5 - stale paused id cleared", store.system.recoveryPausedProtocolId == nil)
+        verify("Case 5 - recovery still active with 2 eligible protocols", store.system.nonNegotiables.contains(where: { $0.state == .recovery }))
+    } catch {
+        print("Recovery-Retirement Simulation - Case 5 threw error: \(error)")
+    }
+}
+
+@MainActor
+func runRecoveryPendingResolutionRecomputeSimulation() {
+    let calendar = DateRules.isoCalendar
+    let startDate = DateRules.date(year: 2026, month: 1, day: 1, hour: 0, calendar: calendar)
+    let retirementDate = DateRules.date(year: 2026, month: 2, day: 10, hour: 9, calendar: calendar)
+
+    func makeDefinition(title: String) -> NonNegotiableDefinition {
+        NonNegotiableDefinition(
+            title: title,
+            frequencyPerWeek: 3,
+            mode: .session,
+            goalId: UUID()
+        )
+    }
+
+    func makeNonNegotiable(
+        title: String,
+        state: NonNegotiableState,
+        createdAtOffset: Int,
+        engine: NonNegotiableEngine
+    ) -> NonNegotiable {
+        var nonNegotiable = try! engine.create(
+            definition: makeDefinition(title: title),
+            startDate: startDate,
+            totalLockDays: 14
+        )
+        nonNegotiable.state = state
+        return NonNegotiable(
+            id: nonNegotiable.id,
+            goalId: nonNegotiable.goalId,
+            definition: nonNegotiable.definition,
+            state: nonNegotiable.state,
+            lock: nonNegotiable.lock,
+            createdAt: DateRules.addingDays(createdAtOffset, to: startDate, calendar: calendar),
+            windows: nonNegotiable.windows,
+            completions: nonNegotiable.completions,
+            violations: nonNegotiable.violations,
+            lastDailyComplianceCheckedDay: nonNegotiable.lastDailyComplianceCheckedDay
+        )
+    }
+
+    func makeStore(system: CommitmentSystem) -> CommitmentSystemStore {
+        let repository = InMemoryCommitmentSystemRepository(initialSystem: system)
+        let nonNegotiableEngine = NonNegotiableEngine(calendar: calendar)
+        let commitmentEngine = CommitmentSystemEngine(nonNegotiableEngine: nonNegotiableEngine)
+        return CommitmentSystemStore(
+            repository: repository,
+            systemEngine: commitmentEngine,
+            nonNegotiableEngine: nonNegotiableEngine,
+            policy: CommitmentPolicyEngine(calendar: calendar),
+            streakEngine: StreakEngine(),
+            calendar: calendar
+        )
+    }
+
+    @discardableResult
+    func verify(_ label: String, _ condition: @autoclosure () -> Bool) -> Bool {
+        let passed = condition()
+        print("Recovery-Pending Simulation - \(label): \(passed ? "PASS" : "FAIL")")
+        return passed
+    }
+
+    let engine = NonNegotiableEngine(calendar: calendar)
+
+    // Case 1: Retirement while pause-selection pending removes one selectable candidate.
+    do {
+        let recovering = makeNonNegotiable(title: "Recovering", state: .recovery, createdAtOffset: 0, engine: engine)
+        let activeA = makeNonNegotiable(title: "Active-A", state: .active, createdAtOffset: 1, engine: engine)
+        let activeB = makeNonNegotiable(title: "Active-B", state: .active, createdAtOffset: 2, engine: engine)
+
+        var system = CommitmentSystem(nonNegotiables: [recovering, activeA, activeB], createdAt: startDate)
+        system.recoveryEntryPendingResolution = true
+        system.recoveryEntryRequiresPauseSelection = true
+        system.recoveryEntryTriggerProtocolId = recovering.id
+        let store = makeStore(system: system)
+
+        try store.retireNonNegotiable(id: activeB.id, referenceDate: retirementDate)
+        let context = store.recoveryEntryContext(referenceDate: retirementDate)
+
+        verify("Case 1 - pending still open", context != nil)
+        verify("Case 1 - retired candidate removed", context?.candidateProtocolIds.contains(activeB.id) == false)
+        verify("Case 1 - selectable set refreshed", Set(context?.candidateProtocolIds ?? []) == Set([recovering.id, activeA.id]))
+    } catch {
+        print("Recovery-Pending Simulation - Case 1 threw error: \(error)")
+    }
+
+    // Case 2: Retirement while pending removes need for user decision.
+    do {
+        let recovering = makeNonNegotiable(title: "Recovering", state: .recovery, createdAtOffset: 0, engine: engine)
+        let active = makeNonNegotiable(title: "Active", state: .active, createdAtOffset: 1, engine: engine)
+
+        var system = CommitmentSystem(nonNegotiables: [recovering, active], createdAt: startDate)
+        system.recoveryEntryPendingResolution = true
+        system.recoveryEntryRequiresPauseSelection = true
+        system.recoveryEntryTriggerProtocolId = recovering.id
+        let store = makeStore(system: system)
+
+        try store.retireNonNegotiable(id: active.id, referenceDate: retirementDate)
+
+        verify("Case 2 - pending flow closed", store.recoveryEntryContext(referenceDate: retirementDate) == nil)
+        verify("Case 2 - pending flag false", store.system.recoveryEntryPendingResolution == false)
+    } catch {
+        print("Recovery-Pending Simulation - Case 2 threw error: \(error)")
+    }
+
+    // Case 3: Retirement while pending still requires a different valid decision set.
+    do {
+        let recovering = makeNonNegotiable(title: "Recovering", state: .recovery, createdAtOffset: 0, engine: engine)
+        let activeA = makeNonNegotiable(title: "Active-A", state: .active, createdAtOffset: 1, engine: engine)
+        let activeB = makeNonNegotiable(title: "Active-B", state: .active, createdAtOffset: 2, engine: engine)
+
+        var system = CommitmentSystem(nonNegotiables: [recovering, activeA, activeB], createdAt: startDate)
+        system.recoveryEntryPendingResolution = true
+        system.recoveryEntryRequiresPauseSelection = true
+        system.recoveryEntryTriggerProtocolId = recovering.id
+        let store = makeStore(system: system)
+
+        try store.retireNonNegotiable(id: activeA.id, referenceDate: retirementDate)
+        let context = store.recoveryEntryContext(referenceDate: retirementDate)
+
+        verify("Case 3 - pending still needs decision", context?.requiresPauseSelection == true)
+        verify("Case 3 - candidate set changed and valid", Set(context?.candidateProtocolIds ?? []) == Set([recovering.id, activeB.id]))
+    } catch {
+        print("Recovery-Pending Simulation - Case 3 threw error: \(error)")
+    }
+
+    // Case 4: Pending trigger protocol becomes invalid due to retirement.
+    do {
+        let recoveringA = makeNonNegotiable(title: "Recovering-A", state: .recovery, createdAtOffset: 0, engine: engine)
+        let recoveringB = makeNonNegotiable(title: "Recovering-B", state: .recovery, createdAtOffset: 1, engine: engine)
+        let active = makeNonNegotiable(title: "Active", state: .active, createdAtOffset: 2, engine: engine)
+
+        var system = CommitmentSystem(nonNegotiables: [recoveringA, recoveringB, active], createdAt: startDate)
+        system.recoveryEntryPendingResolution = true
+        system.recoveryEntryRequiresPauseSelection = true
+        system.recoveryEntryTriggerProtocolId = recoveringA.id
+        let store = makeStore(system: system)
+
+        try store.retireNonNegotiable(id: recoveringA.id, referenceDate: retirementDate)
+        let context = store.recoveryEntryContext(referenceDate: retirementDate)
+
+        verify("Case 4 - pending trigger repaired", context?.triggerProtocolId == recoveringB.id)
+        verify("Case 4 - retired trigger not selectable", context?.candidateProtocolIds.contains(recoveringA.id) == false)
+    } catch {
+        print("Recovery-Pending Simulation - Case 4 threw error: \(error)")
+    }
+
+    // Case 5: Stale pending flags are repaired safely before continuing.
+    do {
+        let recovering = makeNonNegotiable(title: "Recovering", state: .recovery, createdAtOffset: 0, engine: engine)
+        let activeA = makeNonNegotiable(title: "Active-A", state: .active, createdAtOffset: 1, engine: engine)
+        let activeB = makeNonNegotiable(title: "Active-B", state: .active, createdAtOffset: 2, engine: engine)
+
+        var system = CommitmentSystem(nonNegotiables: [recovering, activeA, activeB], createdAt: startDate)
+        system.recoveryEntryPendingResolution = false
+        system.recoveryEntryRequiresPauseSelection = true
+        system.recoveryEntryTriggerProtocolId = UUID()
+        system.recoveryPausedProtocolId = UUID()
+        let store = makeStore(system: system)
+
+        try store.retireNonNegotiable(id: activeB.id, referenceDate: retirementDate)
+
+        verify("Case 5 - pending flag remains closed", store.system.recoveryEntryPendingResolution == false)
+        verify("Case 5 - stale requires flag cleared", store.system.recoveryEntryRequiresPauseSelection == false)
+        verify("Case 5 - stale trigger cleared", store.system.recoveryEntryTriggerProtocolId == nil)
+        verify("Case 5 - stale paused id cleared", store.system.recoveryPausedProtocolId == nil)
+    } catch {
+        print("Recovery-Pending Simulation - Case 5 threw error: \(error)")
+    }
+}
+
+@MainActor
+func runInitialGraceWindowPressureAlignmentSimulation() {
+    let calendar = DateRules.isoCalendar
+    let creationDate = DateRules.date(year: 2026, month: 1, day: 7, hour: 10, calendar: calendar)
+    let graceWeekSunday = DateRules.date(year: 2026, month: 1, day: 11, hour: 20, calendar: calendar)
+    let firstDayAfterGraceWeek = DateRules.date(year: 2026, month: 1, day: 12, hour: 9, calendar: calendar)
+
+    let nonNegotiableEngine = NonNegotiableEngine(calendar: calendar)
+    let commitmentEngine = CommitmentSystemEngine(nonNegotiableEngine: nonNegotiableEngine)
+
+    @discardableResult
+    func verify(_ label: String, _ condition: @autoclosure () -> Bool) -> Bool {
+        let passed = condition()
+        print("Grace-Pressure Simulation - \(label): \(passed ? "PASS" : "FAIL")")
+        return passed
+    }
+
+    do {
+        let definition = NonNegotiableDefinition(
+            title: "Grace Recovery",
+            frequencyPerWeek: 7,
+            mode: .session,
+            goalId: UUID()
+        )
+
+        var graceProtocol = try nonNegotiableEngine.create(
+            definition: definition,
+            startDate: creationDate,
+            totalLockDays: 28
+        )
+
+        // Case 1: Recovery-day feasibility should not require full-week quota in grace week.
+        graceProtocol.state = .recovery
+        var recoverySystem = CommitmentSystem(nonNegotiables: [graceProtocol], createdAt: creationDate)
+        commitmentEngine.evaluateRecoveryDay(
+            referenceDate: graceWeekSunday,
+            in: &recoverySystem,
+            calendar: calendar
+        )
+        verify(
+            "Case 1 - grace-week protocol does not block clean recovery day",
+            recoverySystem.recoveryCleanDayStreak == 1
+        )
+
+        // Case 2: Log pressure surface should not flag inevitable weekly miss in grace week.
+        graceProtocol.state = .active
+        let storeSystem = CommitmentSystem(nonNegotiables: [graceProtocol], createdAt: creationDate)
+        let store = CommitmentSystemStore(
+            repository: InMemoryCommitmentSystemRepository(initialSystem: storeSystem),
+            systemEngine: commitmentEngine,
+            nonNegotiableEngine: nonNegotiableEngine,
+            policy: CommitmentPolicyEngine(calendar: calendar),
+            streakEngine: StreakEngine(),
+            calendar: calendar
+        )
+        let graceDayStart = DateRules.startOfDay(graceWeekSunday, calendar: calendar)
+        let graceSignal = store
+            .logsCalendarSignals(lastDays: 2, referenceDate: firstDayAfterGraceWeek)
+            .first(where: { $0.day == graceDayStart })
+
+        verify(
+            "Case 2 - grace week does not show inevitable miss",
+            graceSignal?.inevitableWeeklyMiss == false
+        )
+        verify(
+            "Case 2 - grace week marks no-work-required satisfied",
+            graceSignal?.noWorkRequiredSatisfied == true
+        )
+    } catch {
+        print("Grace-Pressure Simulation failed with error: \(error)")
+    }
+}
