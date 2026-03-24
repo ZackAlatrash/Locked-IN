@@ -38,6 +38,19 @@ struct NonNegotiableEngine {
         let creationWeekId: WeekID
     }
 
+    private struct RecoveryUpdateDebugContext {
+        let source: String
+        let tickDate: Date
+        let evaluatedWeekId: WeekID?
+        let evaluatedDay: Date?
+        let completionCount: Int?
+        let expected: Int?
+        let missedWeeklyAppended: Bool
+        let missedDailyAppended: Bool
+        let weeklyViolationCountBefore: Int
+        let stateBefore: NonNegotiableState
+    }
+
     private let calendar: Calendar
     private let graceDebugDateFormatter: ISO8601DateFormatter
 
@@ -117,11 +130,21 @@ struct NonNegotiableEngine {
         while dayCursor <= evaluationEnd {
             advanceWindowIfNeeded(&nn, currentDate: dayCursor)
             if let windowIndex = windowIndex(for: nn, date: dayCursor) {
+                if isDailyCreationGraceDay(dayCursor, for: nn) {
+                    guard let next = calendar.date(byAdding: .day, value: 1, to: dayCursor) else {
+                        break
+                    }
+                    dayCursor = next
+                    continue
+                }
+
                 let didCompleteOnDay = nn.completions.contains { completion in
                     completion.kind == .counted && calendar.isDate(completion.date, inSameDayAs: dayCursor)
                 }
 
                 if !didCompleteOnDay {
+                    let stateBefore = nn.state
+                    let weeklyViolationCountBefore = nn.windows[windowIndex].weeklyViolationCount
                     nn.windows[windowIndex].weeklyViolationCount += 1
                     nn.violations.append(
                         Violation(
@@ -131,7 +154,22 @@ struct NonNegotiableEngine {
                             weekId: DateRules.weekID(for: dayCursor, calendar: calendar)
                         )
                     )
-                    updateRecoveryState(&nn, windowIndex: windowIndex)
+                    updateRecoveryState(
+                        &nn,
+                        windowIndex: windowIndex,
+                        debugContext: RecoveryUpdateDebugContext(
+                            source: "evaluateDailyComplianceIfNeeded",
+                            tickDate: currentDate,
+                            evaluatedWeekId: DateRules.weekID(for: dayCursor, calendar: calendar),
+                            evaluatedDay: dayCursor,
+                            completionCount: didCompleteOnDay ? 1 : 0,
+                            expected: expectedCompletionsPerWeek(for: nn.definition),
+                            missedWeeklyAppended: false,
+                            missedDailyAppended: true,
+                            weeklyViolationCountBefore: weeklyViolationCountBefore,
+                            stateBefore: stateBefore
+                        )
+                    )
                 }
             }
 
@@ -170,9 +208,15 @@ struct NonNegotiableEngine {
             weekInterval: weekInterval
         )
         let shouldSuppressShortfall = graceEvaluation.shouldSuppressShortfall
+        let shouldSuppressDailyCreationWeekShortfall = shouldSuppressDailyCreationWeekShortfall(
+            for: nn,
+            weekId: weekId
+        )
         let stateBefore = nn.state
         let weeklyViolationCountBefore = nn.windows[windowIndex].weeklyViolationCount
-        let shouldAppendMissedWeekly = completionCount < expected && shouldSuppressShortfall == false
+        let shouldAppendMissedWeekly = completionCount < expected &&
+            shouldSuppressShortfall == false &&
+            shouldSuppressDailyCreationWeekShortfall == false
 
         if shouldAppendMissedWeekly {
             nn.windows[windowIndex].weeklyViolationCount += 1
@@ -187,7 +231,22 @@ struct NonNegotiableEngine {
         }
 
         nn.windows[windowIndex].weeksEvaluated.insert(weekId)
-        updateRecoveryState(&nn, windowIndex: windowIndex)
+        updateRecoveryState(
+            &nn,
+            windowIndex: windowIndex,
+            debugContext: RecoveryUpdateDebugContext(
+                source: "evaluateWeekIfNeeded",
+                tickDate: date,
+                evaluatedWeekId: weekId,
+                evaluatedDay: nil,
+                completionCount: completionCount,
+                expected: expected,
+                missedWeeklyAppended: shouldAppendMissedWeekly,
+                missedDailyAppended: false,
+                weeklyViolationCountBefore: weeklyViolationCountBefore,
+                stateBefore: stateBefore
+            )
+        )
 
         if shouldEmitGraceWeeklyDebugLog(
             for: nn,
@@ -325,6 +384,22 @@ struct NonNegotiableEngine {
         mode == .session
     }
 
+    private func isDailyCreationGraceDay(_ day: Date, for nn: NonNegotiable) -> Bool {
+        guard nn.definition.mode == .daily else { return false }
+        let creationDay = DateRules.startOfDay(nn.createdAt, calendar: calendar)
+        let targetDay = DateRules.startOfDay(day, calendar: calendar)
+        return creationDay == targetDay
+    }
+
+    private func shouldSuppressDailyCreationWeekShortfall(
+        for nn: NonNegotiable,
+        weekId: WeekID
+    ) -> Bool {
+        guard nn.definition.mode == .daily else { return false }
+        let creationWeekId = DateRules.weekID(for: nn.createdAt, calendar: calendar)
+        return creationWeekId == weekId
+    }
+
     private func shouldEmitGraceWeeklyDebugLog(
         for nn: NonNegotiable,
         evaluatedWeekId: WeekID,
@@ -451,12 +526,58 @@ struct NonNegotiableEngine {
         }
     }
 
-    private func updateRecoveryState(_ nn: inout NonNegotiable, windowIndex: Int) {
-        guard nn.state != .recovery else { return }
-
+    private func updateRecoveryState(
+        _ nn: inout NonNegotiable,
+        windowIndex: Int,
+        debugContext: RecoveryUpdateDebugContext? = nil
+    ) {
+        let stateBefore = debugContext?.stateBefore ?? nn.state
+        let weeklyViolationCountBefore = debugContext?.weeklyViolationCountBefore ?? nn.windows[windowIndex].weeklyViolationCount
         let threshold = recoveryViolationThreshold(for: nn.definition.mode)
-        if nn.windows[windowIndex].weeklyViolationCount >= threshold {
+        let weeklyViolationCountAfter = nn.windows[windowIndex].weeklyViolationCount
+        let thresholdReached = weeklyViolationCountAfter >= threshold
+
+        if nn.state != .recovery && thresholdReached {
             nn.state = .recovery
+        }
+
+        let stateAfter = nn.state
+        let recoveryEntered = stateBefore != .recovery && stateAfter == .recovery
+        let reason: String
+        if recoveryEntered {
+            reason = "enteredRecovery:thresholdReached"
+        } else if stateBefore == .recovery {
+            reason = "alreadyInRecovery"
+        } else if thresholdReached == false {
+            reason = "noRecovery:belowThreshold"
+        } else {
+            reason = "noRecovery:stateUnchanged"
+        }
+
+        if shouldEmitRecoveryTriggerDebugLog(
+            for: nn,
+            missedWeeklyAppended: debugContext?.missedWeeklyAppended ?? false,
+            missedDailyAppended: debugContext?.missedDailyAppended ?? false,
+            recoveryEntered: recoveryEntered
+        ) {
+            emitRecoveryTriggerDebugLog(
+                nonNegotiable: nn,
+                source: debugContext?.source ?? "updateRecoveryState",
+                tickDate: debugContext?.tickDate,
+                evaluatedWeekId: debugContext?.evaluatedWeekId,
+                evaluatedDay: debugContext?.evaluatedDay,
+                completionCount: debugContext?.completionCount,
+                expected: debugContext?.expected,
+                missedWeeklyAppended: debugContext?.missedWeeklyAppended ?? false,
+                missedDailyAppended: debugContext?.missedDailyAppended ?? false,
+                weeklyViolationCountBefore: weeklyViolationCountBefore,
+                weeklyViolationCountAfter: weeklyViolationCountAfter,
+                threshold: threshold,
+                stateBefore: stateBefore,
+                stateAfter: stateAfter,
+                recoveryEntered: recoveryEntered,
+                reason: reason
+            )
         }
     }
 
@@ -467,5 +588,59 @@ struct NonNegotiableEngine {
         case .session:
             return 2
         }
+    }
+
+    private func shouldEmitRecoveryTriggerDebugLog(
+        for nn: NonNegotiable,
+        missedWeeklyAppended: Bool,
+        missedDailyAppended: Bool,
+        recoveryEntered: Bool
+    ) -> Bool {
+        nn.definition.mode == .session || missedWeeklyAppended || missedDailyAppended || recoveryEntered
+    }
+
+    private func emitRecoveryTriggerDebugLog(
+        nonNegotiable: NonNegotiable,
+        source: String,
+        tickDate: Date?,
+        evaluatedWeekId: WeekID?,
+        evaluatedDay: Date?,
+        completionCount: Int?,
+        expected: Int?,
+        missedWeeklyAppended: Bool,
+        missedDailyAppended: Bool,
+        weeklyViolationCountBefore: Int,
+        weeklyViolationCountAfter: Int,
+        threshold: Int,
+        stateBefore: NonNegotiableState,
+        stateAfter: NonNegotiableState,
+        recoveryEntered: Bool,
+        reason: String
+    ) {
+        let title = nonNegotiable.definition.title.replacingOccurrences(of: "\"", with: "'")
+        let tickDateString = tickDate.map { graceDebugDateFormatter.string(from: $0) } ?? "n/a"
+        let evaluatedDayString = evaluatedDay.map { graceDebugDateFormatter.string(from: $0) } ?? "n/a"
+        print(
+            "[RecoveryTriggerDebug] " +
+            "source=\(source) " +
+            "protocolId=\(nonNegotiable.id.uuidString) " +
+            "title=\"\(title)\" " +
+            "mode=\(nonNegotiable.definition.mode.rawValue) " +
+            "createdAt=\(graceDebugDateFormatter.string(from: nonNegotiable.createdAt)) " +
+            "tickDate=\(tickDateString) " +
+            "evaluatedWeekId=\(evaluatedWeekId?.description ?? "n/a") " +
+            "evaluatedDay=\(evaluatedDayString) " +
+            "completionCount=\(completionCount.map(String.init) ?? "n/a") " +
+            "expected=\(expected.map(String.init) ?? "n/a") " +
+            "missedWeeklyAppended=\(missedWeeklyAppended) " +
+            "missedDailyAppended=\(missedDailyAppended) " +
+            "weeklyViolationCountBefore=\(weeklyViolationCountBefore) " +
+            "weeklyViolationCountAfter=\(weeklyViolationCountAfter) " +
+            "recoveryThreshold=\(threshold) " +
+            "stateBefore=\(stateBefore.rawValue) " +
+            "stateAfter=\(stateAfter.rawValue) " +
+            "recoveryEntered=\(recoveryEntered) " +
+            "reason=\(reason)"
+        )
     }
 }

@@ -105,6 +105,119 @@ func runNonNegotiableEngineSimulation() {
         let secondDailyViolations = dailyNN.violations.filter { $0.kind == .missedDailyCompliance }.count
         print("Daily violations after second check: \(secondDailyViolations) (expected 1)")
 
+        // Daily creation-day grace checks (temporary normalized semantics).
+        let dailyGraceDefinition = NonNegotiableDefinition(
+            title: "Daily Grace",
+            frequencyPerWeek: 7,
+            mode: .daily,
+            goalId: UUID()
+        )
+        let creationDay = DateRules.date(year: 2026, month: 1, day: 10, hour: 15, calendar: calendar)
+        let dayAfterCreation = DateRules.date(year: 2026, month: 1, day: 11, hour: 8, calendar: calendar)
+        let secondDayAfterCreation = DateRules.date(year: 2026, month: 1, day: 12, hour: 8, calendar: calendar)
+
+        // Case 1: Create daily protocol and do nothing on creation day -> no same-day daily miss.
+        var dailyGraceCase1 = try engine.create(
+            definition: dailyGraceDefinition,
+            startDate: creationDay,
+            totalLockDays: 28
+        )
+        engine.evaluateDailyComplianceIfNeeded(&dailyGraceCase1, at: dayAfterCreation)
+        verify(
+            "Daily Grace Case 1 - creation day does not emit missedDailyCompliance",
+            dailyGraceCase1.violations.contains(where: { $0.kind == .missedDailyCompliance }) == false
+        )
+
+        // Case 2: Create daily protocol and complete on creation day -> completion counts, no same-day miss.
+        var dailyGraceCase2 = try engine.create(
+            definition: dailyGraceDefinition,
+            startDate: creationDay,
+            totalLockDays: 28
+        )
+        let case2Decision = try engine.recordCompletion(
+            &dailyGraceCase2,
+            at: DateRules.date(year: 2026, month: 1, day: 10, hour: 20, calendar: calendar)
+        )
+        engine.evaluateDailyComplianceIfNeeded(&dailyGraceCase2, at: dayAfterCreation)
+        verify(
+            "Daily Grace Case 2 - creation-day completion remains counted",
+            case2Decision.kind == .counted
+        )
+        verify(
+            "Daily Grace Case 2 - creation day still emits no missedDailyCompliance",
+            dailyGraceCase2.violations.contains(where: { $0.kind == .missedDailyCompliance }) == false
+        )
+
+        // Case 3: Next day after creation -> normal daily enforcement applies.
+        engine.evaluateDailyComplianceIfNeeded(&dailyGraceCase1, at: secondDayAfterCreation)
+        let case3DailyViolations = dailyGraceCase1.violations.filter { $0.kind == .missedDailyCompliance }
+        verify(
+            "Daily Grace Case 3 - first full day after creation is enforceable",
+            case3DailyViolations.count == 1 &&
+            calendar.isDate(case3DailyViolations[0].date, inSameDayAs: DateRules.date(year: 2026, month: 1, day: 11, hour: 0, calendar: calendar))
+        )
+
+        // Case 4: Create daily protocol and retire before next day -> no daily miss.
+        var dailyGraceCase4 = try engine.create(
+            definition: dailyGraceDefinition,
+            startDate: creationDay,
+            totalLockDays: 28
+        )
+        dailyGraceCase4.state = .retired
+        engine.evaluateDailyComplianceIfNeeded(&dailyGraceCase4, at: dayAfterCreation)
+        verify(
+            "Daily Grace Case 4 - retired before next day emits no daily miss",
+            dailyGraceCase4.violations.contains(where: { $0.kind == .missedDailyCompliance }) == false
+        )
+
+        // Case 5: Existing older daily protocol still behaves as before.
+        var dailyGraceCase5 = try engine.create(
+            definition: dailyGraceDefinition,
+            startDate: DateRules.date(year: 2026, month: 1, day: 1, hour: 9, calendar: calendar),
+            totalLockDays: 28
+        )
+        dailyGraceCase5.lastDailyComplianceCheckedDay = DateRules.date(year: 2026, month: 1, day: 9, hour: 0, calendar: calendar)
+        engine.evaluateDailyComplianceIfNeeded(
+            &dailyGraceCase5,
+            at: DateRules.date(year: 2026, month: 1, day: 11, hour: 8, calendar: calendar)
+        )
+        let case5DailyViolations = dailyGraceCase5.violations.filter { $0.kind == .missedDailyCompliance }
+        verify(
+            "Daily Grace Case 5 - older daily still enforces normal missed day behavior",
+            case5DailyViolations.count == 1 &&
+            calendar.isDate(case5DailyViolations[0].date, inSameDayAs: DateRules.date(year: 2026, month: 1, day: 10, hour: 0, calendar: calendar))
+        )
+
+        // Case 6: No alternate weekly path unfairly penalizes creation week for daily protocols.
+        let weeklyBoundaryCreation = DateRules.date(year: 2026, month: 1, day: 11, hour: 19, calendar: calendar)
+        let dailyGraceCase6Protocol = try engine.create(
+            definition: dailyGraceDefinition,
+            startDate: weeklyBoundaryCreation,
+            totalLockDays: 28
+        )
+        var dailyGraceCase6System = CommitmentSystem(
+            nonNegotiables: [dailyGraceCase6Protocol],
+            createdAt: weeklyBoundaryCreation
+        )
+        commitmentEngine.evaluateWeekCatchUp(
+            referenceDate: DateRules.date(year: 2026, month: 1, day: 12, hour: 9, calendar: calendar),
+            in: &dailyGraceCase6System,
+            calendar: calendar
+        )
+        let dailyGraceCase6Evaluated = dailyGraceCase6System.nonNegotiables[0]
+        let dailyGraceCase6CreationWeekId = DateRules.weekID(
+            for: DateRules.date(year: 2026, month: 1, day: 11, hour: 23, minute: 59, calendar: calendar),
+            calendar: calendar
+        )
+        verify(
+            "Daily Grace Case 6 - creation week emits no missedWeeklyFrequency for daily",
+            dailyGraceCase6Evaluated.violations.contains(where: { $0.kind == .missedWeeklyFrequency }) == false
+        )
+        verify(
+            "Daily Grace Case 6 - creation week still recorded as evaluated",
+            dailyGraceCase6Evaluated.windows[0].weeksEvaluated.contains(dailyGraceCase6CreationWeekId)
+        )
+
         let streakCompletions = [
             CompletionRecord(
                 date: DateRules.date(year: 2026, month: 1, day: 10, hour: 7, calendar: calendar),

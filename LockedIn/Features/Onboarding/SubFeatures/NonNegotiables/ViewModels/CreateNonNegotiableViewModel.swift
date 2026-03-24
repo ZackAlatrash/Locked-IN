@@ -171,7 +171,11 @@ final class CreateNonNegotiableViewModel: ObservableObject {
         return messages.isEmpty
     }
 
-    func submit(using store: CommitmentSystemStore, onSuccess: () -> Void) {
+    func submit(
+        using store: CommitmentSystemStore,
+        referenceDate: Date = Date(),
+        onSuccess: () -> Void
+    ) {
         guard validateForm() else { return }
         guard let effectiveDuration = resolvedDurationMinutes() else { return }
 
@@ -190,7 +194,11 @@ final class CreateNonNegotiableViewModel: ObservableObject {
                 iconSystemName: selectedIconSystemName
             )
 
-            try store.createNonNegotiable(definition: definition, totalLockDays: totalLockDays)
+            try store.createNonNegotiable(
+                definition: definition,
+                totalLockDays: totalLockDays,
+                referenceDate: referenceDate
+            )
             clearErrors()
             onSuccess()
         } catch {

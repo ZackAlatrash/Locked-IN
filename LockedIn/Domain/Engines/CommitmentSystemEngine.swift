@@ -450,6 +450,9 @@ final class CommitmentSystemEngine {
 
             switch nonNegotiable.definition.mode {
             case .daily:
+                if isDailyCreationGraceDay(for: nonNegotiable, day: dayStart, calendar: calendar) {
+                    return false
+                }
                 let hasCountedToday = nonNegotiable.completions.contains { completion in
                     completion.kind == .counted &&
                     completion.date >= dayStart &&
@@ -516,6 +519,17 @@ final class CommitmentSystemEngine {
 
         // Increment 4 keeps current normalized createdAt semantics.
         return nonNegotiable.createdAt > week.start
+    }
+
+    private func isDailyCreationGraceDay(
+        for nonNegotiable: NonNegotiable,
+        day: Date,
+        calendar: Calendar
+    ) -> Bool {
+        guard nonNegotiable.definition.mode == .daily else { return false }
+        let creationDay = DateRules.startOfDay(nonNegotiable.createdAt, calendar: calendar)
+        let targetDay = DateRules.startOfDay(day, calendar: calendar)
+        return creationDay == targetDay
     }
 
     private func feasibleCompletionDays(

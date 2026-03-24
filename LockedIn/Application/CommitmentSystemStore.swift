@@ -67,9 +67,10 @@ final class CommitmentSystemStore: ObservableObject {
 
     func createNonNegotiable(
         definition: NonNegotiableDefinition,
-        totalLockDays: Int
+        totalLockDays: Int,
+        referenceDate: Date = Date()
     ) throws {
-        let decision = policy.canCreate(definition: definition, in: system, at: Date())
+        let decision = policy.canCreate(definition: definition, in: system, at: referenceDate)
         guard decision.allowed else {
             throw CommitmentStoreError.policyDenied(decision.reason ?? .generic(message: "Create action blocked."))
         }
@@ -79,7 +80,7 @@ final class CommitmentSystemStore: ObservableObject {
         do {
             let nonNegotiable = try nonNegotiableEngine.create(
                 definition: definition,
-                startDate: Date(),
+                startDate: referenceDate,
                 totalLockDays: totalLockDays
             )
             try systemEngine.add(nonNegotiable, to: &updated)
@@ -321,10 +322,33 @@ final class CommitmentSystemStore: ObservableObject {
 
     func runDailyIntegrityTick(referenceDate: Date) {
         var updated = system
+        let hadSessionProtocol = updated.nonNegotiables.contains(where: { $0.definition.mode == .session })
+        let recoveryIdsBefore = Set(updated.nonNegotiables.filter { $0.state == .recovery }.map(\.id.uuidString)).sorted()
+        if hadSessionProtocol || recoveryIdsBefore.isEmpty == false {
+            print(
+                "[RecoveryTriggerDebug] " +
+                "source=runDailyIntegrityTick:start " +
+                "tickDate=\(referenceDate.ISO8601Format()) " +
+                "recoveryIdsBefore=\(recoveryIdsBefore.joined(separator: ","))"
+            )
+        }
+
         systemEngine.evaluateDailyCompliance(currentDate: referenceDate, in: &updated)
         systemEngine.evaluateWeekCatchUp(referenceDate: referenceDate, in: &updated, calendar: calendar)
         systemEngine.advanceWindows(currentDate: referenceDate, in: &updated)
         systemEngine.evaluateRecoveryDay(referenceDate: referenceDate, in: &updated, calendar: calendar)
+
+        let recoveryIdsAfter = Set(updated.nonNegotiables.filter { $0.state == .recovery }.map(\.id.uuidString)).sorted()
+        if hadSessionProtocol || recoveryIdsAfter.isEmpty == false || recoveryIdsBefore != recoveryIdsAfter {
+            print(
+                "[RecoveryTriggerDebug] " +
+                "source=runDailyIntegrityTick:end " +
+                "tickDate=\(referenceDate.ISO8601Format()) " +
+                "recoveryIdsAfter=\(recoveryIdsAfter.joined(separator: ",")) " +
+                "recoveryChanged=\(recoveryIdsBefore != recoveryIdsAfter)"
+            )
+        }
+
         applySystemUpdate(updated, referenceDate: referenceDate)
     }
 
@@ -796,6 +820,9 @@ final class CommitmentSystemStore: ObservableObject {
 
             switch nonNegotiable.definition.mode {
             case .daily:
+                if isDailyCreationGraceDay(for: nonNegotiable, day: dayStart) {
+                    return false
+                }
                 let hasCountedToday = nonNegotiable.completions.contains { completion in
                     completion.kind == .counted &&
                     completion.date >= dayStart &&
@@ -849,6 +876,13 @@ final class CommitmentSystemStore: ObservableObject {
 
         // Increment 4 keeps current normalized createdAt semantics.
         return nonNegotiable.createdAt > week.start
+    }
+
+    private func isDailyCreationGraceDay(for nonNegotiable: NonNegotiable, day: Date) -> Bool {
+        guard nonNegotiable.definition.mode == .daily else { return false }
+        let creationDay = DateRules.startOfDay(nonNegotiable.createdAt, calendar: calendar)
+        let targetDay = DateRules.startOfDay(day, calendar: calendar)
+        return creationDay == targetDay
     }
 
     private func feasibleCompletionDays(

@@ -11,6 +11,7 @@ private struct CommitmentPeriodOption: Identifiable {
 @MainActor
 struct CreateNonNegotiableView: View {
     @EnvironmentObject private var store: CommitmentSystemStore
+    @EnvironmentObject private var appClock: AppClock
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
 
@@ -784,7 +785,7 @@ private extension CreateNonNegotiableView {
                     return
                 }
                 Haptics.selection()
-                viewModel.submit(using: store) {
+                viewModel.submit(using: store, referenceDate: appClock.now) {
                     Haptics.success()
                     onSuccess?()
                     dismiss()

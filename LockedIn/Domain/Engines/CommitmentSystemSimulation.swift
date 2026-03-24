@@ -578,3 +578,178 @@ func runInitialGraceWindowPressureAlignmentSimulation() {
         print("Grace-Pressure Simulation failed with error: \(error)")
     }
 }
+
+@MainActor
+func runDailyCreationDayGracePressureSimulation() {
+    let calendar = DateRules.isoCalendar
+    let creationDate = DateRules.date(year: 2026, month: 1, day: 10, hour: 15, calendar: calendar)
+    let nextDay = DateRules.date(year: 2026, month: 1, day: 11, hour: 9, calendar: calendar)
+
+    let nonNegotiableEngine = NonNegotiableEngine(calendar: calendar)
+    let commitmentEngine = CommitmentSystemEngine(nonNegotiableEngine: nonNegotiableEngine)
+
+    @discardableResult
+    func verify(_ label: String, _ condition: @autoclosure () -> Bool) -> Bool {
+        let passed = condition()
+        print("Daily-Grace Pressure Simulation - \(label): \(passed ? "PASS" : "FAIL")")
+        return passed
+    }
+
+    do {
+        let definition = NonNegotiableDefinition(
+            title: "Daily Grace Pressure",
+            frequencyPerWeek: 7,
+            mode: .daily,
+            goalId: UUID()
+        )
+
+        // Case 1: Recovery feasibility should not require counted completion on creation day.
+        var recoveryProtocol = try nonNegotiableEngine.create(
+            definition: definition,
+            startDate: creationDate,
+            totalLockDays: 28
+        )
+        recoveryProtocol.state = .recovery
+        var recoverySystem = CommitmentSystem(nonNegotiables: [recoveryProtocol], createdAt: creationDate)
+        commitmentEngine.evaluateRecoveryDay(
+            referenceDate: creationDate,
+            in: &recoverySystem,
+            calendar: calendar
+        )
+        verify(
+            "Case 1 - creation day does not block clean recovery day",
+            recoverySystem.recoveryCleanDayStreak == 1
+        )
+
+        // Case 2: Closed-day log pressure should not mark creation day as owed.
+        let activeProtocol = try nonNegotiableEngine.create(
+            definition: definition,
+            startDate: creationDate,
+            totalLockDays: 28
+        )
+        let store = CommitmentSystemStore(
+            repository: InMemoryCommitmentSystemRepository(
+                initialSystem: CommitmentSystem(nonNegotiables: [activeProtocol], createdAt: creationDate)
+            ),
+            systemEngine: commitmentEngine,
+            nonNegotiableEngine: nonNegotiableEngine,
+            policy: CommitmentPolicyEngine(calendar: calendar),
+            streakEngine: StreakEngine(),
+            calendar: calendar
+        )
+        let creationDayStart = DateRules.startOfDay(creationDate, calendar: calendar)
+        let creationDaySignal = store
+            .logsCalendarSignals(lastDays: 2, referenceDate: nextDay)
+            .first(where: { $0.day == creationDayStart })
+
+        verify(
+            "Case 2 - creation day is not flagged unproductive",
+            creationDaySignal?.unproductive == false
+        )
+        verify(
+            "Case 2 - creation day can be no-work-required satisfied",
+            creationDaySignal?.noWorkRequiredSatisfied == true
+        )
+    } catch {
+        print("Daily-Grace Pressure Simulation failed with error: \(error)")
+    }
+}
+
+@MainActor
+func runCreationDateSourceSimulation() {
+    let calendar = DateRules.isoCalendar
+    let nonNegotiableEngine = NonNegotiableEngine(calendar: calendar)
+    let commitmentEngine = CommitmentSystemEngine(nonNegotiableEngine: nonNegotiableEngine)
+    let store = CommitmentSystemStore(
+        repository: InMemoryCommitmentSystemRepository(
+            initialSystem: CommitmentSystem(nonNegotiables: [], createdAt: DateRules.date(year: 2026, month: 1, day: 1, hour: 0, calendar: calendar))
+        ),
+        systemEngine: commitmentEngine,
+        nonNegotiableEngine: nonNegotiableEngine,
+        policy: CommitmentPolicyEngine(calendar: calendar),
+        streakEngine: StreakEngine(),
+        calendar: calendar
+    )
+
+    @discardableResult
+    func verify(_ label: String, _ condition: @autoclosure () -> Bool) -> Bool {
+        let passed = condition()
+        print("Creation-Date Source Simulation - \(label): \(passed ? "PASS" : "FAIL")")
+        return passed
+    }
+
+    do {
+        // Case 1: Simulated/advanced app day is used as creation source.
+        let simulatedSaturday = DateRules.date(year: 2026, month: 1, day: 10, hour: 14, calendar: calendar)
+        let simulatedDefinition = NonNegotiableDefinition(
+            title: "Simulated Session Source",
+            frequencyPerWeek: 7,
+            mode: .session,
+            goalId: UUID()
+        )
+        try store.createNonNegotiable(
+            definition: simulatedDefinition,
+            totalLockDays: 28,
+            referenceDate: simulatedSaturday
+        )
+        let simulatedCreated = store.system.nonNegotiables.last(where: { $0.definition.title == simulatedDefinition.title })
+        verify(
+            "Case 1 - createdAt matches effective app day",
+            simulatedCreated != nil &&
+            DateRules.startOfDay(simulatedCreated!.createdAt, calendar: calendar) ==
+                DateRules.startOfDay(simulatedSaturday, calendar: calendar)
+        )
+
+        // Case 2: Default non-advanced creation still uses live now behavior.
+        let defaultDefinition = NonNegotiableDefinition(
+            title: "Live Session Source",
+            frequencyPerWeek: 3,
+            mode: .session,
+            goalId: UUID()
+        )
+        let liveNowBefore = Date()
+        try store.createNonNegotiable(definition: defaultDefinition, totalLockDays: 28)
+        let liveCreated = store.system.nonNegotiables.last(where: { $0.definition.title == defaultDefinition.title })
+        verify(
+            "Case 2 - default creation remains tied to live date basis",
+            liveCreated != nil &&
+            calendar.isDate(liveCreated!.createdAt, inSameDayAs: liveNowBefore)
+        )
+
+        // Case 3: No retroactive misses before effective creation date.
+        let dailyDefinition = NonNegotiableDefinition(
+            title: "Daily Source Guard",
+            frequencyPerWeek: 7,
+            mode: .daily,
+            goalId: UUID()
+        )
+        let effectiveCreation = DateRules.date(year: 2026, month: 1, day: 10, hour: 15, calendar: calendar)
+        try store.createNonNegotiable(
+            definition: dailyDefinition,
+            totalLockDays: 28,
+            referenceDate: effectiveCreation
+        )
+        guard let dailyProtocol = store.system.nonNegotiables.last(where: { $0.definition.title == dailyDefinition.title }) else {
+            verify("Case 3 - daily protocol exists", false)
+            return
+        }
+        store.runDailyComplianceCheck(
+            currentDate: DateRules.date(year: 2026, month: 1, day: 11, hour: 8, calendar: calendar)
+        )
+        store.runDailyComplianceCheck(
+            currentDate: DateRules.date(year: 2026, month: 1, day: 12, hour: 8, calendar: calendar)
+        )
+        guard let evaluatedDaily = store.system.nonNegotiables.first(where: { $0.id == dailyProtocol.id }) else {
+            verify("Case 3 - evaluated daily protocol exists", false)
+            return
+        }
+        let dailyMisses = evaluatedDaily.violations.filter { $0.kind == .missedDailyCompliance }
+        let creationDayStart = DateRules.startOfDay(effectiveCreation, calendar: calendar)
+        verify(
+            "Case 3 - no retroactive misses before effective creation day",
+            dailyMisses.contains(where: { $0.date < creationDayStart }) == false
+        )
+    } catch {
+        print("Creation-Date Source Simulation failed with error: \(error)")
+    }
+}

@@ -316,7 +316,11 @@ final class DevOptionsController: ObservableObject {
             iconSystemName: iconSystemName
         )
 
-        try commitmentStore.createNonNegotiable(definition: definition, totalLockDays: 28)
+        try commitmentStore.createNonNegotiable(
+            definition: definition,
+            totalLockDays: 28,
+            referenceDate: appClock.now
+        )
 
         guard let created = commitmentStore.system.nonNegotiables
             .sorted(by: { $0.createdAt > $1.createdAt })
