@@ -187,7 +187,7 @@ private extension MainAppView {
     var dailyCheckInPopupOverlay: some View {
         ZStack {
             Rectangle()
-                .fill(Color.black.opacity(0.2))
+                .fill(Color.black.opacity(0.28))
                 .ignoresSafeArea()
 
             DailyCheckInFlowView(
@@ -199,18 +199,18 @@ private extension MainAppView {
             ) { outcome in
                 handleDailyCheckInFinished(outcome)
             }
-            .frame(maxWidth: 680)
-            .frame(maxHeight: 780)
+            .frame(maxWidth: 560)
+            .frame(maxHeight: 720)
             .background(
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(.ultraThinMaterial)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .stroke(
                         appAppearanceMode == .dark
-                            ? Color.white.opacity(0.16)
-                            : Color.black.opacity(0.08),
+                            ? Color.white.opacity(0.18)
+                            : Color.black.opacity(0.1),
                         lineWidth: 1
                     )
             )

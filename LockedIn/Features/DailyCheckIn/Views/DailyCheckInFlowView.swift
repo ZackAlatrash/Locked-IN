@@ -78,6 +78,7 @@ struct DailyCheckInFlowView: View {
             }
             .padding(.top, 6)
         }
+        .accessibilityAddTraits(isPopup ? .isModal : [])
         .onAppear {
             viewModel.refresh()
             MotionRuntime.runMotion(reduceMotion, animation: Theme.Animation.content) {
@@ -104,9 +105,9 @@ private extension DailyCheckInFlowView {
                 }
                 contentForStep
             }
-            .padding(.horizontal, isPopup ? 14 : 16)
-            .padding(.top, isPopup ? 12 : 14)
-            .padding(.bottom, isPopup ? 18 : 24)
+            .padding(.horizontal, isPopup ? 16 : 18)
+            .padding(.top, isPopup ? 14 : 16)
+            .padding(.bottom, isPopup ? 20 : 24)
             .opacity(didAppear ? 1 : 0)
             .offset(y: didAppear ? 0 : 12)
         }
@@ -140,17 +141,35 @@ private extension DailyCheckInFlowView {
     }
 
     var header: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .top, spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(accent.opacity(colorScheme == .dark ? 0.2 : 0.12))
+                    .frame(width: 34, height: 34)
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.system(size: 14, weight: .black))
+                    .foregroundColor(accent)
+            }
+
             VStack(alignment: .leading, spacing: 5) {
                 Text("DAILY CHECK-IN")
                     .font(.system(size: 11, weight: .black, design: .monospaced))
-                    .tracking(1.6)
+                    .tracking(1.4)
                     .foregroundColor(accent)
-                Text("Close today with intent.")
-                    .font(.system(size: 13, weight: .semibold))
+
+                Text(viewModel.overview?.dateLabel ?? "Today")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(textMain)
+                    .lineLimit(1)
+
+                Text("Resolve today quickly, then close the day.")
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(textMuted)
+                    .lineLimit(2)
             }
-            Spacer()
+
+            Spacer(minLength: 0)
+
             if viewModel.step != .closeDay {
                 Button {
                     Haptics.selection()
@@ -174,33 +193,41 @@ private extension DailyCheckInFlowView {
     func overviewCard(_ overview: DailyCheckInOverviewModel) -> some View {
         DailyCheckInCard {
             VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(overview.dateLabel)
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(textMain)
-                        Text("\(overview.completedCount) done • \(overview.needsAttentionCount) needs attention")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(textMuted)
-                    }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("System State")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(textMain)
+
                     Spacer()
-                    Text(overview.modeLabel)
-                        .font(.system(size: 10, weight: .black, design: .monospaced))
-                        .foregroundColor(accent)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(
-                            Capsule()
-                                .fill(accent.opacity(colorScheme == .dark ? 0.16 : 0.12))
-                        )
+
+                    statusChip(overview.modeLabel)
+
+                    statusChip(
+                        overview.needsAttentionCount == 0
+                            ? "CLEAR"
+                            : "\(overview.needsAttentionCount) PENDING"
+                    )
                 }
 
                 HStack(spacing: 10) {
                     overviewMetric(title: "Reliability", value: "\(overview.reliabilityScore)%")
                     overviewMetric(title: "Streak", value: "\(overview.streakDays)d")
+                    overviewMetric(title: "Done", value: "\(overview.completedCount)")
                 }
             }
         }
+    }
+
+    func statusChip(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 9, weight: .black, design: .monospaced))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(accent.opacity(colorScheme == .dark ? 0.16 : 0.12))
+            )
+            .foregroundColor(accent)
     }
 
     func overviewMetric(title: String, value: String) -> some View {
@@ -208,9 +235,12 @@ private extension DailyCheckInFlowView {
             Text(title.uppercased())
                 .font(.system(size: 9, weight: .black, design: .monospaced))
                 .foregroundColor(textMuted)
+                .lineLimit(1)
             Text(value)
-                .font(.system(size: 20, weight: .black))
+                .font(.system(size: 18, weight: .black))
                 .foregroundColor(textMain)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -251,21 +281,35 @@ private extension DailyCheckInFlowView {
             } else {
                 DailyCheckInCard {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Today Protocols")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(textMain)
-                        ForEach(viewModel.protocolItems) { item in
-                            DailyCheckInProtocolRow(
-                                item: item,
-                                onMarkDone: {
-                                    Haptics.softImpact()
-                                    viewModel.markDone(protocolId: item.protocolId)
-                                },
-                                onResolve: {
-                                    Haptics.selection()
-                                    viewModel.openResolve(protocolId: item.protocolId)
+                        HStack {
+                            Text("Required Today")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(textMain)
+                            Spacer()
+                            Text("\(viewModel.unresolvedCount) pending")
+                                .font(.system(size: 10, weight: .black, design: .monospaced))
+                                .foregroundColor(textMuted)
+                        }
+
+                        VStack(spacing: 10) {
+                            ForEach(Array(viewModel.protocolItems.enumerated()), id: \.element.id) { index, item in
+                                DailyCheckInProtocolRow(
+                                    item: item,
+                                    onMarkDone: {
+                                        Haptics.softImpact()
+                                        viewModel.markDone(protocolId: item.protocolId)
+                                    },
+                                    onResolve: {
+                                        Haptics.selection()
+                                        viewModel.openResolve(protocolId: item.protocolId)
+                                    }
+                                )
+
+                                if index < viewModel.protocolItems.count - 1 {
+                                    Divider()
+                                        .overlay(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08))
                                 }
-                            )
+                            }
                         }
                     }
                 }
