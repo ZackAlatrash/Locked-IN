@@ -177,18 +177,18 @@ final class DailyCheckInViewModel: ObservableObject {
             needsAttentionCount: unresolvedCount
         )
 
-        if unresolvedCount == 0 && step != .closeDay {
-            step = .closeDay
-        } else {
-            switch step {
-            case .resolve(let protocolId), .recommendation(let protocolId):
-                if protocolItems.contains(where: { $0.protocolId == protocolId }) == false {
-                    step = unresolvedCount == 0 ? .closeDay : .overview
-                    recommendation = nil
-                }
-            case .overview, .closeDay:
-                break
+        switch step {
+        case .resolve(let protocolId), .recommendation(let protocolId):
+            if protocolItems.contains(where: { $0.protocolId == protocolId }) == false {
+                step = .overview
+                recommendation = nil
             }
+        case .closeDay:
+            if unresolvedCount > 0 {
+                step = .overview
+            }
+        case .overview:
+            break
         }
     }
 

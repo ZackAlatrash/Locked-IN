@@ -3,122 +3,153 @@ import SwiftUI
 struct DailyCheckInProtocolRow: View {
     let item: DailyCheckInProtocolItem
     let onMarkDone: () -> Void
-    let onResolve: () -> Void
+    let isRecoveryThemeActive: Bool
 
     @Environment(\.colorScheme) private var colorScheme
 
-    private var accent: Color {
-        colorScheme == .dark ? Color(hex: "#22D3EE") : Color(hex: "#0369A1")
+    private var surfaceColor: Color {
+        colorScheme == .dark ? Color(hex: "#0E0E11").opacity(0.9) : Color.white.opacity(0.96)
     }
 
-    private var extraAccent: Color {
-        colorScheme == .dark ? Color(hex: "#FDE047") : Color(hex: "#A16207")
+    private var borderColor: Color {
+        colorScheme == .dark ? Color(hex: "#849495").opacity(0.2) : Color.black.opacity(0.1)
     }
 
-    private var textMain: Color {
-        colorScheme == .dark ? .white : Color(hex: "#0F172A")
+    private var mutedText: Color {
+        colorScheme == .dark ? Color(hex: "#B9CACB") : Color(hex: "#6B7280")
     }
 
-    private var textMuted: Color {
-        colorScheme == .dark ? Color.white.opacity(0.62) : Color(hex: "#6B7280")
+    private var primaryTone: Color {
+        if isRecoveryThemeActive {
+            return colorScheme == .dark ? Color(hex: "#F87171") : Color(hex: "#B91C1C")
+        }
+        return Color(hex: "#00F0FF")
     }
 
-    private var rowBackground: Color {
-        colorScheme == .dark ? Color.white.opacity(0.035) : Color.black.opacity(0.03)
+    private var secondaryTone: Color {
+        if isRecoveryThemeActive {
+            return colorScheme == .dark ? Color(hex: "#EF4444") : Color(hex: "#DC2626")
+        }
+        return Color(hex: "#FF571A")
     }
 
-    private var statusTint: Color {
-        if item.isSuspended { return textMuted }
-        if item.isExtraToday { return extraAccent }
-        if item.needsAttention { return Color(hex: "#F59E0B") }
-        if item.completedToday { return accent }
-        return textMuted
+    private var subtitleLabel: String {
+        item.remainingWeekText ?? item.statusText
     }
 
-    private var actionTint: Color {
-        item.isExtraToday ? extraAccent : accent
+    private var actionTitle: String {
+        item.actionTitle.uppercased()
+    }
+
+    private var protocolIconName: String {
+        ProtocolIconCatalog.resolvedSymbolName(item.iconSystemName, fallback: "bolt.fill")
+    }
+
+    private var actionBackground: Color {
+        if item.canMarkDone == false {
+            return colorScheme == .dark ? Color(hex: "#353438") : Color(hex: "#E5E7EB")
+        }
+        return item.needsAttention ? secondaryTone.opacity(0.14) : primaryTone.opacity(0.14)
+    }
+
+    private var actionBorder: Color {
+        if item.canMarkDone == false {
+            return colorScheme == .dark ? Color(hex: "#849495").opacity(0.24) : Color.black.opacity(0.14)
+        }
+        return item.needsAttention ? secondaryTone.opacity(0.34) : primaryTone.opacity(0.34)
+    }
+
+    private var actionText: Color {
+        if item.canMarkDone == false {
+            return mutedText
+        }
+        return item.needsAttention ? secondaryTone : primaryTone
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: ProtocolIconCatalog.resolvedSymbolName(item.iconSystemName, fallback: "bolt.fill"))
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(statusTint)
-                .frame(width: 30, height: 30)
-                .background(
-                    Circle()
-                        .fill(statusTint.opacity(colorScheme == .dark ? 0.2 : 0.14))
-                )
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.title)
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .foregroundColor(colorScheme == .dark ? Color(hex: "#E5E1E5") : Color(hex: "#1F2937"))
+                        .lineLimit(2)
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text(item.title)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(textMain)
-                    .lineLimit(2)
+                    HStack(spacing: 6) {
+                        Text(subtitleLabel.uppercased())
+                            .font(.system(size: 10, weight: .semibold))
+                            .tracking(0.9)
+                            .foregroundColor(mutedText)
+                            .lineLimit(1)
 
-                HStack(spacing: 6) {
-                    Text(item.modeLabel)
-                        .font(.system(size: 9, weight: .black, design: .monospaced))
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(
-                            Capsule(style: .continuous)
-                                .fill(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06))
-                        )
-                        .foregroundColor(textMuted)
+                        Text("•")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(mutedText.opacity(0.75))
 
-                    Text(item.statusText)
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(statusTint)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
-
-                if let remainingWeekText = item.remainingWeekText {
-                    Text(remainingWeekText.uppercased())
-                        .font(.system(size: 10, weight: .black, design: .monospaced))
-                        .foregroundColor(textMuted)
-                        .lineLimit(1)
-                }
-            }
-
-            Spacer(minLength: 8)
-
-            VStack(alignment: .trailing, spacing: 8) {
-                Button(item.actionTitle) {
-                    onMarkDone()
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .tint(actionTint)
-                .disabled(item.canMarkDone == false)
-                .font(.system(size: 12, weight: .bold))
-
-                if item.canResolve {
-                    Button("Resolve") {
-                        onResolve()
+                        Text(item.modeLabel.uppercased())
+                            .font(.system(size: 10, weight: .bold))
+                            .tracking(0.9)
+                            .foregroundColor(mutedText)
+                            .lineLimit(1)
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .font(.system(size: 11, weight: .bold))
                 }
 
-                if item.canMarkDone == false, let actionDisabledReason = item.actionDisabledReason {
-                    Text(actionDisabledReason.uppercased())
-                        .font(.system(size: 8, weight: .black, design: .monospaced))
-                        .multilineTextAlignment(.trailing)
-                        .foregroundColor(textMuted)
-                        .frame(maxWidth: 110, alignment: .trailing)
-                }
+                Spacer(minLength: 8)
+
+                Image(systemName: protocolIconName)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(primaryTone.opacity(item.isSuspended ? 0.6 : 1))
+                    .frame(width: 40, height: 40)
+                    .background(
+                        Circle()
+                            .fill(colorScheme == .dark ? Color(hex: "#2A2A2D") : Color(hex: "#F3F4F6"))
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(borderColor, lineWidth: 1)
+                    )
+                    .accessibilityHidden(true)
             }
-            .frame(minWidth: 100)
+
+            Button {
+                onMarkDone()
+            } label: {
+                Text(actionTitle)
+                    .font(.system(size: 11, weight: .heavy))
+                    .tracking(1.1)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .textCase(.uppercase)
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(actionText)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(actionBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(actionBorder, lineWidth: 1)
+            )
+            .disabled(item.canMarkDone == false)
+            .accessibilityHint(item.actionDisabledReason ?? "")
+
+            if item.canMarkDone == false, let actionDisabledReason = item.actionDisabledReason {
+                Text(actionDisabledReason.uppercased())
+                    .font(.system(size: 9, weight: .bold))
+                    .tracking(0.7)
+                    .foregroundColor(mutedText)
+            }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 10)
+        .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(rowBackground)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(surfaceColor)
         )
-        .opacity(item.isSuspended ? 0.75 : 1)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(borderColor, lineWidth: 1)
+        )
+        .opacity(item.isSuspended ? 0.78 : 1)
     }
 }

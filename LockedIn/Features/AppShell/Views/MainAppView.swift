@@ -176,9 +176,6 @@ struct MainAppView: View {
             }
             wasRecoveryActive = isRecoveryActive
             evaluateRecoveryEntryPresentation(now: appClock.now)
-            if isRecoveryActive {
-                router.dismissDailyCheckIn()
-            }
         }
     }
 }
@@ -187,7 +184,14 @@ private extension MainAppView {
     var dailyCheckInPopupOverlay: some View {
         ZStack {
             Rectangle()
-                .fill(Color.black.opacity(0.28))
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    (isRecoveryThemeActive
+                        ? (appAppearanceMode == .dark ? Color(hex: "#2A0E13") : Color(hex: "#FDE8EA"))
+                        : Color(hex: "#131316")
+                    )
+                    .opacity(0.72)
+                )
                 .ignoresSafeArea()
 
             DailyCheckInFlowView(
@@ -200,21 +204,7 @@ private extension MainAppView {
                 handleDailyCheckInFinished(outcome)
             }
             .frame(maxWidth: 560)
-            .frame(maxHeight: 720)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.ultraThinMaterial)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(
-                        appAppearanceMode == .dark
-                            ? Color.white.opacity(0.18)
-                            : Color.black.opacity(0.1),
-                        lineWidth: 1
-                    )
-            )
-            .shadow(color: Color.black.opacity(0.28), radius: 28, x: 0, y: 12)
+            .frame(maxHeight: 760)
             .padding(.horizontal, 18)
             .padding(.vertical, 22)
         }
@@ -257,6 +247,9 @@ private extension MainAppView {
 
     func evaluateRecoveryEntryPresentation(now: Date = Date()) {
         if store.recoveryEntryContext(referenceDate: now) != nil {
+            if router.presentDailyCheckIn {
+                return
+            }
             router.requestRecoveryEntryPresentation()
             router.dismissDailyCheckIn()
         } else {
@@ -342,5 +335,6 @@ private extension MainAppView {
 
         Haptics.selection()
         router.dismissDailyCheckIn()
+        evaluateRecoveryEntryPresentation(now: now)
     }
 }

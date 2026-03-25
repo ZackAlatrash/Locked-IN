@@ -32,51 +32,17 @@ struct DailyCheckInFlowView: View {
     var body: some View {
         Group {
             if isPopup {
-                content
+                popupPanel
             } else {
                 ZStack {
                     background
-                    content
+                    popupPanel
+                        .padding(16)
                 }
             }
         }
         .overlay(alignment: .top) {
-            VStack(spacing: 8) {
-                if let toast = viewModel.toastMessage {
-                    Text(toast)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#111827"))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule(style: .continuous)
-                                .fill(colorScheme == .dark ? Color.white.opacity(0.14) : Color.black.opacity(0.08))
-                        )
-                        .overlay(
-                            Capsule(style: .continuous)
-                                .stroke(colorScheme == .dark ? Color.white.opacity(0.24) : Color.black.opacity(0.14), lineWidth: 1)
-                        )
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
-
-                if let warning = viewModel.warningMessage {
-                    Text(warning)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#111827"))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule(style: .continuous)
-                                .fill(colorScheme == .dark ? Color.red.opacity(0.22) : Color.orange.opacity(0.22))
-                        )
-                        .overlay(
-                            Capsule(style: .continuous)
-                                .stroke(colorScheme == .dark ? Color.red.opacity(0.45) : Color.orange.opacity(0.35), lineWidth: 1)
-                        )
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
-            }
-            .padding(.top, 6)
+            toastOverlay
         }
         .accessibilityAddTraits(isPopup ? .isModal : [])
         .onAppear {
@@ -96,81 +62,130 @@ struct DailyCheckInFlowView: View {
 }
 
 private extension DailyCheckInFlowView {
-    var content: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 14) {
-                header
-                if let overview = viewModel.overview, viewModel.step != .closeDay {
-                    overviewCard(overview)
-                }
-                contentForStep
-            }
-            .padding(.horizontal, isPopup ? 16 : 18)
-            .padding(.top, isPopup ? 14 : 16)
-            .padding(.bottom, isPopup ? 20 : 24)
-            .opacity(didAppear ? 1 : 0)
-            .offset(y: didAppear ? 0 : 12)
+    var popupPanel: some View {
+        VStack(spacing: 18) {
+            stepContent
         }
-    }
-
-    var background: some View {
-        ZStack {
-            if colorScheme == .dark {
-                LinearGradient(
-                    colors: [Color(hex: "#081327"), Color(hex: "#020617")],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+        .padding(.horizontal, 24)
+        .padding(.vertical, 24)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(panelBackground)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(
+                    RadialGradient(
+                        colors: [primaryTone.opacity(0.09), .clear],
+                        center: .center,
+                        startRadius: 8,
+                        endRadius: 260
+                    )
                 )
-            } else {
-                Color(hex: "#F4F7FB")
+                .allowsHitTesting(false)
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(panelBorder, lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.56), radius: 28, x: 0, y: 12)
+        .opacity(didAppear ? 1 : 0)
+        .offset(y: didAppear ? 0 : 12)
+    }
+
+    @ViewBuilder
+    var stepContent: some View {
+        switch viewModel.step {
+        case .overview:
+            overviewStep
+        case .resolve, .recommendation:
+            resolveStep
+        case .closeDay:
+            closeDayStep
+        }
+    }
+
+    var toastOverlay: some View {
+        VStack(spacing: 8) {
+            if let toast = viewModel.toastMessage {
+                Text(toast)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#111827"))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(colorScheme == .dark ? Color.white.opacity(0.14) : Color.black.opacity(0.08))
+                    )
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(colorScheme == .dark ? Color.white.opacity(0.24) : Color.black.opacity(0.14), lineWidth: 1)
+                    )
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
+            if let warning = viewModel.warningMessage {
+                Text(warning)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#111827"))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(colorScheme == .dark ? Color.red.opacity(0.22) : Color.orange.opacity(0.22))
+                    )
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(colorScheme == .dark ? Color.red.opacity(0.45) : Color.orange.opacity(0.35), lineWidth: 1)
+                    )
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .ignoresSafeArea()
+        .padding(.top, 6)
     }
 
-    var accent: Color {
-        colorScheme == .dark ? Color(hex: "#22D3EE") : Color(hex: "#0369A1")
-    }
+    var overviewStep: some View {
+        VStack(spacing: 16) {
+            overviewHeader
 
-    var textMain: Color {
-        colorScheme == .dark ? .white : Color(hex: "#0F172A")
-    }
-
-    var textMuted: Color {
-        colorScheme == .dark ? Color.white.opacity(0.68) : Color(hex: "#6B7280")
-    }
-
-    var header: some View {
-        HStack(alignment: .top, spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(accent.opacity(colorScheme == .dark ? 0.2 : 0.12))
-                    .frame(width: 34, height: 34)
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 14, weight: .black))
-                    .foregroundColor(accent)
+            if viewModel.protocolItems.isEmpty {
+                DailyCheckInCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("No active protocols today.")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(textMain)
+                        Text("You can close the day or defer this check-in.")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(textMuted)
+                    }
+                }
+            } else {
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 12) {
+                        ForEach(viewModel.protocolItems) { item in
+                            DailyCheckInProtocolRow(
+                                item: item,
+                                onMarkDone: {
+                                    Haptics.softImpact()
+                                    viewModel.markDone(protocolId: item.protocolId)
+                                },
+                                isRecoveryThemeActive: isRecoveryThemeActive
+                            )
+                        }
+                    }
+                }
+                .frame(maxHeight: 360)
             }
 
-            VStack(alignment: .leading, spacing: 5) {
-                Text("DAILY CHECK-IN")
-                    .font(.system(size: 11, weight: .black, design: .monospaced))
-                    .tracking(1.4)
-                    .foregroundColor(accent)
+            footerActions
+        }
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
+    }
 
-                Text(viewModel.overview?.dateLabel ?? "Today")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(textMain)
-                    .lineLimit(1)
-
-                Text("Resolve today quickly, then close the day.")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(textMuted)
-                    .lineLimit(2)
-            }
-
-            Spacer(minLength: 0)
-
-            if viewModel.step != .closeDay {
+    var overviewHeader: some View {
+        VStack(spacing: 10) {
+            HStack {
+                Spacer()
                 Button {
                     Haptics.selection()
                     onFinish(viewModel.dismissOutcome(completed: false))
@@ -187,156 +202,106 @@ private extension DailyCheckInFlowView {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Close check-in")
             }
-        }
-    }
 
-    func overviewCard(_ overview: DailyCheckInOverviewModel) -> some View {
-        DailyCheckInCard {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top, spacing: 8) {
-                    Text("System State")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(textMain)
+            statusPill
 
-                    Spacer()
-
-                    statusChip(overview.modeLabel)
-
-                    statusChip(
-                        overview.needsAttentionCount == 0
-                            ? "CLEAR"
-                            : "\(overview.needsAttentionCount) PENDING"
-                    )
-                }
-
-                HStack(spacing: 10) {
-                    overviewMetric(title: "Reliability", value: "\(overview.reliabilityScore)%")
-                    overviewMetric(title: "Streak", value: "\(overview.streakDays)d")
-                    overviewMetric(title: "Done", value: "\(overview.completedCount)")
-                }
-            }
-        }
-    }
-
-    func statusChip(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 9, weight: .black, design: .monospaced))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(accent.opacity(colorScheme == .dark ? 0.16 : 0.12))
-            )
-            .foregroundColor(accent)
-    }
-
-    func overviewMetric(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title.uppercased())
-                .font(.system(size: 9, weight: .black, design: .monospaced))
-                .foregroundColor(textMuted)
-                .lineLimit(1)
-            Text(value)
-                .font(.system(size: 18, weight: .black))
+            Text(ritualStatusTitle)
+                .font(.system(size: 36, weight: .black, design: .rounded))
+                .tracking(0.3)
                 .foregroundColor(textMain)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+                .textCase(.uppercase)
+
+            Text(ritualStatusSubtitle)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(textMuted)
+                .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
     }
 
-    @ViewBuilder
-    var contentForStep: some View {
-        switch viewModel.step {
-        case .overview:
-            overviewStep
-        case .resolve:
-            resolveStep
-        case .recommendation:
-            resolveStep
-        case .closeDay:
-            closeDayStep
+    var statusPill: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(primaryTone)
+                .frame(width: 8, height: 8)
+            Text("SYSTEM STATUS: \(ritualStatusHeadline)")
+                .font(.system(size: 10, weight: .heavy))
+                .tracking(1.1)
+                .foregroundColor(primaryTone)
+                .textCase(.uppercase)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(
+            Capsule(style: .continuous)
+                .fill(primaryTone.opacity(0.1))
+        )
+        .overlay(
+            Capsule(style: .continuous)
+                .stroke(primaryTone.opacity(0.22), lineWidth: 1)
+        )
     }
 
-    var overviewStep: some View {
-        Group {
-            if viewModel.protocolItems.isEmpty {
-                DailyCheckInCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("No active protocols today.")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(textMain)
-                        Text("Close the day and continue tomorrow.")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(textMuted)
-                        Button("Close Day") {
-                            Haptics.selection()
-                            viewModel.closeDay()
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(accent)
-                    }
-                }
-            } else {
-                DailyCheckInCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Text("Required Today")
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundColor(textMain)
-                            Spacer()
-                            Text("\(viewModel.unresolvedCount) pending")
-                                .font(.system(size: 10, weight: .black, design: .monospaced))
-                                .foregroundColor(textMuted)
-                        }
-
-                        VStack(spacing: 10) {
-                            ForEach(Array(viewModel.protocolItems.enumerated()), id: \.element.id) { index, item in
-                                DailyCheckInProtocolRow(
-                                    item: item,
-                                    onMarkDone: {
-                                        Haptics.softImpact()
-                                        viewModel.markDone(protocolId: item.protocolId)
-                                    },
-                                    onResolve: {
-                                        Haptics.selection()
-                                        viewModel.openResolve(protocolId: item.protocolId)
-                                    }
-                                )
-
-                                if index < viewModel.protocolItems.count - 1 {
-                                    Divider()
-                                        .overlay(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08))
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if viewModel.unresolvedCount == 0 {
-                    Button("Close Day") {
-                        Haptics.selection()
-                        viewModel.closeDay()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(accent)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                } else {
-                    Button("Close for now") {
-                        Haptics.selection()
-                        onFinish(viewModel.dismissOutcome(completed: false))
-                    }
-                    .buttonStyle(.bordered)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                }
+    var footerActions: some View {
+        VStack(spacing: 10) {
+            Button {
+                Haptics.selection()
+                handlePrimaryOverviewAction()
+            } label: {
+                Text(viewModel.unresolvedCount == 0 ? "COMMIT LOG" : "RESOLVE PROTOCOLS")
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .tracking(1.2)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
             }
+            .buttonStyle(.plain)
+            .foregroundColor(colorScheme == .dark ? Color(hex: "#00363A") : .white)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(viewModel.unresolvedCount == 0 ? primaryTone : primaryTone.opacity(0.85))
+            )
         }
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
+    }
+
+    func handlePrimaryOverviewAction() {
+        if viewModel.unresolvedCount == 0 {
+            viewModel.closeDay()
+            return
+        }
+
+        if let unresolved = viewModel.protocolItems.first(where: { $0.needsAttention }) {
+            viewModel.openResolve(protocolId: unresolved.protocolId)
+            return
+        }
+
+        onFinish(viewModel.dismissOutcome(completed: false))
     }
 
     var resolveStep: some View {
-        Group {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("RESOLUTION")
+                    .font(.system(size: 11, weight: .black, design: .monospaced))
+                    .tracking(1.2)
+                    .foregroundColor(primaryTone)
+                Spacer()
+                Button {
+                    Haptics.selection()
+                    onFinish(viewModel.dismissOutcome(completed: false))
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(textMain)
+                        .frame(width: 30, height: 30)
+                        .background(
+                            Circle()
+                                .fill(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06))
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close check-in")
+            }
+
             if let protocolItem = viewModel.resolvingProtocol ?? viewModel.recommendationProtocol {
                 DailyCheckInResolutionSheet(
                     protocolItem: protocolItem,
@@ -383,5 +348,68 @@ private extension DailyCheckInFlowView {
             }
         )
         .transition(.opacity.combined(with: .scale))
+    }
+
+    var background: some View {
+        ZStack {
+            if colorScheme == .dark {
+                LinearGradient(
+                    colors: [Color(hex: "#081327"), Color(hex: "#020617")],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            } else {
+                Color(hex: "#F4F7FB")
+            }
+        }
+        .ignoresSafeArea()
+    }
+
+    var panelBackground: Color {
+        colorScheme == .dark ? Color(hex: "#201F22").opacity(0.82) : Color.white.opacity(0.94)
+    }
+
+    var panelBorder: Color {
+        colorScheme == .dark ? Color(hex: "#849495").opacity(0.24) : Color.black.opacity(0.1)
+    }
+
+    var primaryTone: Color {
+        if isRecoveryThemeActive {
+            return colorScheme == .dark ? Color(hex: "#F87171") : Color(hex: "#B91C1C")
+        }
+        return Color(hex: "#00F0FF")
+    }
+
+    var isRecoveryThemeActive: Bool {
+        viewModel.overview?.modeLabel == "RECOVERY"
+    }
+
+    var textMain: Color {
+        colorScheme == .dark ? Color(hex: "#E5E1E5") : Color(hex: "#0F172A")
+    }
+
+    var textMuted: Color {
+        colorScheme == .dark ? Color(hex: "#B9CACB") : Color(hex: "#6B7280")
+    }
+
+    var ritualStatusHeadline: String {
+        if viewModel.overview?.modeLabel == "RECOVERY" {
+            return "RECOVERY"
+        }
+        return viewModel.unresolvedCount == 0 ? "STABLE" : "WATCH"
+    }
+
+    var ritualStatusTitle: String {
+        viewModel.unresolvedCount == 0 ? "STABLE" : "PENDING"
+    }
+
+    var ritualStatusSubtitle: String {
+        if viewModel.unresolvedCount == 0 {
+            let streak = viewModel.overview?.streakDays ?? 0
+            return "\(streak) clean days since last protocol breach"
+        }
+        let pending = viewModel.unresolvedCount
+        let suffix = pending == 1 ? "protocol requires action" : "protocols require action"
+        return "\(pending) \(suffix)"
     }
 }

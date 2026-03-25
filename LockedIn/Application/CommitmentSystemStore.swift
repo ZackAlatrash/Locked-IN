@@ -713,7 +713,6 @@ final class CommitmentSystemStore: ObservableObject {
         to updated: inout CommitmentSystem,
         referenceDate: Date
     ) {
-        _ = referenceDate
         let wasInRecovery = previous.nonNegotiables.contains(where: { $0.state == .recovery })
         let isInRecovery = updated.nonNegotiables.contains(where: { $0.state == .recovery })
 
@@ -736,6 +735,9 @@ final class CommitmentSystemStore: ObservableObject {
             updated.recoveryEntryRequiresPauseSelection = activeOrRecoveryCount > 1
             updated.recoveryEntryTriggerProtocolId = enteredRecovery.first?.id
             updated.recoveryPausedProtocolId = nil
+            updated.recoveryCleanDayStreak = 0
+            let entryDay = DateRules.startOfDay(referenceDate, calendar: calendar)
+            updated.lastRecoveryEvaluationDay = calendar.date(byAdding: .day, value: -1, to: entryDay) ?? entryDay
             return
         }
 

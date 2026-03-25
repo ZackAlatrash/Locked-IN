@@ -124,10 +124,15 @@ final class CommitmentSystemEngine {
         in system: inout CommitmentSystem,
         calendar: Calendar = DateRules.isoCalendar
     ) {
-        let evaluationDay = DateRules.startOfDay(referenceDate, calendar: calendar)
+        // Evaluate the most recently closed day so the result is deterministic and
+        // does not depend on what time the app happened to run today.
+        let today = DateRules.startOfDay(referenceDate, calendar: calendar)
+        guard let evaluationDay = calendar.date(byAdding: .day, value: -1, to: today) else {
+            return
+        }
 
         if let last = system.lastRecoveryEvaluationDay,
-           calendar.isDate(last, inSameDayAs: evaluationDay) {
+           last >= evaluationDay {
             return
         }
 
