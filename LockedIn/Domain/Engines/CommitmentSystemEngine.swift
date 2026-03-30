@@ -264,18 +264,10 @@ final class CommitmentSystemEngine {
     }
 
     func isSystemStable(_ system: CommitmentSystem) -> Bool {
-        if system.nonNegotiables.contains(where: { $0.state == .recovery }) {
-            return false
-        }
-
-        for nn in system.nonNegotiables {
-            guard let currentWindow = nn.windows.last else { continue }
-            if currentWindow.weeklyViolationCount >= 3 {
-                return false
-            }
-        }
-
-        return true
+        // Recovery mode is represented by explicit protocol state.
+        // Window violation counters are historical bookkeeping and should not
+        // keep the system in recovery after recovery has exited.
+        system.nonNegotiables.contains(where: { $0.state == .recovery }) == false
     }
 
     func canCreateNewNonNegotiable(_ system: CommitmentSystem) -> Bool {

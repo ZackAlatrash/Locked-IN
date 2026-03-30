@@ -177,18 +177,9 @@ private extension CommitmentPolicyEngine {
     }
 
     func isSystemStable(_ system: CommitmentSystem) -> Bool {
-        if system.nonNegotiables.contains(where: { $0.state == .recovery }) {
-            return false
-        }
-
-        for nn in system.nonNegotiables {
-            guard let window = nn.windows.last else { continue }
-            if window.weeklyViolationCount >= 3 {
-                return false
-            }
-        }
-
-        return true
+        // Keep policy stability aligned with domain recovery state:
+        // once no protocol is in .recovery, the system is considered stable.
+        system.nonNegotiables.contains(where: { $0.state == .recovery }) == false
     }
 
     func fieldOrder(lhs: ProtocolField, rhs: ProtocolField) -> Bool {
