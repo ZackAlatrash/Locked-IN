@@ -22,6 +22,7 @@ struct CockpitUIState {
     var accentRGB: RGBColor
     var nonNegotiables: [CockpitNonNegotiableCardModel]
     var todayTasks: [TodayTask]
+    var upcomingTasks: [UpcomingTask]
     var todayWindowTitle: String
     var todayWindowSubtitle: String
 
@@ -46,6 +47,7 @@ struct CockpitUIState {
             accentRGB: RGBColor(r: 0.07, g: 0.50, b: 0.93),
             nonNegotiables: [],
             todayTasks: [],
+            upcomingTasks: [],
             todayWindowTitle: "TODAY'S WINDOW",
             todayWindowSubtitle: "No active windows yet"
         )
@@ -93,6 +95,7 @@ struct CockpitNonNegotiableCardModel: Identifiable {
 
 enum CockpitAction: Equatable {
     case complete(nnId: UUID)
+    case undo(nnId: UUID)
     case openDetails(nnId: UUID)
     case edit(nnId: UUID)
     case openCreate
@@ -132,4 +135,11 @@ struct TodayTask: Identifiable, Equatable {
     let completionVisual: CompletionVisual
     let ctaTitle: String
     let isCtaEnabled: Bool
+}
+
+struct UpcomingTask: Identifiable, Equatable {
+    let id: UUID
+    let title: String
+    let iconSystemName: String
+    let timingText: String
 }

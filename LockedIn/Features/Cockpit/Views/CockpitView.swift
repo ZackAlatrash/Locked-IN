@@ -189,6 +189,7 @@ private extension CockpitView {
             weeklyTargetCount: weeklyTargetCount,
             weeklyCompletionByDay: weeklyCompletionByDay,
             capacityProtocols: viewModel.uiState.todayTasks,
+            upcomingProtocols: viewModel.uiState.upcomingTasks,
             showEmbeddedHeader: false,
             onWeeklyActivityTap: { perform(.openWeeklyActivity) },
             onStreakTap: { perform(.openStreak) },
@@ -200,6 +201,9 @@ private extension CockpitView {
             },
             onProtocolComplete: { nnId in
                 perform(.complete(nnId: nnId))
+            },
+            onProtocolUndo: { nnId in
+                perform(.undo(nnId: nnId))
             },
             onProtocolTap: { nnId in
                 perform(.openDetails(nnId: nnId))
@@ -345,6 +349,25 @@ private extension CockpitView {
                     )
                 }
                 Haptics.success()
+            } catch {
+                Haptics.warning()
+                actionErrorMessage = actionMessage(for: error)
+            }
+
+        case .undo(let nnId):
+            do {
+                guard let protocolModel = store.system.nonNegotiables.first(where: { $0.id == nnId }) else {
+                    actionErrorMessage = "This protocol is no longer available."
+                    return
+                }
+                let removed = try store.undoLatestCompletionToday(for: nnId, at: appClock.now)
+                store.runDailyIntegrityTick(referenceDate: appClock.now)
+                if removed.kind == .extra {
+                    showCompletionToast("Removed EXTRA for \(protocolModel.definition.title).")
+                } else {
+                    showCompletionToast("Undid completion for \(protocolModel.definition.title).")
+                }
+                Haptics.selection()
             } catch {
                 Haptics.warning()
                 actionErrorMessage = actionMessage(for: error)

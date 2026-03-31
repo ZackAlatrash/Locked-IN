@@ -24,6 +24,7 @@ struct CockpitModernView: View {
     let weeklyTargetCount: Int
     let weeklyCompletionByDay: [Int]
     let capacityProtocols: [TodayTask]
+    let upcomingProtocols: [UpcomingTask]
     let showEmbeddedHeader: Bool
     let onWeeklyActivityTap: () -> Void
     let onStreakTap: () -> Void
@@ -31,6 +32,7 @@ struct CockpitModernView: View {
     let onCreateTap: () -> Void
     let onCheckInTap: () -> Void
     let onProtocolComplete: (UUID) -> Void
+    let onProtocolUndo: (UUID) -> Void
     let onProtocolTap: (UUID) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -42,6 +44,8 @@ struct CockpitModernView: View {
     @State private var showWeeklyStrip = false
     @State private var showActiveSection = false
     @State private var revealedProtocolRows = 0
+    @State private var pendingUndoTaskId: UUID?
+    @State private var pendingUndoResetTask: Task<Void, Never>?
     @State private var animatedReliabilityValue: Double = 0
     @ScaledMetric(relativeTo: .largeTitle) private var reliabilityScoreFontSize: CGFloat = 58
     @ScaledMetric(relativeTo: .title2) private var ringSize: CGFloat = 222
@@ -74,6 +78,7 @@ struct CockpitModernView: View {
         weeklyTargetCount: Int,
         weeklyCompletionByDay: [Int],
         capacityProtocols: [TodayTask],
+        upcomingProtocols: [UpcomingTask],
         showEmbeddedHeader: Bool = true,
         onWeeklyActivityTap: @escaping () -> Void = {},
         onStreakTap: @escaping () -> Void = {},
@@ -81,6 +86,7 @@ struct CockpitModernView: View {
         onCreateTap: @escaping () -> Void = {},
         onCheckInTap: @escaping () -> Void = {},
         onProtocolComplete: @escaping (UUID) -> Void = { _ in },
+        onProtocolUndo: @escaping (UUID) -> Void = { _ in },
         onProtocolTap: @escaping (UUID) -> Void = { _ in }
     ) {
         self.style = style
@@ -101,6 +107,7 @@ struct CockpitModernView: View {
         self.weeklyTargetCount = weeklyTargetCount
         self.weeklyCompletionByDay = weeklyCompletionByDay
         self.capacityProtocols = capacityProtocols
+        self.upcomingProtocols = upcomingProtocols
         self.showEmbeddedHeader = showEmbeddedHeader
         self.onWeeklyActivityTap = onWeeklyActivityTap
         self.onStreakTap = onStreakTap
@@ -108,6 +115,7 @@ struct CockpitModernView: View {
         self.onCreateTap = onCreateTap
         self.onCheckInTap = onCheckInTap
         self.onProtocolComplete = onProtocolComplete
+        self.onProtocolUndo = onProtocolUndo
         self.onProtocolTap = onProtocolTap
     }
 
@@ -232,6 +240,9 @@ struct CockpitModernView: View {
         }
         .onChange(of: reliabilityScore) { newValue in
             animateReliabilityValue(to: newValue)
+        }
+        .onDisappear {
+            clearPendingUndo()
         }
     }
 }
@@ -460,60 +471,9 @@ private extension CockpitModernView {
         VStack(alignment: .leading, spacing: 14) {
             activeProtocolsHeader
 
-            Button(action: onCapacityTap) {
-                HStack(alignment: .center, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Capacity \(activeCapacityCountText.replacingOccurrences(of: " ", with: ""))")
-                            .font(.headline.weight(.bold))
-                            .foregroundColor(textMain)
-                        Text(directiveTitle)
-                            .font(.caption2.weight(.medium))
-                            .tracking(1.1)
-                            .foregroundColor(textSecondary)
-                            .lineLimit(3)
-                            .fixedSize(horizontal: false, vertical: true)
-                        if let recoveryProgressText {
-                            Text(recoveryProgressText.uppercased())
-                                .font(.caption2.weight(.bold))
-                                .foregroundColor(primary)
-                        }
-                    }
-                    .layoutPriority(1)
+            capacitySummaryCard
 
-                    Spacer(minLength: 10)
-
-                    HStack(spacing: 6) {
-                        ForEach(0..<totalCount, id: \.self) { index in
-                            Capsule(style: .continuous)
-                                .fill(index < activeCount ? primary : (style == .dark ? Color.white.opacity(0.09) : Color.black.opacity(0.08)))
-                                .frame(width: capacityCapsuleWidth, height: capacityCapsuleHeight)
-                                .overlay(
-                                    Capsule(style: .continuous)
-                                        .stroke(
-                                            index < activeCount
-                                                ? primary.opacity(0.3)
-                                                : (style == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08)),
-                                            lineWidth: 1
-                                        )
-                                )
-                                .shadow(color: index < activeCount ? primary.opacity(0.3) : .clear, radius: 5, x: 0, y: 0)
-                        }
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 14)
-                .background(glassCard)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(glassStroke, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            }
-            .buttonStyle(CockpitPressScaleButtonStyle())
-
-            if todayCompleted == false {
-                checkInInlineCard
-            }
+            checkInInlineCard
 
             VStack(spacing: 10) {
                 ForEach(Array(capacityProtocols.prefix(3).enumerated()), id: \.element.id) { index, task in
@@ -522,6 +482,110 @@ private extension CockpitModernView {
                         .offset(y: revealedProtocolRows > index ? 0 : 10)
                 }
             }
+
+            if upcomingProtocols.isEmpty == false {
+                upcomingPreviewSection
+            }
+        }
+    }
+
+    var capacitySummaryCard: some View {
+        Button(action: onCapacityTap) {
+            HStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Capacity \(activeCapacityCountText.replacingOccurrences(of: " ", with: ""))")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(textSecondary.opacity(0.92))
+                    Text(directiveTitle)
+                        .font(.caption2.weight(.medium))
+                        .tracking(0.9)
+                        .foregroundColor(textSecondary.opacity(0.86))
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let recoveryProgressText {
+                        Text(recoveryProgressText.uppercased())
+                            .font(.caption2.weight(.semibold))
+                            .foregroundColor(primary.opacity(0.82))
+                    }
+                }
+                .layoutPriority(1)
+
+                Spacer(minLength: 8)
+
+                HStack(spacing: 5) {
+                    ForEach(0..<totalCount, id: \.self) { index in
+                        capacityIndicator(for: index)
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 11)
+            .background(glassCard.opacity(0.86))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(glassStroke.opacity(0.8), lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(CockpitPressScaleButtonStyle())
+    }
+
+    func capacityIndicator(for index: Int) -> some View {
+        let isActive = index < activeCount
+        let fillColor = isActive ? primary.opacity(0.7) : (style == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.07))
+        let strokeColor = isActive ? primary.opacity(0.24) : (style == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08))
+        let shadowColor = isActive ? primary.opacity(0.14) : Color.clear
+        let width = capacityCapsuleWidth - 2
+        let height = max(6, capacityCapsuleHeight - 2)
+
+        return Capsule(style: .continuous)
+            .fill(fillColor)
+            .frame(width: width, height: height)
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(strokeColor, lineWidth: 1)
+            )
+            .shadow(color: shadowColor, radius: 2, x: 0, y: 0)
+    }
+
+    var upcomingPreviewSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("UP NEXT")
+                .font(.caption2.weight(.bold))
+                .tracking(1.8)
+                .foregroundColor(textSecondary.opacity(0.82))
+
+            VStack(spacing: 6) {
+                ForEach(upcomingProtocols) { task in
+                    HStack(spacing: 8) {
+                        Image(systemName: ProtocolIconCatalog.resolvedSymbolName(task.iconSystemName, fallback: "scope"))
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(textSecondary.opacity(0.8))
+
+                        Text(task.title)
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(textSecondary.opacity(0.92))
+                            .lineLimit(1)
+
+                        Spacer(minLength: 8)
+
+                        Text(task.timingText.uppercased())
+                            .font(.caption2.weight(.bold))
+                            .tracking(0.8)
+                            .foregroundColor(textSecondary.opacity(0.75))
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(subtleCard)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(glassStroke.opacity(0.6), lineWidth: 1)
+            )
         }
     }
 
@@ -597,7 +661,18 @@ private extension CockpitModernView {
     }
 
     var checkInInlineCard: some View {
-        Button(action: onCheckInTap) {
+        let checkInTitle = todayCompleted ? "OPEN CHECK-IN" : "CHECK IN"
+        let checkInSubtitle: String = {
+            if dueCount > 0 {
+                return dueCount == 1 ? "1 protocol still due today" : "\(dueCount) protocols still due today"
+            }
+            if todayCompleted {
+                return "Review today's status"
+            }
+            return "No pending protocols - open check-in"
+        }()
+
+        return Button(action: onCheckInTap) {
             HStack(spacing: 12) {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 15, weight: .black))
@@ -609,11 +684,11 @@ private extension CockpitModernView {
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("CHECK IN")
+                    Text(checkInTitle)
                         .font(.caption.weight(.black))
                         .tracking(1.2)
                         .foregroundColor(textMain)
-                    Text("Complete today’s review")
+                    Text(checkInSubtitle)
                         .font(.caption2.weight(.semibold))
                         .foregroundColor(textSecondary)
                         .lineLimit(2)
@@ -643,9 +718,14 @@ private extension CockpitModernView {
 
     func protocolRow(_ task: TodayTask) -> some View {
         let paused = task.isPaused
+        let isUndoArmed = pendingUndoTaskId == task.nnId
+        let canUndo = task.completionVisual != .none && !paused
         let completionTint: Color = {
             if paused {
                 return style == .dark ? Color.white.opacity(0.5) : Color.black.opacity(0.42)
+            }
+            if isUndoArmed {
+                return Color(hex: "F59E0B")
             }
             switch task.completionVisual {
             case .none:
@@ -661,7 +741,10 @@ private extension CockpitModernView {
         return HStack(spacing: 4) {
             Button {
                 if task.isCtaEnabled {
+                    clearPendingUndo()
                     onProtocolComplete(task.nnId)
+                } else if canUndo {
+                    handleUndoTap(for: task)
                 }
             } label: {
                 ZStack {
@@ -672,7 +755,7 @@ private extension CockpitModernView {
                                 .fill(showCompletionCheck ? completionTint.opacity(0.2) : Color.clear)
                         )
                     if showCompletionCheck {
-                        Image(systemName: "checkmark")
+                        Image(systemName: isUndoArmed ? "arrow.uturn.backward" : "checkmark")
                             .font(.system(size: 10, weight: .black))
                             .foregroundColor(completionTint)
                     }
@@ -699,6 +782,14 @@ private extension CockpitModernView {
                             .foregroundColor(paused ? textSecondary.opacity(0.86) : textSecondary)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
+
+                        if isUndoArmed {
+                            Text("TAP AGAIN TO UNDO")
+                                .font(.caption2.weight(.bold))
+                                .tracking(1.2)
+                                .foregroundColor(Color(hex: "F59E0B"))
+                                .lineLimit(1)
+                        }
                     }
                     .layoutPriority(1)
 
@@ -787,6 +878,30 @@ private extension CockpitModernView {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.52) {
             didAnimateCockpitPhase1SessionID = effectiveMotionSessionID
         }
+    }
+
+    func handleUndoTap(for task: TodayTask) {
+        if pendingUndoTaskId == task.nnId {
+            clearPendingUndo()
+            onProtocolUndo(task.nnId)
+            return
+        }
+
+        pendingUndoTaskId = task.nnId
+        pendingUndoResetTask?.cancel()
+        pendingUndoResetTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard Task.isCancelled == false else { return }
+            if pendingUndoTaskId == task.nnId {
+                pendingUndoTaskId = nil
+            }
+        }
+    }
+
+    func clearPendingUndo() {
+        pendingUndoTaskId = nil
+        pendingUndoResetTask?.cancel()
+        pendingUndoResetTask = nil
     }
 
     func animateReliabilityValue(to score: Int) {

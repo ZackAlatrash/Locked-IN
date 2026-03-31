@@ -139,6 +139,41 @@ final class CommitmentSystemStore: ObservableObject {
         }
     }
 
+    @discardableResult
+    func undoLatestCompletionToday(
+        for id: UUID,
+        at date: Date = Date()
+    ) throws -> CompletionRecord {
+        guard let nonNegotiableIndex = system.nonNegotiables.firstIndex(where: { $0.id == id }) else {
+            throw CommitmentStoreError.domain(CommitmentSystemError.nonNegotiableNotFound)
+        }
+
+        let dayStart = DateRules.startOfDay(date, calendar: calendar)
+        guard let nextDay = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+            throw CommitmentStoreError.policyDenied(.generic(message: "Unable to undo completion right now."))
+        }
+
+        var updated = system
+        let completions = updated.nonNegotiables[nonNegotiableIndex].completions
+        let todaysCompletionIndices = completions.indices.filter { index in
+            let completion = completions[index]
+            return completion.date >= dayStart && completion.date < nextDay
+        }
+        guard let completionIndex = todaysCompletionIndices.max(by: { lhs, rhs in
+            completions[lhs].date < completions[rhs].date
+        }) else {
+            throw CommitmentStoreError.policyDenied(.generic(message: "No completion to undo today."))
+        }
+
+        let removed = updated.nonNegotiables[nonNegotiableIndex].completions.remove(at: completionIndex)
+
+        systemEngine.evaluateWeekCatchUp(referenceDate: date, in: &updated, calendar: calendar)
+        systemEngine.evaluateRecoveryDay(referenceDate: date, in: &updated, calendar: calendar)
+        systemEngine.advanceWindows(currentDate: date, in: &updated)
+        applySystemUpdate(updated, referenceDate: date)
+        return removed
+    }
+
     func retireNonNegotiable(id: UUID, referenceDate: Date = Date()) throws {
         guard let index = system.nonNegotiables.firstIndex(where: { $0.id == id }) else {
             throw CommitmentStoreError.domain(CommitmentSystemError.nonNegotiableNotFound)

@@ -39,6 +39,7 @@ final class CockpitViewModel: ObservableObject {
             accentRGB: accent,
             nonNegotiables: mapCards(system: system, referenceDate: now),
             todayTasks: todayTasks(system: system, referenceDate: now),
+            upcomingTasks: upcomingTasks(system: system, referenceDate: now),
             todayWindowTitle: "TODAY'S WINDOW",
             todayWindowSubtitle: todayWindowSubtitle(system: system, referenceDate: now)
         )
@@ -360,6 +361,63 @@ private extension CockpitViewModel {
                     )
                 }
             }
+    }
+
+    func upcomingTasks(system: CommitmentSystem, referenceDate: Date) -> [UpcomingTask] {
+        let weekId = DateRules.weekID(for: referenceDate)
+
+        let candidates: [(task: UpcomingTask, priority: Int)] = system.nonNegotiables
+            .filter { $0.state == .active || $0.state == .recovery }
+            .map { nn in
+                let completedToday = countedCompletedToday(nn, on: referenceDate)
+                let thisWeekCount = countedCompletionsThisWeek(nn, weekId: weekId)
+
+                switch nn.definition.mode {
+                case .daily:
+                    let timing = completedToday ? "Tomorrow" : "Tomorrow"
+                    return (
+                        UpcomingTask(
+                            id: nn.id,
+                            title: nn.definition.title,
+                            iconSystemName: nn.definition.iconSystemName,
+                            timingText: timing
+                        ),
+                        0
+                    )
+                case .session:
+                    let remaining = max(nn.definition.frequencyPerWeek - thisWeekCount, 0)
+                    if remaining > 0 {
+                        return (
+                            UpcomingTask(
+                                id: nn.id,
+                                title: nn.definition.title,
+                                iconSystemName: nn.definition.iconSystemName,
+                                timingText: remaining == 1 ? "Later this week" : "This week"
+                            ),
+                            1
+                        )
+                    }
+                    return (
+                        UpcomingTask(
+                            id: nn.id,
+                            title: nn.definition.title,
+                            iconSystemName: nn.definition.iconSystemName,
+                            timingText: "Next week"
+                        ),
+                        2
+                    )
+                }
+            }
+
+        return candidates
+            .sorted {
+                if $0.priority != $1.priority {
+                    return $0.priority < $1.priority
+                }
+                return $0.task.title.localizedCaseInsensitiveCompare($1.task.title) == .orderedAscending
+            }
+            .prefix(2)
+            .map(\.task)
     }
 
     func accentRGB(for score: Int) -> RGBColor {
