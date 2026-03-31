@@ -33,6 +33,8 @@ struct CompletionDecision: Equatable {
 }
 
 struct NonNegotiableEngine {
+    private static let allowedLockDurations: Set<Int> = [14, 28, 60, 90]
+
     private struct InitialPartialWeeklyGraceEvaluation {
         let shouldSuppressShortfall: Bool
         let creationWeekId: WeekID
@@ -304,7 +306,7 @@ struct NonNegotiableEngine {
         if definition.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             throw NonNegotiableEngineError.invalidDefinition(reason: .titleEmpty)
         }
-        if totalLockDays != 14 && totalLockDays != 28 {
+        if Self.allowedLockDurations.contains(totalLockDays) == false {
             throw NonNegotiableEngineError.invalidDefinition(reason: .invalidLockDuration)
         }
         if NonNegotiableDefinition.isValidEstimatedDuration(definition.estimatedDurationMinutes) == false {

@@ -5,7 +5,6 @@ private struct CommitmentPeriodOption: Identifiable {
     let id: Int
     let title: String
     let days: Int
-    let isAvailable: Bool
 }
 
 @MainActor
@@ -74,8 +73,8 @@ struct CreateNonNegotiableView: View {
         .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity, alignment: .top)
         .background(backgroundLayer.ignoresSafeArea())
-        .navigationTitle("New Protocol")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button {
@@ -93,17 +92,6 @@ struct CreateNonNegotiableView: View {
                         .background(Circle().fill(softFillColor))
                 }
                 .buttonStyle(.plain)
-            }
-
-            ToolbarItem(placement: .topBarTrailing) {
-                Circle()
-                    .fill(softFillColor)
-                    .frame(width: 34, height: 34)
-                    .overlay(
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(headingColor.opacity(0.45))
-                    )
             }
         }
         .sheet(isPresented: $showingIconPicker) {
@@ -179,10 +167,10 @@ private extension CreateNonNegotiableView {
 
     var periodOptions: [CommitmentPeriodOption] {
         [
-            CommitmentPeriodOption(id: 14, title: "Sprint", days: 14, isAvailable: true),
-            CommitmentPeriodOption(id: 28, title: "Habit Formation", days: 28, isAvailable: true),
-            CommitmentPeriodOption(id: 60, title: "Lifestyle", days: 60, isAvailable: false),
-            CommitmentPeriodOption(id: 90, title: "Mastery", days: 90, isAvailable: false)
+            CommitmentPeriodOption(id: 14, title: "Sprint", days: 14),
+            CommitmentPeriodOption(id: 28, title: "Habit Formation", days: 28),
+            CommitmentPeriodOption(id: 60, title: "Lifestyle", days: 60),
+            CommitmentPeriodOption(id: 90, title: "Mastery", days: 90)
         ]
     }
 
@@ -286,11 +274,19 @@ private extension CreateNonNegotiableView {
     }
 
     var titleContext: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("NON-NEGOTIABLE")
-                .font(.system(size: 12, weight: .bold))
-                .tracking(2.4)
-                .foregroundColor(cockpitAccentColor)
+        VStack(alignment: .leading, spacing: 8) {
+            TextField(
+                "",
+                text: $viewModel.title,
+                prompt: Text("New Protocol")
+                    .foregroundColor(subtitleColor.opacity(0.9))
+            )
+            .font(.system(size: 38, weight: .heavy))
+            .foregroundColor(headingColor)
+            .autocorrectionDisabled()
+            .textInputAutocapitalization(.words)
+            .accessibilityLabel("Protocol name")
+
             Text("Configure your lock and system impact.")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(subtitleColor)
@@ -303,7 +299,7 @@ private extension CreateNonNegotiableView {
         roundedCard {
             VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
                 HStack {
-                    Text("PROTOCOL NAME")
+                    Text("PROTOCOL DETAILS")
                         .font(.system(size: 11, weight: .bold))
                         .tracking(1.3)
                         .foregroundColor(subtitleColor)
@@ -312,12 +308,6 @@ private extension CreateNonNegotiableView {
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(cockpitAccentColor)
                 }
-
-                TextField("e.g. Deep Work: Monk Mode", text: $viewModel.title)
-                    .font(.system(size: 36, weight: .heavy))
-                    .foregroundColor(headingColor)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.words)
 
                 Text("Goal axis: \(viewModel.selectedGoalTitle)")
                     .font(.system(size: 16, weight: .medium))
@@ -448,8 +438,7 @@ private extension CreateNonNegotiableView {
 
                     HStack(spacing: 8) {
                         Button {
-                            Haptics.selection()
-                            viewModel.enableCustomDuration()
+                            activateCustomDuration()
                         } label: {
                             Text("Custom")
                                 .font(.system(size: 12, weight: .bold))
@@ -467,28 +456,41 @@ private extension CreateNonNegotiableView {
                         }
                         .buttonStyle(.plain)
 
-                        TextField(
-                            "minutes",
-                            text: Binding(
-                                get: { viewModel.customDurationText },
-                                set: { viewModel.setCustomDurationText($0) }
+                        ZStack {
+                            TextField(
+                                "minutes",
+                                text: Binding(
+                                    get: { viewModel.customDurationText },
+                                    set: { viewModel.setCustomDurationText($0) }
+                                )
                             )
-                        )
-                            .keyboardType(.numberPad)
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(headingColor)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(softFillColor)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .stroke(cardStrokeColor, lineWidth: 1)
-                            )
-                            .disabled(viewModel.isUsingCustomDuration == false)
-                            .opacity(viewModel.isUsingCustomDuration ? 1 : 0.55)
+                                .keyboardType(.numberPad)
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(headingColor)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(softFillColor)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .stroke(cardStrokeColor, lineWidth: 1)
+                                )
+                                .disabled(viewModel.isUsingCustomDuration == false)
+                                .opacity(viewModel.isUsingCustomDuration ? 1 : 0.55)
+
+                            if viewModel.isUsingCustomDuration == false {
+                                Button {
+                                    activateCustomDuration()
+                                } label: {
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(Color.clear)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Custom duration")
+                            }
+                        }
                     }
                 }
 
@@ -500,9 +502,12 @@ private extension CreateNonNegotiableView {
     }
 
     var frequencyControl: some View {
-        HStack(spacing: 8) {
+        let canDecrementFrequency = viewModel.mode == .session
+        let canIncrementFrequency = viewModel.mode == .session && viewModel.frequencyPerWeek < 7
+
+        return HStack(spacing: 8) {
             Button {
-                guard viewModel.mode == .session else { return }
+                guard canDecrementFrequency else { return }
                 Haptics.selection()
                 withAnimation(.easeInOut(duration: Theme.Animation.defaultDuration)) {
                     viewModel.frequencyPerWeek = max(1, viewModel.frequencyPerWeek - 1)
@@ -524,7 +529,7 @@ private extension CreateNonNegotiableView {
                 .frame(minWidth: 34)
 
             Button {
-                guard viewModel.mode == .session else { return }
+                guard canIncrementFrequency else { return }
                 Haptics.selection()
                 withAnimation(.easeInOut(duration: Theme.Animation.defaultDuration)) {
                     viewModel.frequencyPerWeek = min(7, viewModel.frequencyPerWeek + 1)
@@ -532,15 +537,20 @@ private extension CreateNonNegotiableView {
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(headingColor)
+                    .foregroundColor(canIncrementFrequency ? headingColor : subtitleColor.opacity(0.85))
                     .frame(width: 34, height: 34)
-                    .background(cockpitAccentColor)
+                    .background(canIncrementFrequency ? cockpitAccentColor : softFillColor)
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
             .buttonStyle(.plain)
-            .disabled(viewModel.mode == .daily)
-            .opacity(viewModel.mode == .daily ? 0.45 : 1)
+            .disabled(!canIncrementFrequency)
+            .opacity(canIncrementFrequency ? 1 : 0.45)
         }
+    }
+
+    func activateCustomDuration() {
+        Haptics.selection()
+        viewModel.enableCustomDuration()
     }
 
     var commitmentPeriodCard: some View {
@@ -568,7 +578,6 @@ private extension CreateNonNegotiableView {
         let isSelected = option.days == viewModel.totalLockDays
 
         return Button {
-            guard option.isAvailable else { return }
             Haptics.selection()
             withAnimation(.easeInOut(duration: Theme.Animation.defaultDuration)) {
                 viewModel.totalLockDays = option.days
@@ -595,22 +604,20 @@ private extension CreateNonNegotiableView {
 
                 Text("\(option.days) Days")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(option.isAvailable ? subtitleColor : subtitleColor.opacity(0.55))
+                    .foregroundColor(subtitleColor)
             }
             .padding(.horizontal, Theme.Spacing.sm)
             .padding(.vertical, 13)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(option.isAvailable && isSelected ? cockpitAccentColor.opacity(0.12) : softFillColor)
+                    .fill(isSelected ? cockpitAccentColor.opacity(0.12) : softFillColor)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(option.isAvailable && isSelected ? cockpitAccentColor : cardStrokeColor, lineWidth: 1.3)
+                    .stroke(isSelected ? cockpitAccentColor : cardStrokeColor, lineWidth: 1.3)
             )
         }
         .buttonStyle(.plain)
-        .disabled(!option.isAvailable)
-        .opacity(option.isAvailable ? 1 : 0.58)
     }
 
     var systemImpactCard: some View {

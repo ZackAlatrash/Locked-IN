@@ -61,6 +61,7 @@ final class CreateNonNegotiableViewModel: ObservableObject {
         GoalOption(id: UUID(uuidString: "DBA8FC85-BAD0-4DE0-907A-FA733A2F8D79") ?? UUID(), title: "Discipline")
     ]
     static let durationPresets: [Int] = [15, 30, 45, 60, 90]
+    static let allowedLockDurations: Set<Int> = [14, 28, 60, 90]
 
     // Backward-compatible properties used by legacy onboarding content.
     @Published var minimumMinutesText: String = ""
@@ -224,8 +225,8 @@ final class CreateNonNegotiableViewModel: ObservableObject {
             messages.append("Frequency must be between 1 and 7 per week.")
         }
 
-        if totalLockDays != 14 && totalLockDays != 28 {
-            messages.append("Lock duration must be 14 or 28 days.")
+        if Self.allowedLockDurations.contains(totalLockDays) == false {
+            messages.append("Lock duration must be 14, 28, 60, or 90 days.")
         }
 
         guard let duration = resolvedDurationMinutes(),
@@ -280,7 +281,7 @@ final class CreateNonNegotiableViewModel: ObservableObject {
         case .invalidDailyFrequency:
             return "Daily mode requires 7 completions per week."
         case .invalidLockDuration:
-            return "Lock duration must be 14 or 28 days."
+            return "Lock duration must be 14, 28, 60, or 90 days."
         case .durationOutOfRange:
             return "Duration must be between 5 and 360 minutes."
         case .iconEmpty:
