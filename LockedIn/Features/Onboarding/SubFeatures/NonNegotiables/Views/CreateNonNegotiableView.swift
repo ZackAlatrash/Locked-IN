@@ -7,6 +7,17 @@ private struct CommitmentPeriodOption: Identifiable {
     let days: Int
 }
 
+private struct ValidationToastState: Identifiable {
+    let id = UUID()
+    let message: String
+}
+
+private enum LockInRitualPhase {
+    case preparing
+    case locking
+    case success
+}
+
 private enum CreationHelpTopic: String, Identifiable {
     case protocolDetails
     case frequency
@@ -53,6 +64,12 @@ struct CreateNonNegotiableView: View {
     @State private var showingIconPicker = false
     @State private var activeHelpTopic: CreationHelpTopic?
     @State private var didAutofocusTitle = false
+    @State private var validationToast: ValidationToastState?
+    @State private var toastDismissTask: Task<Void, Never>?
+    @State private var showingLockConfirmation = false
+    @State private var ritualPhase: LockInRitualPhase?
+    @State private var ritualLockClosed = false
+    @State private var ritualTask: Task<Void, Never>?
     @FocusState private var isTitleFieldFocused: Bool
     private let accentColorOverride: Color?
 
@@ -92,14 +109,6 @@ struct CreateNonNegotiableView: View {
                     schedulingProfileCard
                     commitmentPeriodCard
                     systemImpactCard
-
-                    if viewModel.showValidationError, let message = viewModel.submissionErrorMessage {
-                        Text(message)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(isDarkMode ? Color(hex: "FCA5A5") : Color(hex: "B91C1C"))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 2)
-                    }
                 }
                 .padding(.horizontal, Theme.Spacing.lg)
                 .padding(.top, Theme.Spacing.md)
@@ -108,9 +117,30 @@ struct CreateNonNegotiableView: View {
 
             bottomCTA
         }
+        .opacity(ritualPhase == nil ? 1 : 0)
         .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity, alignment: .top)
         .background(backgroundLayer.ignoresSafeArea())
+        .overlay(alignment: .top) {
+            if let validationToast {
+                InlineToastBanner(message: validationToast.message, isDarkMode: isDarkMode)
+                    .padding(.horizontal, Theme.Spacing.lg)
+                    .padding(.top, 8)
+                    .allowsHitTesting(false)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .overlay {
+            if let ritualPhase {
+                LockInRitualOverlay(
+                    phase: ritualPhase,
+                    lockClosed: ritualLockClosed,
+                    accentColor: cockpitAccentColor
+                )
+                .transition(.opacity)
+                .zIndex(10)
+            }
+        }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -147,9 +177,28 @@ struct CreateNonNegotiableView: View {
                 .presentationDetents([.height(240), .medium])
                 .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $showingLockConfirmation) {
+            LockProtocolConfirmationSheet(
+                protocolTitle: confirmationProtocolTitle,
+                accentColor: cockpitAccentColor,
+                isSubmitting: viewModel.isSubmitting,
+                onCancel: {
+                    showingLockConfirmation = false
+                },
+                onConfirm: {
+                    showingLockConfirmation = false
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    performCreateSubmission()
+                }
+            )
+            .presentationDetents([.height(290)])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(22)
+            .interactiveDismissDisabled(viewModel.isSubmitting)
+        }
         .onChange(of: viewModel.submissionErrorMessage) { message in
-            if message?.isEmpty == false {
-                Haptics.warning()
+            if let toastMessage = validationToastMessage(from: message) {
+                presentValidationToast(toastMessage)
             }
         }
         .onAppear {
@@ -162,7 +211,17 @@ struct CreateNonNegotiableView: View {
         .onDisappear {
             didAutofocusTitle = false
             isTitleFieldFocused = false
+            toastDismissTask?.cancel()
+            toastDismissTask = nil
+            validationToast = nil
+            showingLockConfirmation = false
+            ritualTask?.cancel()
+            ritualTask = nil
+            ritualPhase = nil
+            ritualLockClosed = false
         }
+        .animation(.easeInOut(duration: 0.22), value: validationToast?.id)
+        .animation(.easeInOut(duration: 0.22), value: ritualPhase != nil)
     }
 }
 
@@ -303,6 +362,11 @@ private extension CreateNonNegotiableView {
 
     var capacityLimitText: String {
         "Maximum of \(maxProtocolsAllowed) active protocols allowed."
+    }
+
+    var confirmationProtocolTitle: String {
+        let trimmed = viewModel.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "New Protocol" : trimmed
     }
 
     var backgroundLayer: some View {
@@ -645,6 +709,95 @@ private extension CreateNonNegotiableView {
         .accessibilityLabel("\(topic.title) help")
     }
 
+    func validationToastMessage(from message: String?) -> String? {
+        guard let message else { return nil }
+        let firstMessage = message
+            .split(whereSeparator: \.isNewline)
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first(where: { $0.isEmpty == false })
+
+        guard let firstMessage else { return nil }
+
+        switch firstMessage {
+        case "Title is required.":
+            return "Please enter a protocol name."
+        case "Frequency must be between 1 and 7 per week.":
+            return "Set frequency between 1 and 7 days."
+        case "Lock duration must be 14, 28, 60, or 90 days.":
+            return "Choose a commitment period."
+        case "Duration must be between 5 and 360 minutes.":
+            return "Enter a valid duration in minutes."
+        default:
+            return firstMessage
+        }
+    }
+
+    func presentValidationToast(_ message: String) {
+        Haptics.warning()
+        toastDismissTask?.cancel()
+
+        withAnimation {
+            validationToast = ValidationToastState(message: message)
+        }
+
+        toastDismissTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_600_000_000)
+            guard Task.isCancelled == false else { return }
+            withAnimation {
+                validationToast = nil
+            }
+        }
+    }
+
+    func performCreateSubmission() {
+        Haptics.selection()
+        viewModel.submit(using: store, referenceDate: appClock.now) {
+            startLockInRitualSequence()
+        }
+        if let toastMessage = validationToastMessage(from: viewModel.submissionErrorMessage) {
+            presentValidationToast(toastMessage)
+        }
+    }
+
+    func startLockInRitualSequence() {
+        ritualTask?.cancel()
+        ritualTask = Task { @MainActor in
+            ritualLockClosed = false
+            withAnimation(.easeInOut(duration: 0.24)) {
+                ritualPhase = .preparing
+            }
+
+            try? await Task.sleep(nanoseconds: 360_000_000)
+            guard Task.isCancelled == false else { return }
+
+            withAnimation(.easeInOut(duration: 0.22)) {
+                ritualPhase = .locking
+            }
+
+            try? await Task.sleep(nanoseconds: 190_000_000)
+            guard Task.isCancelled == false else { return }
+
+            UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+            withAnimation(.spring(response: 0.38, dampingFraction: 0.76)) {
+                ritualLockClosed = true
+            }
+
+            try? await Task.sleep(nanoseconds: 940_000_000)
+            guard Task.isCancelled == false else { return }
+
+            withAnimation(.easeInOut(duration: 0.22)) {
+                ritualPhase = .success
+            }
+            Haptics.success()
+
+            try? await Task.sleep(nanoseconds: 1_100_000_000)
+            guard Task.isCancelled == false else { return }
+
+            onSuccess?()
+            dismiss()
+        }
+    }
+
     var commitmentPeriodCard: some View {
         roundedCard {
             VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
@@ -881,15 +1034,12 @@ private extension CreateNonNegotiableView {
 
             Button {
                 guard canCreateProtocol else {
-                    Haptics.warning()
+                    presentValidationToast("Maximum protocols reached right now.")
                     return
                 }
+                guard viewModel.isSubmitting == false else { return }
                 Haptics.selection()
-                viewModel.submit(using: store, referenceDate: appClock.now) {
-                    Haptics.success()
-                    onSuccess?()
-                    dismiss()
-                }
+                showingLockConfirmation = true
             } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "lock.fill")
@@ -916,8 +1066,8 @@ private extension CreateNonNegotiableView {
                 )
             }
             .buttonStyle(.plain)
-            .disabled(viewModel.isSubmitting)
-            .opacity((viewModel.isSubmitting || !canCreateProtocol) ? 0.7 : 1)
+            .disabled(viewModel.isSubmitting || ritualPhase != nil)
+            .opacity((viewModel.isSubmitting || !canCreateProtocol || ritualPhase != nil) ? 0.7 : 1)
             .padding(.horizontal, Theme.Spacing.lg)
             .padding(.bottom, 24)
             .background(canvasColor)
@@ -1082,6 +1232,180 @@ private struct SectionHelpSheet: View {
             Spacer(minLength: 0)
         }
         .padding(18)
+    }
+}
+
+private struct InlineToastBanner: View {
+    let message: String
+    let isDarkMode: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(isDarkMode ? Color(hex: "FBBF24") : Color(hex: "B45309"))
+
+            Text(message)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(isDarkMode ? Color.white.opacity(0.94) : Color(hex: "111827"))
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(isDarkMode ? Color.white.opacity(0.12) : Color.black.opacity(0.08), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .shadow(color: Color.black.opacity(isDarkMode ? 0.28 : 0.12), radius: 12, x: 0, y: 5)
+    }
+}
+
+private struct LockProtocolConfirmationSheet: View {
+    let protocolTitle: String
+    let accentColor: Color
+    let isSubmitting: Bool
+    let onCancel: () -> Void
+    let onConfirm: () -> Void
+
+    var body: some View {
+        let warningTint = Color(hex: "D97706")
+
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 10) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(warningTint)
+                    .frame(width: 30, height: 30)
+                    .background(
+                        Circle()
+                            .fill(warningTint.opacity(0.16))
+                    )
+
+                Text("Lock \"\(protocolTitle)\"?")
+                    .font(.system(size: 23, weight: .black))
+
+                Spacer()
+            }
+
+            Text("Locking this in makes the commitment active and non-editable.")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(spacing: 10) {
+                Button {
+                    onConfirm()
+                } label: {
+                    Text(isSubmitting ? "Locking..." : "Lock In")
+                        .font(.system(size: 15, weight: .black))
+                        .foregroundColor(.white.opacity(0.96))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(accentColor)
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(isSubmitting)
+                .opacity(isSubmitting ? 0.75 : 1)
+
+                Button {
+                    onCancel()
+                } label: {
+                    Text("Cancel")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color.primary.opacity(0.08))
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(isSubmitting)
+                .opacity(isSubmitting ? 0.6 : 1)
+            }
+            .padding(.top, 2)
+        }
+        .padding(18)
+        .background(.ultraThinMaterial)
+    }
+}
+
+private struct LockInRitualOverlay: View {
+    let phase: LockInRitualPhase
+    let lockClosed: Bool
+    let accentColor: Color
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.001)
+                .ignoresSafeArea()
+
+            VStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(accentColor.opacity(0.16))
+                        .frame(width: 74, height: 74)
+                        .scaleEffect(lockClosed ? 1.02 : 0.96)
+
+                    Image(systemName: lockClosed ? "lock.fill" : "lock.open.fill")
+                        .font(.system(size: 28, weight: .black))
+                        .foregroundColor(accentColor)
+                        .scaleEffect(lockClosed ? 1 : 0.92)
+                }
+                .animation(.spring(response: 0.34, dampingFraction: 0.72), value: lockClosed)
+
+                Text(primaryText)
+                    .font(.system(size: 21, weight: .black))
+                    .foregroundColor(.primary)
+
+                Text(secondaryText)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary.opacity(0.9))
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.28), radius: 16, x: 0, y: 8)
+            .padding(.horizontal, 26)
+        }
+        .allowsHitTesting(true)
+    }
+
+    private var primaryText: String {
+        switch phase {
+        case .preparing:
+            return "Locking in"
+        case .locking:
+            return lockClosed ? "Locked" : "Locking in"
+        case .success:
+            return "Locked in"
+        }
+    }
+
+    private var secondaryText: String {
+        switch phase {
+        case .preparing:
+            return "Final check before activation."
+        case .locking:
+            return "Applying your commitment."
+        case .success:
+            return "This commitment is now active."
+        }
     }
 }
 
