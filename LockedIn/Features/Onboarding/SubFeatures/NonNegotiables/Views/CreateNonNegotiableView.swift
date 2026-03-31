@@ -7,6 +7,41 @@ private struct CommitmentPeriodOption: Identifiable {
     let days: Int
 }
 
+private enum CreationHelpTopic: String, Identifiable {
+    case protocolDetails
+    case frequency
+    case schedulingProfile
+    case commitmentPeriod
+    case systemImpact
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .protocolDetails: return "Protocol Details"
+        case .frequency: return "Frequency"
+        case .schedulingProfile: return "Scheduling Profile"
+        case .commitmentPeriod: return "Commitment Period"
+        case .systemImpact: return "System Impact"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .protocolDetails:
+            return "Name, icon, and goal shape how this protocol appears across your flow. Clear setup makes daily execution faster."
+        case .frequency:
+            return "Frequency sets your weekly target. Higher targets raise difficulty and system load, so choose a pace you can sustain."
+        case .schedulingProfile:
+            return "Preferred time and duration guide when this protocol should happen. Better timing improves consistency and planning."
+        case .commitmentPeriod:
+            return "This locks your protocol for the selected number of days. Longer commitments build momentum, but reduce flexibility."
+        case .systemImpact:
+            return "This preview shows how your new protocol may affect reliability and active load before saving."
+        }
+    }
+}
+
 @MainActor
 struct CreateNonNegotiableView: View {
     @EnvironmentObject private var store: CommitmentSystemStore
@@ -16,6 +51,9 @@ struct CreateNonNegotiableView: View {
 
     @StateObject private var viewModel: CreateNonNegotiableViewModel
     @State private var showingIconPicker = false
+    @State private var activeHelpTopic: CreationHelpTopic?
+    @State private var didAutofocusTitle = false
+    @FocusState private var isTitleFieldFocused: Bool
     private let accentColorOverride: Color?
 
     let onSuccess: (() -> Void)?
@@ -104,10 +142,26 @@ struct CreateNonNegotiableView: View {
                 viewModel.selectIconSystemName(selected)
             }
         }
+        .sheet(item: $activeHelpTopic) { topic in
+            SectionHelpSheet(topic: topic, accentColor: cockpitAccentColor)
+                .presentationDetents([.height(240), .medium])
+                .presentationDragIndicator(.visible)
+        }
         .onChange(of: viewModel.submissionErrorMessage) { message in
             if message?.isEmpty == false {
                 Haptics.warning()
             }
+        }
+        .onAppear {
+            guard didAutofocusTitle == false else { return }
+            didAutofocusTitle = true
+            DispatchQueue.main.async {
+                isTitleFieldFocused = true
+            }
+        }
+        .onDisappear {
+            didAutofocusTitle = false
+            isTitleFieldFocused = false
         }
     }
 }
@@ -285,7 +339,26 @@ private extension CreateNonNegotiableView {
             .foregroundColor(headingColor)
             .autocorrectionDisabled()
             .textInputAutocapitalization(.words)
+            .submitLabel(.done)
+            .focused($isTitleFieldFocused)
             .accessibilityLabel("Protocol name")
+            .padding(.bottom, 2)
+            .overlay(alignment: .bottomLeading) {
+                Rectangle()
+                    .fill(isTitleFieldFocused ? cockpitAccentColor.opacity(0.75) : subtitleColor.opacity(0.22))
+                    .frame(height: 1)
+            }
+
+            if isTitleFieldFocused == false {
+                HStack(spacing: 5) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("Tap title to rename")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .foregroundColor(subtitleColor.opacity(0.8))
+                .padding(.top, 2)
+            }
 
             Text("Configure your lock and system impact.")
                 .font(.system(size: 14, weight: .medium))
@@ -304,9 +377,7 @@ private extension CreateNonNegotiableView {
                         .tracking(1.3)
                         .foregroundColor(subtitleColor)
                     Spacer()
-                    Image(systemName: "pencil")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(cockpitAccentColor)
+                    sectionInfoButton(.protocolDetails)
                 }
 
                 Text("Goal axis: \(viewModel.selectedGoalTitle)")
@@ -328,8 +399,8 @@ private extension CreateNonNegotiableView {
                             )
                         Text("Protocol Icon")
                             .font(.system(size: 13, weight: .bold))
-                        Text(viewModel.selectedIconSystemName)
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        Text(ProtocolIconCatalog.displayLabel(for: viewModel.selectedIconSystemName))
+                            .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(subtitleColor)
                             .lineLimit(1)
                         Spacer()
@@ -376,10 +447,14 @@ private extension CreateNonNegotiableView {
     var frequencyCard: some View {
         roundedCard {
             VStack(spacing: Theme.Spacing.md) {
-                Text("FREQUENCY")
-                    .font(.system(size: 11, weight: .bold))
-                    .tracking(1.2)
-                    .foregroundColor(subtitleColor)
+                HStack {
+                    Text("FREQUENCY")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(1.2)
+                        .foregroundColor(subtitleColor)
+                    Spacer()
+                    sectionInfoButton(.frequency)
+                }
 
                 VStack(spacing: Theme.Spacing.sm) {
                     HStack(spacing: Theme.Spacing.xs) {
@@ -408,10 +483,14 @@ private extension CreateNonNegotiableView {
     var schedulingProfileCard: some View {
         roundedCard {
             VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                Text("SCHEDULING PROFILE")
-                    .font(.system(size: 11, weight: .bold))
-                    .tracking(1.2)
-                    .foregroundColor(subtitleColor)
+                HStack {
+                    Text("SCHEDULING PROFILE")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(1.2)
+                        .foregroundColor(subtitleColor)
+                    Spacer()
+                    sectionInfoButton(.schedulingProfile)
+                }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Preferred Time")
@@ -553,6 +632,19 @@ private extension CreateNonNegotiableView {
         viewModel.enableCustomDuration()
     }
 
+    func sectionInfoButton(_ topic: CreationHelpTopic) -> some View {
+        Button {
+            Haptics.selection()
+            activeHelpTopic = topic
+        } label: {
+            Image(systemName: "info.circle.fill")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(subtitleColor.opacity(0.82))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(topic.title) help")
+    }
+
     var commitmentPeriodCard: some View {
         roundedCard {
             VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
@@ -562,9 +654,7 @@ private extension CreateNonNegotiableView {
                         .tracking(1.2)
                         .foregroundColor(subtitleColor)
                     Spacer()
-                    Image(systemName: "info.circle.fill")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(subtitleColor.opacity(0.8))
+                    sectionInfoButton(.commitmentPeriod)
                 }
 
                 ForEach(periodOptions) { option in
@@ -624,10 +714,13 @@ private extension CreateNonNegotiableView {
         roundedCard {
             VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
                 HStack(alignment: .top) {
-                    Text("SYSTEM IMPACT")
-                        .font(.system(size: 11, weight: .bold))
-                        .tracking(1.2)
-                        .foregroundColor(subtitleColor)
+                    HStack(spacing: 6) {
+                        Text("SYSTEM IMPACT")
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(1.2)
+                            .foregroundColor(subtitleColor)
+                        sectionInfoButton(.systemImpact)
+                    }
 
                     Spacer()
 
@@ -960,6 +1053,38 @@ private extension CreateNonNegotiableView {
 
 }
 
+private struct SectionHelpSheet: View {
+    let topic: CreationHelpTopic
+    let accentColor: Color
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Image(systemName: "info.circle.fill")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(accentColor)
+                Text(topic.title)
+                    .font(.headline.weight(.bold))
+                Spacer()
+                Button("Done") {
+                    dismiss()
+                }
+                .font(.subheadline.weight(.semibold))
+            }
+
+            Text(topic.message)
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+        }
+        .padding(18)
+    }
+}
+
 struct CreateNonNegotiableView_Previews: PreviewProvider {
     static var previews: some View {
         CreateNonNegotiableView()
@@ -1067,9 +1192,8 @@ struct ProtocolIconPickerSheet: View {
                     .font(.headline.weight(.bold))
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
-                Text(selectedSymbol)
-                    .font(.caption.weight(.semibold))
-                    .fontDesign(.monospaced)
+                Text(ProtocolIconCatalog.displayLabel(for: selectedSymbol))
+                    .font(.caption.weight(.bold))
                     .foregroundColor(.secondary)
             }
             Spacer()
@@ -1331,8 +1455,38 @@ struct ProtocolIconCatalog {
         }
 
         return symbols.filter { symbol in
-            symbol.lowercased().contains(trimmed) || aliasMatches.contains(symbol)
+            symbol.lowercased().contains(trimmed)
+                || displayLabel(for: symbol).lowercased().contains(trimmed)
+                || aliasMatches.contains(symbol)
         }
+    }
+
+    static func displayLabel(for symbol: String) -> String {
+        let root = normalizedRoot(from: symbol)
+        if let explicit = explicitRootLabels[root] {
+            return explicit
+        }
+
+        let tokens = root
+            .split(separator: ".")
+            .map(String.init)
+            .compactMap { token in
+                genericTokenLabels[token] ?? token
+            }
+            .filter { token in
+                fillerTokens.contains(token) == false
+            }
+
+        if tokens.isEmpty {
+            return "Protocol"
+        }
+
+        return tokens
+            .joined(separator: " ")
+            .split(separator: " ")
+            .prefix(3)
+            .map { $0.capitalized }
+            .joined(separator: " ")
     }
 
     static func resolvedSymbolName(_ raw: String, fallback: String) -> String {
@@ -1356,6 +1510,205 @@ struct ProtocolIconCatalog {
         }
         return output
     }
+
+    private static func normalizedRoot(from symbol: String) -> String {
+        var root = symbol.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        for suffix in [".fill", ".circle.fill", ".square.fill", ".circle", ".square"] {
+            if root.hasSuffix(suffix) {
+                root.removeLast(suffix.count)
+                break
+            }
+        }
+        return root
+    }
+
+    private static let fillerTokens: Set<String> = [
+        "and", "with", "left", "right", "up", "down", "horizontal", "vertical", "traditional"
+    ]
+
+    private static let genericTokenLabels: [String: String] = [
+        "figure": "",
+        "book": "Reading",
+        "bookmarks": "Reading",
+        "keyboard": "Typing",
+        "doc": "Docs",
+        "text": "",
+        "note": "Notes",
+        "line": "Progress",
+        "chart": "Progress",
+        "bar": "",
+        "xyaxis": "",
+        "wave": "Signal",
+        "waveform": "Signal",
+        "motion": "Move",
+        "path": "",
+        "badge": "",
+        "plus": "Plus",
+        "zzz": "Sleep",
+        "americas": "Global",
+        "network": "Network",
+        "radiowaves": "Signal",
+        "cooldown": "Cooldown",
+        "highintensity": "HIIT",
+        "intervaltraining": "Training",
+        "strengthtraining": "Strength",
+        "flexibility": "Mobility",
+        "core": "Core",
+        "mind": "Mind",
+        "body": "Body",
+        "head": "",
+        "profile": "",
+        "double": ""
+    ]
+
+    private static let explicitRootLabels: [String: String] = [
+        "bolt": "Focus",
+        "target": "Goals",
+        "scope": "Deep Focus",
+        "timer": "Timed Work",
+        "stopwatch": "Sprints",
+        "clock": "Routine",
+        "alarm": "Wake Up",
+        "calendar": "Planning",
+        "calendar.badge.clock": "Time Block",
+        "calendar.badge.plus": "Schedule",
+        "flag": "Milestone",
+        "eye": "Awareness",
+        "lightbulb": "Ideas",
+        "sparkles": "Mindset",
+        "wand.and.stars": "Reset",
+        "pencil": "Writing",
+        "checkmark": "Consistency",
+        "line.3.horizontal.decrease": "Simplify",
+        "chart.bar": "Progress",
+        "chart.line.uptrend.xyaxis": "Growth",
+        "chart.xyaxis.line": "Analytics",
+        "chart.bar.doc.horizontal": "Reports",
+        "chart.pie": "Balance",
+        "chart.dots.scatter": "Trends",
+        "waveform": "Rhythm",
+        "waveform.path.ecg": "Heart Health",
+        "waveform.path.badge.plus": "Health Boost",
+        "brain": "Mental Clarity",
+        "brain.head.profile": "Mental Focus",
+        "brain.filled.head.profile": "Sharp Mind",
+        "bell": "Reminder",
+        "moon": "Night Routine",
+        "sun.max": "Morning Routine",
+        "star": "Priority",
+        "figure.mind.and.body": "Mind Body",
+        "figure.yoga": "Yoga",
+        "book": "Reading",
+        "book.closed": "Study",
+        "book.pages": "Reading Plan",
+        "book.pages.fill": "Reading Plan",
+        "quote.bubble": "Reflection",
+        "headphones": "Deep Work",
+        "music.note": "Music",
+        "leaf": "Wellness",
+        "cloud": "Reset",
+        "cloud.sun": "Day Balance",
+        "cloud.moon": "Night Balance",
+        "wind": "Breathing",
+        "snowflake": "Cool Down",
+        "globe": "Language",
+        "globe.americas": "Global",
+        "tortoise": "Slow Pace",
+        "hare": "Fast Pace",
+        "figure.walk": "Walk",
+        "figure.run": "Run",
+        "figure.walk.motion": "Daily Steps",
+        "figure.run.circle": "Cardio",
+        "figure.strengthtraining.traditional": "Strength",
+        "figure.cooldown": "Recovery",
+        "figure.highintensity.intervaltraining": "HIIT",
+        "figure.flexibility": "Mobility",
+        "figure.core.training": "Core Training",
+        "figure.hiking": "Hiking",
+        "dumbbell": "Gym",
+        "flame": "Intensity",
+        "bolt.heart": "Cardio",
+        "bicycle": "Cycling",
+        "sportscourt": "Sports",
+        "drop": "Hydration",
+        "heart": "Health",
+        "cross": "Care",
+        "cross.case": "Medical",
+        "stethoscope": "Checkup",
+        "pills": "Medication",
+        "bandage": "Recovery Care",
+        "cross.vial": "Lab Check",
+        "lungs": "Breath Work",
+        "allergens": "Allergy Care",
+        "bed.double": "Sleep",
+        "fork.knife": "Nutrition",
+        "applelogo": "Apple Health",
+        "moon.zzz": "Sleep Quality",
+        "books.vertical": "Learning",
+        "graduationcap": "Study Goal",
+        "doc.text": "Notes",
+        "note.text": "Journaling",
+        "highlighter": "Review",
+        "folder": "Organize",
+        "tray": "Inbox Zero",
+        "bookmark": "Key Lesson",
+        "tag": "Priorities",
+        "paperclip": "Attachments",
+        "link": "References",
+        "magnifyingglass": "Research",
+        "character.book.closed": "Language Study",
+        "house": "Home Care",
+        "cart": "Grocery",
+        "creditcard": "Budget",
+        "wallet.pass": "Finance",
+        "bag": "Errands",
+        "tshirt": "Laundry",
+        "cup.and.saucer": "Coffee Break",
+        "car": "Commute",
+        "airplane": "Travel",
+        "airplane.departure": "Departure",
+        "airplane.arrival": "Arrival",
+        "tram": "Transit",
+        "location": "Location",
+        "map": "Route",
+        "pin": "Pin",
+        "person": "Personal",
+        "person.2": "Relationships",
+        "person.3": "Community",
+        "phone": "Calls",
+        "message": "Messages",
+        "envelope": "Email",
+        "gift": "Giving",
+        "camera": "Capture",
+        "photo": "Memories",
+        "film": "Content",
+        "desktopcomputer": "Desktop Work",
+        "laptopcomputer": "Laptop Work",
+        "ipad": "Tablet Work",
+        "iphone": "Phone Use",
+        "applewatch": "Watch",
+        "visionpro": "Spatial",
+        "cpu": "Deep Work",
+        "memorychip": "Coding",
+        "server.rack": "Infrastructure",
+        "externaldrive": "Backups",
+        "wifi": "Connectivity",
+        "antenna.radiowaves.left.and.right": "Signal",
+        "network": "Systems",
+        "terminal": "Terminal",
+        "curlybraces": "Coding",
+        "hammer": "Build",
+        "wrench": "Maintenance",
+        "screwdriver": "Fixes",
+        "lock": "Security",
+        "key": "Access",
+        "shield": "Protection",
+        "bolt.horizontal": "Power",
+        "wave.3.right": "Audio",
+        "app.badge": "Apps",
+        "gear": "Settings",
+        "slider.horizontal.3": "Adjustments"
+    ]
 }
 
 private enum ProtocolIconRecentStore {
