@@ -8,6 +8,7 @@ final class CockpitViewModel: ObservableObject {
     func refresh(
         system: CommitmentSystem,
         isStable: Bool,
+        planSnapshot: PlanWeekSnapshot? = nil,
         reliabilityOverride: Int? = nil,
         currentStreakDays: Int = 0,
         todayCompleted: Bool = false,
@@ -39,7 +40,7 @@ final class CockpitViewModel: ObservableObject {
             accentRGB: accent,
             nonNegotiables: mapCards(system: system, referenceDate: now),
             todayTasks: todayTasks(system: system, referenceDate: now),
-            upcomingTasks: upcomingTasks(system: system, referenceDate: now),
+            upcomingTasks: upcomingTasks(system: system, referenceDate: now, planSnapshot: planSnapshot),
             todayWindowTitle: "TODAY'S WINDOW",
             todayWindowSubtitle: todayWindowSubtitle(system: system, referenceDate: now)
         )
@@ -363,61 +364,112 @@ private extension CockpitViewModel {
             }
     }
 
-    func upcomingTasks(system: CommitmentSystem, referenceDate: Date) -> [UpcomingTask] {
+    func upcomingTasks(system: CommitmentSystem, referenceDate: Date, planSnapshot: PlanWeekSnapshot?) -> [UpcomingTask] {
         let weekId = DateRules.weekID(for: referenceDate)
+        guard let planSnapshot else { return [] }
+        let trackedProtocols = Dictionary(
+            uniqueKeysWithValues: system.nonNegotiables
+                .filter { $0.state == .active || $0.state == .recovery }
+                .map { ($0.id, $0) }
+        )
+        guard trackedProtocols.isEmpty == false else { return [] }
 
-        let candidates: [(task: UpcomingTask, priority: Int)] = system.nonNegotiables
-            .filter { $0.state == .active || $0.state == .recovery }
-            .map { nn in
-                let completedToday = countedCompletedToday(nn, on: referenceDate)
-                let thisWeekCount = countedCompletionsThisWeek(nn, weekId: weekId)
-
-                switch nn.definition.mode {
-                case .daily:
-                    let timing = completedToday ? "Tomorrow" : "Tomorrow"
-                    return (
-                        UpcomingTask(
-                            id: nn.id,
-                            title: nn.definition.title,
-                            iconSystemName: nn.definition.iconSystemName,
-                            timingText: timing
-                        ),
-                        0
-                    )
-                case .session:
-                    let remaining = max(nn.definition.frequencyPerWeek - thisWeekCount, 0)
-                    if remaining > 0 {
-                        return (
-                            UpcomingTask(
-                                id: nn.id,
-                                title: nn.definition.title,
-                                iconSystemName: nn.definition.iconSystemName,
-                                timingText: remaining == 1 ? "Later this week" : "This week"
-                            ),
-                            1
-                        )
-                    }
-                    return (
-                        UpcomingTask(
-                            id: nn.id,
-                            title: nn.definition.title,
-                            iconSystemName: nn.definition.iconSystemName,
-                            timingText: "Next week"
-                        ),
-                        2
-                    )
+        let sortedActiveAllocations = planSnapshot.currentWeekAllocations
+            .filter { allocation in
+                allocation.status == .active && trackedProtocols[allocation.protocolId] != nil
+            }
+            .sorted { lhs, rhs in
+                let leftDay = DateRules.startOfDay(lhs.day)
+                let rightDay = DateRules.startOfDay(rhs.day)
+                if leftDay != rightDay {
+                    return leftDay < rightDay
                 }
+                let leftSlot = slotSortOrder(lhs.slot)
+                let rightSlot = slotSortOrder(rhs.slot)
+                if leftSlot != rightSlot {
+                    return leftSlot < rightSlot
+                }
+                let leftStart = allocationStartMinutes(lhs)
+                let rightStart = allocationStartMinutes(rhs)
+                if leftStart != rightStart {
+                    return leftStart < rightStart
+                }
+                if lhs.createdAt != rhs.createdAt {
+                    return lhs.createdAt < rhs.createdAt
+                }
+                return lhs.id.uuidString < rhs.id.uuidString
             }
 
-        return candidates
-            .sorted {
-                if $0.priority != $1.priority {
-                    return $0.priority < $1.priority
-                }
-                return $0.task.title.localizedCaseInsensitiveCompare($1.task.title) == .orderedAscending
+        var seenProtocolIds: Set<UUID> = []
+        var nextProtocolIds: [UUID] = []
+
+        for allocation in sortedActiveAllocations {
+            guard seenProtocolIds.contains(allocation.protocolId) == false else { continue }
+            guard let nonNegotiable = trackedProtocols[allocation.protocolId] else { continue }
+            let weeklyTarget = weeklyTarget(for: nonNegotiable)
+            let completions = countedCompletionsThisWeek(nonNegotiable, weekId: weekId)
+            let remaining = max(0, weeklyTarget - completions)
+            guard remaining > 0 else { continue }
+            seenProtocolIds.insert(allocation.protocolId)
+            nextProtocolIds.append(allocation.protocolId)
+            if nextProtocolIds.count == 3 {
+                break
             }
-            .prefix(2)
-            .map(\.task)
+        }
+
+        return nextProtocolIds.enumerated().compactMap { index, protocolId in
+            guard let nonNegotiable = trackedProtocols[protocolId] else { return nil }
+            return UpcomingTask(
+                id: nonNegotiable.id,
+                title: nonNegotiable.definition.title,
+                iconSystemName: nonNegotiable.definition.iconSystemName,
+                timingText: "Step \(index + 1)"
+            )
+        }
+    }
+
+    func weeklyTarget(for nonNegotiable: NonNegotiable) -> Int {
+        switch nonNegotiable.definition.mode {
+        case .daily:
+            return 7
+        case .session:
+            return nonNegotiable.definition.frequencyPerWeek
+        }
+    }
+
+    func slotSortOrder(_ slot: PlanSlot) -> Int {
+        switch slot {
+        case .am:
+            return 0
+        case .pm:
+            return 1
+        case .eve:
+            return 2
+        }
+    }
+
+    func allocationStartMinutes(_ allocation: PlanAllocation) -> Int {
+        guard let startTime = allocation.startTime else {
+            return allocation.slot.startHour * 60
+        }
+        let components = DateRules.isoCalendar.dateComponents([.hour, .minute], from: startTime)
+        let hour = components.hour ?? allocation.slot.startHour
+        let minute = components.minute ?? 0
+        return (hour * 60) + minute
+    }
+
+    func countedCompletedToday(_ nonNegotiable: NonNegotiable, on date: Date) -> Bool {
+        nonNegotiable.completions.contains {
+            $0.kind == .counted && DateRules.isoCalendar.isDate($0.date, inSameDayAs: date)
+        }
+    }
+
+    func countedCompletionsThisWeek(_ nonNegotiable: NonNegotiable, weekId: WeekID) -> Int {
+        nonNegotiable.completions.reduce(into: 0) { partial, completion in
+            if completion.weekId == weekId && completion.kind == .counted {
+                partial += 1
+            }
+        }
     }
 
     func accentRGB(for score: Int) -> RGBColor {
@@ -448,17 +500,4 @@ private extension CockpitViewModel {
         )
     }
 
-    func countedCompletionsThisWeek(_ nonNegotiable: NonNegotiable, weekId: WeekID) -> Int {
-        nonNegotiable.completions.reduce(into: 0) { partial, completion in
-            if completion.weekId == weekId && completion.kind == .counted {
-                partial += 1
-            }
-        }
-    }
-
-    func countedCompletedToday(_ nonNegotiable: NonNegotiable, on date: Date) -> Bool {
-        nonNegotiable.completions.contains {
-            $0.kind == .counted && DateRules.isoCalendar.isDate($0.date, inSameDayAs: date)
-        }
-    }
 }

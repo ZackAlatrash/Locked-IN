@@ -309,6 +309,7 @@ private extension CockpitView {
         viewModel.refresh(
             system: store.system,
             isStable: store.isSystemStable,
+            planSnapshot: planStore.currentWeekSnapshot(),
             reliabilityOverride: devRuntime.reliabilityOverride,
             currentStreakDays: store.currentStreakDays(referenceDate: referenceDate),
             todayCompleted: store.todayCompleted(referenceDate: referenceDate),

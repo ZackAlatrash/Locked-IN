@@ -1173,13 +1173,11 @@ private extension PlanStore {
     }
 
     func effectiveWeeklyTarget(for descriptor: PlanProtocolDescriptor, in week: DateInterval) -> Int {
+        _ = week
         switch descriptor.mode {
         case .daily:
             return 7
         case .session:
-            guard isInitialPartialGraceWeek(for: descriptor, in: week) == false else {
-                return 0
-            }
             return descriptor.frequencyPerWeek
         }
     }
