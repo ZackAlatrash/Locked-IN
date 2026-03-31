@@ -74,7 +74,7 @@ struct PlanScreen: View {
                     legend
                 }
                 .padding(.horizontal, 14)
-                .padding(.top, 8)
+                .padding(.top, Theme.Spacing.navLargeTitleContentTopInset)
                 .padding(.bottom, 36)
             }
         }

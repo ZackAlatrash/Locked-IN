@@ -62,7 +62,7 @@ struct CockpitLogsScreen: View {
                         .offset(y: showHistorySection ? 0 : 14)
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 8)
+                .padding(.top, Theme.Spacing.navLargeTitleContentTopInset)
                 .padding(.bottom, 36)
             }
         }

@@ -119,6 +119,7 @@ enum Theme {
         static let xxl: CGFloat = 32
         static let xxxl: CGFloat = 48
         static let xxxxl: CGFloat = 64
+        static let navLargeTitleContentTopInset: CGFloat = 4
     }
     
     // MARK: - Corner Radius

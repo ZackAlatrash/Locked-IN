@@ -158,7 +158,7 @@ struct CockpitModernView: View {
     private var ringTrack: Color { style == .dark ? Color.white.opacity(0.08) : Color(hex: "94A3B8").opacity(0.3) }
     private var ringValueTextColor: Color { style == .dark ? primary : Color(hex: "111827") }
     private var ringMetaTextColor: Color { style == .dark ? primary : Color(hex: "374151") }
-    private var topPadding: CGFloat { showEmbeddedHeader ? 52 : 8 }
+    private var topPadding: CGFloat { showEmbeddedHeader ? 52 : Theme.Spacing.navLargeTitleContentTopInset }
     private var dueCount: Int { capacityProtocols.filter(\.isRequiredToday).count }
     private var activeCount: Int {
         let chunks = activeCapacityCountText.replacingOccurrences(of: " ", with: "").split(separator: "/")
