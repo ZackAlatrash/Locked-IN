@@ -82,17 +82,10 @@ struct PlanScreen: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Button {
+                ProfileToolbarButton(foregroundColor: navItemColor) {
                     Haptics.selection()
                     showProfile = true
-                } label: {
-                    Image(systemName: "person.crop.circle")
-                        .font(.system(size: 19, weight: .medium))
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                        .foregroundColor(navItemColor)
                 }
-                .accessibilityLabel("Open profile")
             }
         }
         .sheet(isPresented: $showProfile) {

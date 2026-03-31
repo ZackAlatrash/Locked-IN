@@ -5,6 +5,23 @@ private struct CockpitDetailsSelection: Identifiable {
     let id: UUID
 }
 
+struct ProfileToolbarButton: View {
+    let foregroundColor: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "person.crop.circle")
+                .font(.system(size: 19, weight: .medium))
+                .foregroundStyle(foregroundColor)
+                .frame(width: 44, height: 44, alignment: .center)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open profile") // [VERIFY]
+    }
+}
+
 @MainActor
 struct CockpitView: View {
     @Binding var selectedTab: MainTab
@@ -43,14 +60,9 @@ struct CockpitView: View {
         .tint(navItemColor)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Button {
+                ProfileToolbarButton(foregroundColor: navItemColor) {
                     perform(.openProfile)
-                } label: {
-                    Image(systemName: "person.crop.circle")
-                        .font(.system(size: 19, weight: .medium))
-                        .foregroundColor(navItemColor)
                 }
-                .accessibilityLabel("Open profile")
             }
         }
         .navigationDestination(item: $activeRoute) { route in

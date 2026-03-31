@@ -77,17 +77,10 @@ struct CockpitLogsScreen: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Button {
+                ProfileToolbarButton(foregroundColor: navItemColor) {
                     Haptics.selection()
                     showProfile = true
-                } label: {
-                    Image(systemName: "person.crop.circle")
-                        .font(.system(size: 19, weight: .medium))
-                        .foregroundColor(navItemColor)
-                        .frame(width: 44, height: 44, alignment: .center)
-                        .contentShape(Rectangle())
                 }
-                .accessibilityLabel("Open profile")
             }
         }
         .sheet(isPresented: $showProfile) {
