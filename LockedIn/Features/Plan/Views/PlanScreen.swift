@@ -21,6 +21,7 @@ struct PlanScreen: View {
     @AppStorage("phase1MotionSessionID") private var motionSessionID = ""
     @AppStorage("didAnimatePlanColumnsSessionID") private var didAnimatePlanColumnsSessionID = ""
     @AppStorage("didDismissPlanBoardHintSessionID") private var didDismissPlanBoardHintSessionID = ""
+    @AppStorage("didDismissPlanCalendarConnectedBannerSessionID") private var didDismissPlanCalendarConnectedBannerSessionID = ""
 
     @StateObject private var viewModel = PlanViewModel()
     @State private var showProfile = false
@@ -55,6 +56,12 @@ struct PlanScreen: View {
     }
     private var shouldShowBoardHint: Bool {
         boardMode == .focusToday && didDismissPlanBoardHintSessionID != effectiveMotionSessionID
+    }
+    private var shouldShowCalendarConnectionBanner: Bool {
+        if viewModel.isCalendarConnected == false {
+            return true
+        }
+        return didDismissPlanCalendarConnectedBannerSessionID != effectiveMotionSessionID
     }
 
     var body: some View {
@@ -177,39 +184,7 @@ struct PlanScreen: View {
             viewModel.refresh(referenceDate: appClock.now)
         }
         .overlay(alignment: .top) {
-            if let warning = viewModel.warningMessage {
-                VStack(alignment: .leading, spacing: 3) {
-                    if let copy = viewModel.warningCopy {
-                        Text(copy.title.uppercased())
-                            .font(.caption2.weight(.black))
-                            .fontDesign(.monospaced)
-                            .tracking(1.1)
-                        Text(copy.message)
-                            .font(.footnote.weight(.semibold))
-                        if let hint = copy.hint {
-                            Text(hint)
-                                .font(.caption.weight(.medium))
-                                .foregroundColor((isDarkMode ? Color.white : Color(hex: "111827")).opacity(0.75))
-                        }
-                    } else {
-                        Text(warning)
-                            .font(.footnote.weight(.semibold))
-                    }
-                }
-                .foregroundColor(isDarkMode ? .white : Color(hex: "111827"))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(isDarkMode ? Color.red.opacity(0.22) : Color.yellow.opacity(0.26))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(isDarkMode ? Color.red.opacity(0.5) : Color.orange.opacity(0.42), lineWidth: 1)
-                )
-                .padding(.top, 8)
-                .padding(.horizontal, 14)
-            }
+            warningBanner
         }
         .overlay(alignment: .bottom) {
             if let toast {
@@ -222,6 +197,18 @@ struct PlanScreen: View {
 }
 
 private extension PlanScreen {
+    @ViewBuilder
+    var warningBanner: some View {
+        if let warning = viewModel.warningMessage {
+            PlanWarningBannerView(
+                title: viewModel.warningCopy?.title,
+                message: viewModel.warningCopy?.message ?? warning,
+                hint: viewModel.warningCopy?.hint,
+                isDarkMode: isDarkMode
+            )
+        }
+    }
+
     var shouldShowQueueSection: Bool {
         viewModel.queueItems.isEmpty == false || viewModel.hasTrackableProtocols == false
     }
@@ -246,7 +233,9 @@ private extension PlanScreen {
     var planBoardSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             planBoardHeader
-            calendarConnectionBanner
+            if shouldShowCalendarConnectionBanner {
+                calendarConnectionBanner
+            }
             if shouldShowBoardHint {
                 boardScrollHint
             }
@@ -365,13 +354,23 @@ private extension PlanScreen {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 10)
+        .padding(.leading, 10)
+        .padding(.trailing, viewModel.isCalendarConnected ? 32 : 10)
         .padding(.vertical, 7)
         .background(Capsule().fill(calendarBannerBackground))
         .overlay(
             Capsule()
                 .stroke(calendarBannerStroke, lineWidth: 1)
         )
+        .overlay(alignment: .trailing) {
+            if viewModel.isCalendarConnected {
+                dismissIconButton(
+                    action: dismissCalendarConnectedBanner,
+                    accessibilityLabel: "Dismiss calendar connection message" // [VERIFY]
+                )
+                .padding(.trailing, 2)
+            }
+        }
     }
 
     var calendarActionForeground: Color {
@@ -1296,25 +1295,59 @@ private extension PlanScreen {
     }
 
     var boardScrollHint: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             Image(systemName: "arrow.left.and.right")
                 .font(.system(size: 10, weight: .bold))
             Text("Swipe left or right to see all days")
-                .font(.caption.weight(.bold))
-                .fontDesign(.monospaced)
-                .tracking(0.5)
+                .font(.caption.weight(.semibold))
+            Spacer(minLength: 0)
         }
         .foregroundColor(textMuted)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.leading, 10)
+        .padding(.trailing, 32)
+        .padding(.vertical, 7)
         .background(Capsule().fill(isDarkMode ? Color.white.opacity(0.06) : Color.white.opacity(0.86)))
         .overlay(
             Capsule()
                 .stroke(isDarkMode ? Color.white.opacity(0.12) : Color.black.opacity(0.08), lineWidth: 1)
         )
-        .onTapGesture {
+        .overlay(alignment: .trailing) {
+            dismissIconButton(
+                action: dismissBoardHint,
+                accessibilityLabel: "Dismiss swipe hint" // [VERIFY]
+            )
+            .padding(.trailing, 2)
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    func dismissBoardHint() {
+        withAnimation(reduceMotion ? nil : Theme.Animation.context) {
             didDismissPlanBoardHintSessionID = effectiveMotionSessionID
         }
+    }
+
+    func dismissCalendarConnectedBanner() {
+        withAnimation(reduceMotion ? nil : Theme.Animation.context) {
+            didDismissPlanCalendarConnectedBannerSessionID = effectiveMotionSessionID
+        }
+    }
+
+    func dismissIconButton(action: @escaping () -> Void, accessibilityLabel: String) -> some View {
+        Button(action: action) {
+            Image(systemName: "xmark")
+                .font(.system(size: 9, weight: .black))
+                .foregroundColor(textSubtle)
+                .frame(width: 20, height: 20)
+                .background(
+                    Circle()
+                        .fill(isDarkMode ? Color.white.opacity(0.08) : Color.black.opacity(0.06))
+                )
+        }
+        .buttonStyle(.plain)
+        .frame(width: 28, height: 28)
+        .contentShape(Rectangle())
+        .accessibilityLabel(accessibilityLabel)
     }
 
     func queueDragPreview(item: PlanQueueItem) -> some View {
@@ -1526,6 +1559,13 @@ private extension PlanScreen {
                 .font(.footnote.weight(.semibold))
                 .foregroundColor(textMain)
                 .lineLimit(2)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(.regularMaterial)
+                        .opacity(isDarkMode ? 0.52 : 0.62)
+                )
 
             Spacer(minLength: 0)
 
@@ -1968,6 +2008,74 @@ private struct BusyEventEntry: Identifiable {
     let isContinuation: Bool
     let continuesFromPrevious: Bool
     let continuesToNext: Bool
+}
+
+private struct PlanWarningBannerView: View {
+    let title: String?
+    let message: String
+    let hint: String?
+    let isDarkMode: Bool
+
+    var body: some View {
+        content
+            .foregroundColor(foregroundTextColor)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(warningSurface)
+            .overlay(outerCardStroke)
+            .padding(.top, 8)
+            .padding(.horizontal, 14)
+    }
+
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            if let title, title.isEmpty == false {
+                Text(title.uppercased())
+                    .font(.caption2.weight(.black))
+                    .fontDesign(.monospaced)
+                    .tracking(1.1)
+            }
+
+            Text(message)
+                .font(.footnote.weight(.semibold))
+
+            if let hint, hint.isEmpty == false {
+                Text(hint)
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(hintTextColor)
+            }
+        }
+    }
+
+    private var foregroundTextColor: Color {
+        isDarkMode ? .white : Color(hex: "111827")
+    }
+
+    private var hintTextColor: Color {
+        (isDarkMode ? Color.white : Color(hex: "111827")).opacity(0.75)
+    }
+
+    private var warningSurface: some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(.thickMaterial)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(warningFillColor)
+            )
+    }
+
+    private var outerCardStroke: some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .stroke(warningStrokeColor, lineWidth: 1)
+    }
+
+    private var warningFillColor: Color {
+        isDarkMode ? Color.red.opacity(0.22) : Color.yellow.opacity(0.26)
+    }
+
+    private var warningStrokeColor: Color {
+        isDarkMode ? Color.red.opacity(0.5) : Color.orange.opacity(0.42)
+    }
 }
 
 private struct PlanToast {
