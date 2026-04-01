@@ -14,6 +14,7 @@ final class PlanViewModel: ObservableObject {
     @Published private(set) var hasTrackableProtocols = false
     @Published private(set) var regulatorSuggestions: [PlanSuggestionUIModel] = []
     @Published private(set) var draftAllocations: [PlanAllocationDraft] = []
+    @Published private(set) var regulatorSummary: PlanRegulatorSummary = .empty
     @Published private(set) var hasDraft = false
     @Published private(set) var calendarAccessStatus: PlanCalendarAuthorizationStatus = .notDetermined
     @Published private(set) var calendarEventsThisWeekCount: Int = 0
@@ -255,18 +256,15 @@ final class PlanViewModel: ObservableObject {
         draftAllocations = draft.suggestedAllocations
         hasDraft = draftAllocations.isEmpty == false
         regulatorSuggestions = mapSuggestionUIModels(mergedSuggestions)
+        regulatorSummary = buildRegulatorSummary(
+            weekStartDate: snapshot.weekStartDate,
+            protocols: protocols,
+            draftAllocations: draft.suggestedAllocations,
+            calendarEvents: snapshot.calendarEvents
+        )
         showingRegulatorSheet = true
 
-        let protocolsNeedingPlacement = protocols.filter { protocolItem in
-            let remaining: Int
-            switch protocolItem.mode {
-            case .session:
-                remaining = max(0, protocolItem.frequencyPerWeek - protocolItem.completionsThisWeek - protocolItem.plannedThisWeek)
-            case .daily:
-                remaining = max(0, 7 - protocolItem.completionsThisWeek - protocolItem.plannedThisWeek)
-            }
-            return remaining > 0
-        }.count
+        let protocolsNeedingPlacement = protocols.filter { remainingSessions(for: $0) > 0 }.count
 
         let freeSlots = countFreeSlots(
             weekStartDate: snapshot.weekStartDate,
@@ -300,6 +298,7 @@ final class PlanViewModel: ObservableObject {
     func discardDraft() {
         draftAllocations = []
         regulatorSuggestions = []
+        regulatorSummary = .empty
         hasDraft = false
         showingRegulatorSheet = false
     }
@@ -490,6 +489,85 @@ private extension PlanViewModel {
         }
     }
 
+    func buildRegulatorSummary(
+        weekStartDate: Date,
+        protocols: [ProtocolPlanItem],
+        draftAllocations: [PlanAllocationDraft],
+        calendarEvents: [PlanCalendarEvent]
+    ) -> PlanRegulatorSummary {
+        let actionableProtocols = protocols.filter { $0.state == .active || $0.state == .recovery }
+        let totalRemaining = actionableProtocols.reduce(0) { partial, item in
+            partial + remainingSessions(for: item)
+        }
+        let placedSessions = draftAllocations.count
+        let unscheduledSessions = max(0, totalRemaining - placedSessions)
+        let draftCountByProtocolId = Dictionary(grouping: draftAllocations, by: \.protocolId).mapValues(\.count)
+        let unscheduledNeeds = actionableProtocols
+            .map { item -> PlanRegulatorUnscheduledNeed? in
+                let remaining = remainingSessions(for: item)
+                let placed = draftCountByProtocolId[item.id, default: 0]
+                let unmet = max(0, remaining - placed)
+                guard unmet > 0 else { return nil }
+                return PlanRegulatorUnscheduledNeed(
+                    protocolTitle: item.title,
+                    unmetSessions: unmet
+                )
+            }
+            .compactMap { $0 }
+            .sorted { lhs, rhs in
+                if lhs.unmetSessions != rhs.unmetSessions { return lhs.unmetSessions > rhs.unmetSessions }
+                return lhs.protocolTitle.localizedCaseInsensitiveCompare(rhs.protocolTitle) == .orderedAscending
+            }
+
+        let spreadDays = Set(
+            draftAllocations.map { DateRules.startOfDay($0.day, calendar: DateRules.isoCalendar) }
+        ).count
+
+        let dayCounts = Dictionary(
+            grouping: draftAllocations,
+            by: { DateRules.startOfDay($0.day, calendar: DateRules.isoCalendar) }
+        ).mapValues(\.count)
+        let isBalanced: Bool = {
+            guard dayCounts.isEmpty == false else { return false }
+            let maxPerDay = dayCounts.values.max() ?? 0
+            let minPerDay = dayCounts.values.min() ?? 0
+            let requiredSpread = min(max(placedSessions, 1), 4)
+            return spreadDays >= requiredSpread && (maxPerDay - minPerDay) <= 1
+        }()
+
+        let hasCalendarConflicts = draftAllocations.contains { draft in
+            guard let slotInterval = draft.slot.planSlot.interval(
+                on: DateRules.startOfDay(draft.day, calendar: DateRules.isoCalendar),
+                calendar: DateRules.isoCalendar
+            ) else {
+                return false
+            }
+            return calendarEvents.contains { event in
+                guard event.isAllDay == false else { return false }
+                let eventInterval = DateInterval(start: event.startDateTime, end: event.endDateTime)
+                return eventInterval.intersects(slotInterval)
+            }
+        }
+
+        return PlanRegulatorSummary(
+            placedSessions: placedSessions,
+            unscheduledSessions: unscheduledSessions,
+            spreadDays: spreadDays,
+            isBalanced: isBalanced,
+            hasCalendarConflicts: hasCalendarConflicts,
+            unscheduledNeeds: unscheduledNeeds
+        )
+    }
+
+    func remainingSessions(for item: ProtocolPlanItem) -> Int {
+        switch item.mode {
+        case .session:
+            return max(0, item.frequencyPerWeek - item.completionsThisWeek - item.plannedThisWeek)
+        case .daily:
+            return max(0, 7 - item.completionsThisWeek - item.plannedThisWeek)
+        }
+    }
+
     func currentReferenceDate() -> Date {
         referenceDateProvider()
     }
@@ -583,6 +661,29 @@ private extension RegulationSlot {
         case .eve: return .eve
         }
     }
+}
+
+struct PlanRegulatorSummary: Equatable {
+    let placedSessions: Int
+    let unscheduledSessions: Int
+    let spreadDays: Int
+    let isBalanced: Bool
+    let hasCalendarConflicts: Bool
+    let unscheduledNeeds: [PlanRegulatorUnscheduledNeed]
+
+    static let empty = PlanRegulatorSummary(
+        placedSessions: 0,
+        unscheduledSessions: 0,
+        spreadDays: 0,
+        isBalanced: false,
+        hasCalendarConflicts: false,
+        unscheduledNeeds: []
+    )
+}
+
+struct PlanRegulatorUnscheduledNeed: Equatable {
+    let protocolTitle: String
+    let unmetSessions: Int
 }
 
 private extension PreferredExecutionSlot {

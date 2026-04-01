@@ -73,7 +73,7 @@ struct PlanRegulatorEngine {
                         startTimeMinutesFromMidnight: nil,
                         durationMinutes: protocolItem.durationMinutes,
                         confidence: 0.10,
-                        reason: "\(protocolItem.title) is suspended and cannot be placed.",
+                        reason: "\(protocolItem.title) is suspended, so it was left unscheduled this week.",
                         kind: .warning
                     )
                 )
@@ -106,7 +106,7 @@ struct PlanRegulatorEngine {
                             startTimeMinutesFromMidnight: nil,
                             durationMinutes: protocolItem.durationMinutes,
                             confidence: 0.15,
-                            reason: "No gaps available - free a slot or reduce load.",
+                            reason: "Could not place 1 session because no valid day remained this week.",
                             kind: .warning
                         )
                     )
@@ -157,7 +157,7 @@ struct PlanRegulatorEngine {
                     startTimeMinutesFromMidnight: nil,
                     durationMinutes: 0,
                     confidence: 0.10,
-                    reason: "No gaps available - free a slot or reduce load.",
+                    reason: "No sessions were placed because valid time blocks were not available this week.",
                     kind: .warning
                 )
             )
@@ -219,7 +219,16 @@ private extension PlanRegulatorEngine {
                     (rules.urgencyWeight * urgencyScore) -
                     (rules.avoidClumpingWeight * clumpPenalty)
 
-                let reason = "Best fit: \(slot.title), day load \(dayLoad), urgency +\(String(format: "%.2f", urgencyScore))."
+                let reason: String
+                if dayIndex > firstEligibleDayIndex {
+                    reason = "Moved later in the week because earlier valid slots were blocked. Avoided calendar conflicts."
+                } else if dayLoad == 0 {
+                    reason = "Spread across separate days to keep the week manageable. Avoided calendar conflicts."
+                } else if preferenceScore > 0.9 {
+                    reason = "Matched your preferred \(slot.title) window while keeping daily load balanced."
+                } else {
+                    reason = "Placed in the best open slot to keep the week balanced and conflict-free."
+                }
                 candidates.append(
                     Candidate(
                         dayIndex: dayIndex,

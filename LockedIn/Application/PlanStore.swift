@@ -447,7 +447,7 @@ final class PlanStore: ObservableObject {
                         startTimeMinutesFromMidnight: nil,
                         durationMinutes: item.durationMinutes,
                         confidence: 0.1,
-                        reason: "Protocol is no longer available.",
+                        reason: "Could not keep this draft placement because the protocol is no longer available.",
                         kind: .warning
                     )
                 )
@@ -467,6 +467,7 @@ final class PlanStore: ObservableObject {
             )
 
             if case .blocked(let reason, _) = validation {
+                let baseReason = validation.reason?.copy().message ?? reason
                 warnings.append(
                     PlanSuggestion(
                         id: UUID(),
@@ -476,7 +477,7 @@ final class PlanStore: ObservableObject {
                         startTimeMinutesFromMidnight: nil,
                         durationMinutes: item.durationMinutes,
                         confidence: 0.15,
-                        reason: validation.reason?.copy().message ?? reason,
+                        reason: "Could not keep this placement: \(baseReason)",
                         kind: .warning
                     )
                 )

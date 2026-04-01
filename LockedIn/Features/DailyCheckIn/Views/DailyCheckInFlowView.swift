@@ -374,10 +374,7 @@ private extension DailyCheckInFlowView {
     }
 
     var primaryTone: Color {
-        if isRecoveryThemeActive {
-            return colorScheme == .dark ? Color(hex: "#F87171") : Color(hex: "#B91C1C")
-        }
-        return Color(hex: "#00F0FF")
+        colorScheme == .dark ? Color(hex: "#22D3EE") : Color(hex: "#0369A1")
     }
 
     var isRecoveryThemeActive: Bool {

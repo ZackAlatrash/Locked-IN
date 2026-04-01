@@ -119,12 +119,14 @@ struct PlanScreen: View {
             PlanRegulatorSheet(
                 suggestions: viewModel.regulatorSuggestions,
                 draftCount: viewModel.draftAllocations.count,
+                summary: viewModel.regulatorSummary,
                 hasDraft: viewModel.hasDraft,
                 onApply: {
                     let draftToApply = viewModel.draftAllocations
                     if viewModel.applyDraft() {
                         Haptics.success()
                         triggerRegulatorLockInAnimation(for: draftToApply)
+                        showDraftAppliedToast(placementCount: draftToApply.count)
                     } else {
                         Haptics.warning()
                     }
@@ -1535,6 +1537,22 @@ private extension PlanScreen {
         }
     }
 
+    func showDraftAppliedToast(placementCount: Int) {
+        pendingUndo = nil
+        let placementLabel = placementCount == 1 ? "1 placement" : "\(placementCount) placements"
+        toast = PlanToast(
+            message: "Draft applied (\(placementLabel)).",
+            undoLabel: nil
+        )
+
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 3_400_000_000)
+            if toast != nil {
+                toast = nil
+            }
+        }
+    }
+
     func applyUndo() {
         guard let pendingUndo else { return }
 
@@ -1569,13 +1587,15 @@ private extension PlanScreen {
 
             Spacer(minLength: 0)
 
-            Button(toast.undoLabel) {
-                Haptics.selection()
-                applyUndo()
+            if let undoLabel = toast.undoLabel {
+                Button(undoLabel) {
+                    Haptics.selection()
+                    applyUndo()
+                }
+                .font(.caption.weight(.black))
+                .fontDesign(.monospaced)
+                .foregroundColor(toneColor(for: .cyan))
             }
-            .font(.caption.weight(.black))
-            .fontDesign(.monospaced)
-            .foregroundColor(toneColor(for: .cyan))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -2080,7 +2100,7 @@ private struct PlanWarningBannerView: View {
 
 private struct PlanToast {
     let message: String
-    let undoLabel: String
+    let undoLabel: String?
 }
 
 private enum PlanUndoAction {
@@ -2091,6 +2111,7 @@ private enum PlanUndoAction {
 private struct PlanRegulatorSheet: View {
     let suggestions: [PlanSuggestionUIModel]
     let draftCount: Int
+    let summary: PlanRegulatorSummary
     let hasDraft: Bool
     let onApply: () -> Void
     let onDiscard: () -> Void
@@ -2113,6 +2134,10 @@ private struct PlanRegulatorSheet: View {
                         .font(.footnote.weight(.semibold))
                         .foregroundColor(.secondary)
                 }
+
+                summarySection
+
+                unscheduledNeedsSection
 
                 if suggestions.isEmpty {
                     Text("No recommendations available for this week.")
@@ -2186,6 +2211,109 @@ private struct PlanRegulatorSheet: View {
         case .recommendOnly: return Color(hex: "#2563EB")
         case .draftCandidate: return Color(hex: "#0891B2")
         case .warning: return .orange
+        }
+    }
+
+    @ViewBuilder
+    var summarySection: some View {
+        if summaryItems.isEmpty == false {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Draft Summary")
+                    .font(.caption.weight(.black))
+                    .fontDesign(.monospaced)
+                    .tracking(0.7)
+                    .foregroundColor(.secondary)
+
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 132), spacing: 8, alignment: .leading)],
+                    alignment: .leading,
+                    spacing: 8
+                ) {
+                    ForEach(summaryItems, id: \.self) { item in
+                        summaryChip(item)
+                    }
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+            .background(summaryPanelBackground)
+            .overlay(summaryPanelStroke)
+        }
+    }
+
+    func summaryChip(_ item: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(accent.opacity(0.9))
+            Text(item)
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(
+            Capsule(style: .continuous)
+                .fill(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.05))
+        )
+    }
+
+    var summaryPanelBackground: some View {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.035))
+    }
+
+    var summaryPanelStroke: some View {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .stroke(colorScheme == .dark ? Color.white.opacity(0.10) : Color.black.opacity(0.07), lineWidth: 1)
+    }
+
+    var summaryItems: [String] {
+        var items: [String] = []
+        items.append("\(summary.placedSessions) placed")
+        if summary.unscheduledSessions > 0 {
+            items.append("\(summary.unscheduledSessions) remain unscheduled")
+        }
+        if summary.spreadDays > 0 {
+            items.append("\(summary.spreadDays) day spread")
+        }
+        if summary.isBalanced {
+            items.append("Balanced week")
+        }
+        if summary.hasCalendarConflicts == false {
+            items.append("No conflicts")
+        }
+        return items
+    }
+
+    @ViewBuilder
+    var unscheduledNeedsSection: some View {
+        if summary.unscheduledNeeds.isEmpty == false {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Still Needs Placement")
+                    .font(.caption.weight(.black))
+                    .fontDesign(.monospaced)
+                    .tracking(0.6)
+                    .foregroundColor(.secondary)
+
+                ForEach(summary.unscheduledNeeds, id: \.protocolTitle) { need in
+                    Text("\(need.protocolTitle) still needs \(need.unmetSessions) valid day\(need.unmetSessions == 1 ? "" : "s").")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(colorScheme == .dark ? Color.orange.opacity(0.10) : Color.orange.opacity(0.08))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(colorScheme == .dark ? Color.orange.opacity(0.24) : Color.orange.opacity(0.22), lineWidth: 1)
+            )
         }
     }
 }
