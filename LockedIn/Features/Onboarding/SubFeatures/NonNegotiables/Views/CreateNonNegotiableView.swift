@@ -196,7 +196,7 @@ struct CreateNonNegotiableView: View {
             .presentationCornerRadius(22)
             .interactiveDismissDisabled(viewModel.isSubmitting)
         }
-        .onChange(of: viewModel.submissionErrorMessage) { message in
+        .onChange(of: viewModel.submissionErrorMessage) { _, message in
             if let toastMessage = validationToastMessage(from: message) {
                 presentValidationToast(toastMessage)
             }

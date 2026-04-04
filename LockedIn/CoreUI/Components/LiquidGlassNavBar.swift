@@ -86,40 +86,7 @@ private struct LiquidGlassNavBarFallbackStyle: ViewModifier {
     let scrollOffset: CGFloat
 
     func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
-            // iOS 26: prefer system native Liquid Glass behavior.
-            content
-        } else if #available(iOS 16, *) {
-            // iOS 16-25 fallback: material + collapsed separator.
-            content
-                .toolbarBackground(.visible, for: .navigationBar)
-                .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-                .overlay(alignment: .top) {
-                    GeometryReader { proxy in
-                        let topInset = proxy.safeAreaInsets.top
-                        Rectangle()
-                            .fill(Color.primary.opacity(0.16))
-                            .frame(height: 0.5)
-                            .opacity(scrollOffset > 10 ? 1 : 0)
-                            .offset(y: topInset + 44)
-                    }
-                    .allowsHitTesting(false)
-                }
-        } else {
-            // iOS 15 fallback: separator only.
-            content
-                .overlay(alignment: .top) {
-                    GeometryReader { proxy in
-                        let topInset = proxy.safeAreaInsets.top
-                        Rectangle()
-                            .fill(Color.primary.opacity(0.16))
-                            .frame(height: 0.5)
-                            .opacity(scrollOffset > 10 ? 1 : 0)
-                            .offset(y: topInset + 44)
-                    }
-                    .allowsHitTesting(false)
-                }
-        }
+        content
     }
 }
 
@@ -138,43 +105,14 @@ struct FloatingLiquidGlassSurface<Content: View>: View {
     }
 
     var body: some View {
-        Group {
-            if #available(iOS 26, *) {
-                content()
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(Color.clear)
-                            .glassEffect()
-                    )
-            } else {
-                content()
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                                    .fill(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color.white.opacity(0.16),
-                                                Color.clear
-                                            ]),
-                                            startPoint: .top,
-                                            endPoint: .center
-                                        )
-                                    )
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                                    .stroke(Color.white.opacity(0.22), lineWidth: 1)
-                            )
-                    )
-            }
-        }
+        content()
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(Color.clear)
+                    .glassEffect()
+            )
     }
 }
 

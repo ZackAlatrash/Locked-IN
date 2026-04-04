@@ -51,20 +51,25 @@ struct NonNegotiablesContentView: View {
 // MARK: - Background Decorations
 private extension NonNegotiablesContentView {
     var backgroundDecorations: some View {
-        ZStack {
-            // Top right glow
-            Circle()
-                .fill(Theme.Colors.authority.opacity(0.1))
-                .frame(width: 320, height: 320)
-                .blur(radius: 120)
-                .offset(x: UIScreen.main.bounds.width * 0.3, y: -UIScreen.main.bounds.height * 0.1)
-            
-            // Bottom left glow
-            Circle()
-                .fill(Theme.Colors.authority.opacity(0.05))
-                .frame(width: 384, height: 384)
-                .blur(radius: 150)
-                .offset(x: -UIScreen.main.bounds.width * 0.3, y: UIScreen.main.bounds.height * 0.3)
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            let height = proxy.size.height
+
+            ZStack {
+                // Top right glow
+                Circle()
+                    .fill(Theme.Colors.authority.opacity(0.1))
+                    .frame(width: 320, height: 320)
+                    .blur(radius: 120)
+                    .offset(x: width * 0.3, y: -height * 0.1)
+
+                // Bottom left glow
+                Circle()
+                    .fill(Theme.Colors.authority.opacity(0.05))
+                    .frame(width: 384, height: 384)
+                    .blur(radius: 150)
+                    .offset(x: -width * 0.3, y: height * 0.3)
+            }
         }
         .allowsHitTesting(false)
     }
@@ -75,13 +80,12 @@ private extension NonNegotiablesContentView {
     var instructionalText: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.md) {
             // Headline
-            (
-                Text("Non-negotiables\n")
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Non-negotiables")
                     .foregroundColor(Theme.Colors.textPrimary)
-                +
                 Text("cannot be edited.")
                     .foregroundColor(Theme.Colors.authority)
-            )
+            }
             .font(.system(size: 30, weight: .heavy))
             .tracking(-0.5)
             .lineSpacing(2)

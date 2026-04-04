@@ -104,13 +104,13 @@ private extension FailureLoopContentView {
                 .fill(Theme.Colors.authority.opacity(0.05))
                 .frame(width: 256, height: 256)
                 .blur(radius: 100)
-                .offset(x: -100, y: -UIScreen.main.bounds.height * 0.25)
+                .offset(x: -100, y: -240)
             
             Circle()
                 .fill(Theme.Colors.authority.opacity(0.05))
                 .frame(width: 256, height: 256)
                 .blur(radius: 100)
-                .offset(x: 100, y: UIScreen.main.bounds.height * 0.25)
+                .offset(x: 100, y: 240)
         }
         .allowsHitTesting(false)
     }
@@ -120,16 +120,14 @@ private extension FailureLoopContentView {
 private extension FailureLoopContentView {
     var headlineSection: some View {
         VStack(spacing: Theme.Spacing.md) {
-            (
+            HStack(spacing: 0) {
                 Text(headlineFirst)
                     .foregroundColor(Theme.Colors.textPrimary)
-                +
                 Text(headlineHighlight)
                     .foregroundColor(Theme.Colors.authority)
-                +
                 Text(headlineSecond)
                     .foregroundColor(Theme.Colors.textPrimary)
-            )
+            }
             .font(.system(size: 30, weight: .heavy))
             .tracking(-0.5)
             .lineSpacing(2)

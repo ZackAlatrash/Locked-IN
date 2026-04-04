@@ -51,14 +51,13 @@ private extension CoreDifferentiationContentView {
     var headlineSection: some View {
         VStack(spacing: Theme.Spacing.md) {
             // Headline: "Locked In removes negotiation."
-            (
-                Text("Locked In removes\n")
+            VStack(spacing: 0) {
+                Text("Locked In removes")
                     .foregroundColor(Theme.Colors.textPrimary)
-                +
                 Text("negotiation.")
                     .foregroundColor(Theme.Colors.authority)
                     .italic()
-            )
+            }
             .font(.system(size: 28, weight: .heavy))
             .tracking(-0.5)
             .lineSpacing(4)

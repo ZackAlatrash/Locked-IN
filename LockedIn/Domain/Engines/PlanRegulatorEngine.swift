@@ -292,7 +292,6 @@ private extension PlanRegulatorEngine {
     func normalizeConfidence(_ rawScore: Double) -> Double {
         let minScore = -2.5
         let maxScore = 3.0
-        if maxScore <= minScore { return 0.5 }
         let normalized = (rawScore - minScore) / (maxScore - minScore)
         return max(0.05, min(0.99, normalized))
     }

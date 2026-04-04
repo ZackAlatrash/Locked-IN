@@ -171,18 +171,18 @@ struct PlanScreen: View {
             handleExternalPlanFocus(router.pendingPlanFocusProtocolId)
             handleExternalPlanEdit(router.pendingPlanEditProtocolId)
         }
-        .onChange(of: router.pendingPlanFocusProtocolId) { protocolId in
+        .onChange(of: router.pendingPlanFocusProtocolId) { _, protocolId in
             handleExternalPlanFocus(protocolId)
         }
-        .onChange(of: router.pendingPlanEditProtocolId) { protocolId in
+        .onChange(of: router.pendingPlanEditProtocolId) { _, protocolId in
             handleExternalPlanEdit(protocolId)
         }
-        .onChange(of: scenePhase) { phase in
+        .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 viewModel.handleDidBecomeActive(referenceDate: appClock.now)
             }
         }
-        .onChange(of: appClock.simulatedNow) { _ in
+        .onChange(of: appClock.simulatedNow) { _, _ in
             viewModel.refresh(referenceDate: appClock.now)
         }
         .overlay(alignment: .top) {
@@ -650,11 +650,11 @@ private extension PlanScreen {
                 centerActiveDay(using: proxy)
                 runColumnEntranceIfNeeded()
             }
-            .onChange(of: viewModel.currentWeekDays.map(\.id)) { _ in
+            .onChange(of: viewModel.currentWeekDays.map(\.id)) { _, _ in
                 centerActiveDay(using: proxy)
                 runColumnEntranceIfNeeded()
             }
-            .onChange(of: boardMode) { _ in
+            .onChange(of: boardMode) { _, _ in
                 centerActiveDay(using: proxy)
             }
         }
@@ -2504,7 +2504,7 @@ private struct ProtocolSchedulingEditorSheet: View {
                     .pickerStyle(.segmented)
                     .tint(coreRulesLocked ? .gray : accent)
                     .disabled(canEdit(.mode) == false)
-                    .onChange(of: mode) { newMode in
+                    .onChange(of: mode) { _, newMode in
                         if newMode == .daily {
                             frequencyPerWeek = 7
                         }
@@ -2573,7 +2573,7 @@ private struct ProtocolSchedulingEditorSheet: View {
                     }
 
                     Toggle("Custom minutes", isOn: $isUsingCustomDuration)
-                        .onChange(of: isUsingCustomDuration) { enabled in
+                        .onChange(of: isUsingCustomDuration) { _, enabled in
                             if enabled {
                                 if customDurationText.isEmpty {
                                     customDurationText = "\(selectedDurationPreset ?? editor.estimatedDurationMinutes)"

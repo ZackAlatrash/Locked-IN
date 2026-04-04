@@ -59,20 +59,25 @@ struct UserHistoryContentView: View {
 // MARK: - Background Decorations
 private extension UserHistoryContentView {
     var backgroundDecorations: some View {
-        ZStack {
-            // Top left glow
-            Circle()
-                .fill(Theme.Colors.authority.opacity(0.1))
-                .frame(width: UIScreen.main.bounds.width * 0.8, height: UIScreen.main.bounds.width * 0.4)
-                .blur(radius: 120)
-                .offset(x: -UIScreen.main.bounds.width * 0.2, y: -UIScreen.main.bounds.height * 0.1)
-            
-            // Bottom right glow
-            Circle()
-                .fill(Theme.Colors.authority.opacity(0.05))
-                .frame(width: UIScreen.main.bounds.width * 0.6, height: UIScreen.main.bounds.width * 0.3)
-                .blur(radius: 100)
-                .offset(x: UIScreen.main.bounds.width * 0.3, y: UIScreen.main.bounds.height * 0.35)
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            let height = proxy.size.height
+
+            ZStack {
+                // Top left glow
+                Circle()
+                    .fill(Theme.Colors.authority.opacity(0.1))
+                    .frame(width: width * 0.8, height: width * 0.4)
+                    .blur(radius: 120)
+                    .offset(x: -width * 0.2, y: -height * 0.1)
+
+                // Bottom right glow
+                Circle()
+                    .fill(Theme.Colors.authority.opacity(0.05))
+                    .frame(width: width * 0.6, height: width * 0.3)
+                    .blur(radius: 100)
+                    .offset(x: width * 0.3, y: height * 0.35)
+            }
         }
         .allowsHitTesting(false)
     }
@@ -82,16 +87,14 @@ private extension UserHistoryContentView {
 private extension UserHistoryContentView {
     var questionSection: some View {
         VStack(spacing: Theme.Spacing.md) {
-            (
+            HStack(spacing: 0) {
                 Text("Have you tried ")
                     .foregroundColor(Theme.Colors.textPrimary)
-                +
                 Text("habit trackers")
                     .foregroundColor(Theme.Colors.authority)
-                +
                 Text(" before?")
                     .foregroundColor(Theme.Colors.textPrimary)
-            )
+            }
             .font(.system(size: 30, weight: .heavy))
             .tracking(-0.5)
             .lineSpacing(2)

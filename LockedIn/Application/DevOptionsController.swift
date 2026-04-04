@@ -386,6 +386,7 @@ final class DevOptionsController: ObservableObject {
     private var appDefaultsKeysForFullWipe: [String] {
         [
             "hasCompletedOnboarding",
+            WalkthroughController.StorageKeys.hasCompletedWalkthrough,
             "appAppearanceMode",
             "phase1MotionSessionID",
             "didAnimateCockpitPhase1SessionID",

@@ -111,6 +111,8 @@
 		A1000000000000000000004E /* RecoveryModeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000004E /* RecoveryModeViewModel.swift */; };
 		A1000000000000000000004F /* RecoveryModePopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000004F /* RecoveryModePopup.swift */; };
 		A10000000000000000000050 /* RecoveryProtocolSelectionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000050 /* RecoveryProtocolSelectionCard.swift */; };
+		A10000000000000000000051 /* WalkthroughController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000051 /* WalkthroughController.swift */; };
+		A10000000000000000000052 /* CockpitWalkthroughOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000052 /* CockpitWalkthroughOverlay.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -221,6 +223,8 @@
 		A2000000000000000000004E /* RecoveryModeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecoveryModeViewModel.swift; path = LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift; sourceTree = SOURCE_ROOT; };
 		A2000000000000000000004F /* RecoveryModePopup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecoveryModePopup.swift; path = LockedIn/Features/Recovery/Views/RecoveryModePopup.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000050 /* RecoveryProtocolSelectionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecoveryProtocolSelectionCard.swift; path = LockedIn/Features/Recovery/Components/RecoveryProtocolSelectionCard.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000051 /* WalkthroughController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WalkthroughController.swift; path = LockedIn/Application/WalkthroughController.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000052 /* CockpitWalkthroughOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CockpitWalkthroughOverlay.swift; path = LockedIn/Features/Cockpit/Components/CockpitWalkthroughOverlay.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -251,6 +255,7 @@
 				A20000000000000000000009 /* CockpitUIModel.swift */,
 				A2000000000000000000000A /* CockpitNonNegotiableCard.swift */,
 				A2000000000000000000000B /* CockpitKpiCard.swift */,
+				A20000000000000000000052 /* CockpitWalkthroughOverlay.swift */,
 				A2000000000000000000000C /* FitnessLiquidGlassNavDemoView.swift */,
 				A2000000000000000000000D /* CockpitModernView.swift */,
 				A2000000000000000000000E /* LiquidGlassNavDemos.swift */,
@@ -294,6 +299,7 @@
 				A20000000000000000000042 /* DevOptionsController.swift */,
 				A20000000000000000000043 /* DevSeedScenario.swift */,
 				A20000000000000000000037 /* DailyCheckInPolicy.swift */,
+				A20000000000000000000051 /* WalkthroughController.swift */,
 				A20000000000000000000014 /* DateRules.swift */,
 				A20000000000000000000015 /* Violation.swift */,
 				A20000000000000000000016 /* NonNegotiableState.swift */,
@@ -572,6 +578,7 @@
 				A10000000000000000000009 /* CockpitUIModel.swift in Sources */,
 				A1000000000000000000000A /* CockpitNonNegotiableCard.swift in Sources */,
 				A1000000000000000000000B /* CockpitKpiCard.swift in Sources */,
+				A10000000000000000000052 /* CockpitWalkthroughOverlay.swift in Sources */,
 				A1000000000000000000000C /* FitnessLiquidGlassNavDemoView.swift in Sources */,
 				A1000000000000000000000D /* CockpitModernView.swift in Sources */,
 				A1000000000000000000000E /* LiquidGlassNavDemos.swift in Sources */,
@@ -593,6 +600,7 @@
 				A10000000000000000000042 /* DevOptionsController.swift in Sources */,
 				A10000000000000000000043 /* DevSeedScenario.swift in Sources */,
 				A10000000000000000000037 /* DailyCheckInPolicy.swift in Sources */,
+				A10000000000000000000051 /* WalkthroughController.swift in Sources */,
 				A10000000000000000000024 /* MainAppView.swift in Sources */,
 				A10000000000000000000038 /* DailyCheckInModels.swift in Sources */,
 				A10000000000000000000039 /* DailyCheckInViewModel.swift in Sources */,

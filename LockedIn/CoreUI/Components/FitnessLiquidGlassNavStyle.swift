@@ -87,15 +87,7 @@ struct FitnessLiquidGlassNavStyle: ViewModifier {
 
     @ViewBuilder
     private var trailingButtons: some View {
-        if #available(iOS 26, *) {
-            GlassEffectContainer(spacing: 10) {
-                HStack(spacing: 10) {
-                    ForEach(actions) { action in
-                        navButton(for: action)
-                    }
-                }
-            }
-        } else {
+        GlassEffectContainer(spacing: 10) {
             HStack(spacing: 10) {
                 ForEach(actions) { action in
                     navButton(for: action)
@@ -114,35 +106,23 @@ struct FitnessLiquidGlassNavStyle: ViewModifier {
         }
         .accessibilityLabel(action.accessibilityLabel)
 
-        if #available(iOS 26, *) {
-            let glassStyledButton = button
-                .buttonStyle(.plain)
-                .padding(.horizontal, action.isSelected ? 12 : 10)
-                .padding(.vertical, action.isSelected ? 8 : 7)
-                .background {
-                    Capsule(style: .continuous)
-                        .fill(action.isSelected ? Color.accentColor.opacity(0.24) : Color.clear)
-                        .glassEffect()
-                }
-                .glassEffectID(action.id, in: glassNamespace)
+        let glassStyledButton = button
+            .buttonStyle(.plain)
+            .padding(.horizontal, action.isSelected ? 12 : 10)
+            .padding(.vertical, action.isSelected ? 8 : 7)
+            .background {
+                Capsule(style: .continuous)
+                    .fill(action.isSelected ? Color.accentColor.opacity(0.24) : Color.clear)
+                    .glassEffect()
+            }
+            .glassEffectID(action.id, in: glassNamespace)
 
-            if action.draggable {
-                glassStyledButton
-                    .offset(dragOffset)
-                    .gesture(dragGesture)
-            } else {
-                glassStyledButton
-            }
+        if action.draggable {
+            glassStyledButton
+                .offset(dragOffset)
+                .gesture(dragGesture)
         } else {
-            if action.draggable {
-                button
-                    .buttonStyle(FitnessGlassFallbackButtonStyle(prominent: action.isSelected))
-                    .offset(dragOffset)
-                    .gesture(dragGesture)
-            } else {
-                button
-                    .buttonStyle(FitnessGlassFallbackButtonStyle(prominent: action.isSelected))
-            }
+            glassStyledButton
         }
     }
 
@@ -164,15 +144,7 @@ struct FitnessLiquidGlassNavStyle: ViewModifier {
 
 private struct FitnessNavBarFallbackBackground: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
-            content
-        } else if #available(iOS 16, *) {
-            content
-                .toolbarBackground(.visible, for: .navigationBar)
-                .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-        } else {
-            content
-        }
+        content
     }
 }
 

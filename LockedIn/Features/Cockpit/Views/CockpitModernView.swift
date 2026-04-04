@@ -238,7 +238,7 @@ struct CockpitModernView: View {
                 animateReliabilityValue(to: reliabilityScore)
             }
         }
-        .onChange(of: reliabilityScore) { newValue in
+        .onChange(of: reliabilityScore) { _, newValue in
             animateReliabilityValue(to: newValue)
         }
         .onDisappear {

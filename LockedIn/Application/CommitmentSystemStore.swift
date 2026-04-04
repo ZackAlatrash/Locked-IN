@@ -45,16 +45,16 @@ final class CommitmentSystemStore: ObservableObject {
         repository: CommitmentSystemRepository,
         systemEngine: CommitmentSystemEngine,
         nonNegotiableEngine: NonNegotiableEngine,
-        policy: CommitmentPolicyEngine = CommitmentPolicyEngine(),
-        streakEngine: StreakEngine = StreakEngine(),
-        calendar: Calendar = DateRules.isoCalendar
+        policy: CommitmentPolicyEngine? = nil,
+        streakEngine: StreakEngine? = nil,
+        calendar: Calendar? = nil
     ) {
         self.repository = repository
         self.systemEngine = systemEngine
         self.nonNegotiableEngine = nonNegotiableEngine
-        self.policy = policy
-        self.streakEngine = streakEngine
-        self.calendar = calendar
+        self.policy = policy ?? CommitmentPolicyEngine()
+        self.streakEngine = streakEngine ?? StreakEngine()
+        self.calendar = calendar ?? DateRules.isoCalendar
 
         do {
             self.system = try repository.load()

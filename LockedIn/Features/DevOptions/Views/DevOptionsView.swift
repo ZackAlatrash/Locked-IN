@@ -32,7 +32,7 @@ struct DevOptionsView: View {
         .onAppear {
             simulatedPickerDate = appClock.now
         }
-        .onChange(of: appClock.simulatedNow) { simulated in
+        .onChange(of: appClock.simulatedNow) { _, simulated in
             if let simulated {
                 simulatedPickerDate = simulated
             }

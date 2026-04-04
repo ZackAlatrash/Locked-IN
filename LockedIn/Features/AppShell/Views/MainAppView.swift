@@ -144,29 +144,29 @@ struct MainAppView: View {
             evaluateRecoveryEntryPresentation(now: appClock.now)
             evaluateDailyCheckInAutoPresentation(now: appClock.now)
         }
-        .onChange(of: scenePhase) { phase in
+        .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 evaluateRecoveryEntryPresentation(now: appClock.now)
                 evaluateDailyCheckInAutoPresentation(now: appClock.now)
             }
         }
-        .onChange(of: router.selectedTab) { _ in
+        .onChange(of: router.selectedTab) { _, _ in
             Haptics.selection()
             evaluateRecoveryEntryPresentation(now: appClock.now)
             evaluateDailyCheckInAutoPresentation(now: appClock.now)
         }
-        .onChange(of: appClock.simulatedNow) { _ in
+        .onChange(of: appClock.simulatedNow) { _, _ in
             evaluateRecoveryEntryPresentation(now: appClock.now)
             evaluateDailyCheckInAutoPresentation(now: appClock.now)
         }
-        .onChange(of: devRuntime.forceShowDailyCheckInToken) { token in
+        .onChange(of: devRuntime.forceShowDailyCheckInToken) { _, token in
             guard token != nil else { return }
             if router.presentRecoveryEntry == false {
                 router.requestDailyCheckInPresentation()
             }
             devRuntime.consumeDailyCheckInPresentationRequest()
         }
-        .onChange(of: store.system) { system in
+        .onChange(of: store.system) { _, system in
             let isRecoveryActive = system.nonNegotiables.contains(where: { $0.state == .recovery })
             if wasRecoveryActive && isRecoveryActive == false {
                 planStore.finalizeRecoveryAllocationStatuses(

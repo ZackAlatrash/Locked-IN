@@ -51,7 +51,7 @@ struct DailyCheckInFlowView: View {
                 didAppear = true
             }
         }
-        .onChange(of: viewModel.toastMessage) { message in
+        .onChange(of: viewModel.toastMessage) { _, message in
             guard let message else { return }
             Task { @MainActor in
                 try? await Task.sleep(nanoseconds: 2_200_000_000)

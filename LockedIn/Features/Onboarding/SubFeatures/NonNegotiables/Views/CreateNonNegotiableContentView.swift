@@ -51,20 +51,25 @@ struct CreateNonNegotiableContentView: View {
 // MARK: - Background Decorations
 private extension CreateNonNegotiableContentView {
     var backgroundDecorations: some View {
-        ZStack {
-            // Top left glow
-            Circle()
-                .fill(Theme.Colors.authority.opacity(0.05))
-                .frame(width: 280, height: 280)
-                .blur(radius: 120)
-                .offset(x: -UIScreen.main.bounds.width * 0.2, y: -UIScreen.main.bounds.height * 0.15)
-            
-            // Bottom right glow
-            Circle()
-                .fill(Theme.Colors.authority.opacity(0.08))
-                .frame(width: 240, height: 240)
-                .blur(radius: 100)
-                .offset(x: UIScreen.main.bounds.width * 0.3, y: UIScreen.main.bounds.height * 0.25)
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            let height = proxy.size.height
+
+            ZStack {
+                // Top left glow
+                Circle()
+                    .fill(Theme.Colors.authority.opacity(0.05))
+                    .frame(width: 280, height: 280)
+                    .blur(radius: 120)
+                    .offset(x: -width * 0.2, y: -height * 0.15)
+
+                // Bottom right glow
+                Circle()
+                    .fill(Theme.Colors.authority.opacity(0.08))
+                    .frame(width: 240, height: 240)
+                    .blur(radius: 100)
+                    .offset(x: width * 0.3, y: height * 0.25)
+            }
         }
         .allowsHitTesting(false)
     }

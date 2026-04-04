@@ -1,6 +1,6 @@
 import Foundation
 
-struct WeekID: Hashable, Codable, Equatable, CustomStringConvertible {
+nonisolated struct WeekID: Hashable, Codable, Equatable, CustomStringConvertible {
     let yearForWeekOfYear: Int
     let weekOfYear: Int
 
@@ -9,7 +9,7 @@ struct WeekID: Hashable, Codable, Equatable, CustomStringConvertible {
     }
 }
 
-enum DateRules {
+nonisolated enum DateRules {
     static var isoCalendar: Calendar {
         var calendar = Calendar(identifier: .iso8601)
         calendar.timeZone = .current

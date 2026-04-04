@@ -232,7 +232,7 @@ private extension PaywallContentView {
             
             // Headline with gradient - responsive font size
             Text(headline)
-                .font(.system(size: min(32, UIScreen.main.bounds.width * 0.08), weight: .black))
+                .font(.system(size: 32, weight: .black))
                 .tracking(-0.5)
                 .foregroundStyle(
                     LinearGradient(

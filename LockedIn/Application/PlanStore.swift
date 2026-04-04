@@ -76,16 +76,16 @@ final class PlanStore: ObservableObject {
     private var lastSystem: CommitmentSystem?
 
     init(
-        repository: PlanAllocationRepository = JSONFilePlanAllocationRepository(),
-        policy: CommitmentPolicyEngine = CommitmentPolicyEngine(),
-        calendar: Calendar = DateRules.isoCalendar
+        repository: PlanAllocationRepository? = nil,
+        policy: CommitmentPolicyEngine? = nil,
+        calendar: Calendar? = nil
     ) {
-        self.repository = repository
-        self.policy = policy
-        self.calendar = calendar
+        self.repository = repository ?? JSONFilePlanAllocationRepository()
+        self.policy = policy ?? CommitmentPolicyEngine()
+        self.calendar = calendar ?? DateRules.isoCalendar
 
         do {
-            self.allAllocations = try repository.load()
+            self.allAllocations = try self.repository.load()
         } catch {
             self.allAllocations = []
         }

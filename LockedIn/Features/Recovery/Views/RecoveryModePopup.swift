@@ -68,12 +68,12 @@ struct RecoveryModePopup: View {
                 didAppear = true
             }
         }
-        .onChange(of: viewModel.isPendingResolution) { isPending in
+        .onChange(of: viewModel.isPendingResolution) { _, isPending in
             if isPending == false {
                 onResolved()
             }
         }
-        .onChange(of: didAppear) { _ in
+        .onChange(of: didAppear) { _, _ in
             viewModel.dismissWarning()
         }
         .opacity(didAppear ? 1 : 0)

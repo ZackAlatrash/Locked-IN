@@ -58,7 +58,7 @@ private extension IdentityWarningContentView {
                 ]),
                 center: .center,
                 startRadius: 0,
-                endRadius: UIScreen.main.bounds.height * 0.55
+                endRadius: 420
             )
         }
     }
@@ -91,13 +91,13 @@ private extension IdentityWarningContentView {
                 .fill(Theme.Colors.authority.opacity(0.05))
                 .frame(width: 256, height: 256)
                 .blur(radius: 100)
-                .offset(x: -100, y: -UIScreen.main.bounds.height * 0.25)
+                .offset(x: -100, y: -240)
             
             Circle()
                 .fill(Theme.Colors.authority.opacity(0.05))
                 .frame(width: 256, height: 256)
                 .blur(radius: 100)
-                .offset(x: 100, y: UIScreen.main.bounds.height * 0.25)
+                .offset(x: 100, y: 240)
         }
         .allowsHitTesting(false)
     }
@@ -129,16 +129,14 @@ private extension IdentityWarningContentView {
     }
     
     var headlineText: some View {
-        (
+        HStack(spacing: 0) {
             Text(headline)
                 .foregroundColor(Theme.Colors.textPrimary)
-            +
             Text(highlightedWord)
                 .foregroundColor(Theme.Colors.authority)
-            +
             Text(headlineSuffix)
                 .foregroundColor(Theme.Colors.textPrimary)
-        )
+        }
         .font(.custom("Inter", size: 30).weight(.heavy))
         .tracking(-0.5)
         .lineSpacing(2)

@@ -27,6 +27,7 @@ struct CockpitView: View {
     @Binding var selectedTab: MainTab
     let onRequestDailyCheckIn: () -> Void
 
+    @EnvironmentObject private var walkthroughController: WalkthroughController
     @EnvironmentObject private var store: CommitmentSystemStore
     @EnvironmentObject private var planStore: PlanStore
     @EnvironmentObject private var router: AppRouter
@@ -57,6 +58,7 @@ struct CockpitView: View {
         }
         .navigationTitle("Cockpit")
         .navigationBarTitleDisplayMode(.large)
+        .toolbar(activeCockpitWalkthroughStep == nil ? .visible : .hidden, for: .tabBar)
         .tint(navItemColor)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
@@ -70,12 +72,19 @@ struct CockpitView: View {
         }
         .onAppear {
             refreshFromStore(referenceDate: appClock.now)
+            enterCockpitWalkthroughIfNeeded()
         }
         .onReceive(store.$system) { _ in
             refreshFromStore(referenceDate: appClock.now)
         }
-        .onChange(of: appClock.simulatedNow) { _ in
+        .onChange(of: appClock.simulatedNow) { _, _ in
             refreshFromStore(referenceDate: appClock.now)
+        }
+        .onChange(of: walkthroughController.step) { _, _ in
+            enterCockpitWalkthroughIfNeeded()
+        }
+        .onChange(of: walkthroughController.isActive) { _, _ in
+            enterCockpitWalkthroughIfNeeded()
         }
         .sheet(isPresented: $showCreateNonNegotiable) {
             NavigationStack {
@@ -146,6 +155,23 @@ struct CockpitView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
+        .overlay {
+            if let step = activeCockpitWalkthroughStep {
+                CockpitWalkthroughOverlay(
+                    step: step,
+                    style: cockpitStyle,
+                    onContinue: {
+                        advanceCockpitWalkthrough(from: step)
+                    },
+                    onSkip: {
+                        walkthroughController.skip()
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                .ignoresSafeArea()
+                .zIndex(100)
+            }
+        }
     }
 }
 
@@ -172,6 +198,20 @@ private extension CockpitView {
 
     var navAvatarStroke: Color {
         cockpitStyle == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.12)
+    }
+
+    var activeCockpitWalkthroughStep: WalkthroughStep? {
+        guard walkthroughController.isActive else { return nil }
+        switch walkthroughController.step {
+        case .cockpitIntro, .cockpitReliability, .cockpitStreak, .cockpitProtocols, .createName:
+            return walkthroughController.step
+        default:
+            return nil
+        }
+    }
+
+    var isWaitingForAddProtocolTap: Bool {
+        walkthroughController.isActive && walkthroughController.step == .createName
     }
 
     var modernCockpitContent: some View {
@@ -208,6 +248,7 @@ private extension CockpitView {
             onCapacityTap: { perform(.openCapacity) },
             onCreateTap: { perform(.openCreate) },
             onCheckInTap: {
+                guard isWaitingForAddProtocolTap == false else { return }
                 Haptics.selection()
                 onRequestDailyCheckIn()
             },
@@ -330,6 +371,10 @@ private extension CockpitView {
     }
 
     func perform(_ action: CockpitAction) {
+        if isWaitingForAddProtocolTap {
+            guard case .openCreate = action else { return }
+        }
+
         switch action {
         case .complete(let nnId):
             do {
@@ -396,6 +441,9 @@ private extension CockpitView {
             router.openPlanEditor(protocolId: nnId)
 
         case .openCreate:
+            if isWaitingForAddProtocolTap {
+                _ = walkthroughController.handleCreateProtocolTapped()
+            }
             Haptics.selection()
             showCreateNonNegotiable = true
 
@@ -497,6 +545,27 @@ private extension CockpitView {
             return "\(protocolTitle) wasn't scheduled today. Tomorrow's \(slot.title) session was removed."
         }
         return "\(protocolTitle) wasn't scheduled today. \(releasedDaySlotLabel(day: releasedDayStart, slot: slot)) was removed."
+    }
+
+    func advanceCockpitWalkthrough(from step: WalkthroughStep) {
+        switch step {
+        case .cockpitIntro:
+            _ = walkthroughController.advance(to: .cockpitReliability)
+        case .cockpitReliability:
+            _ = walkthroughController.advance(to: .cockpitStreak)
+        case .cockpitStreak:
+            _ = walkthroughController.advance(to: .cockpitProtocols)
+        case .cockpitProtocols:
+            _ = walkthroughController.advance(to: .createName)
+        default:
+            break
+        }
+    }
+
+    func enterCockpitWalkthroughIfNeeded() {
+        guard walkthroughController.isActive else { return }
+        guard walkthroughController.step == .intro else { return }
+        _ = walkthroughController.advance(to: .cockpitIntro)
     }
 }
 

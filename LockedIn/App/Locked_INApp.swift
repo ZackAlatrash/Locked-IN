@@ -22,6 +22,7 @@ struct LockedInAppRoot: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @AppStorage(WalkthroughController.StorageKeys.hasCompletedWalkthrough) private var hasCompletedWalkthrough = false
     @AppStorage("appAppearanceMode") private var appAppearanceModeRaw = AppAppearanceMode.dark.rawValue
     @AppStorage("phase1MotionSessionID") private var phase1MotionSessionID = ""
     @StateObject private var appClock = AppClock()
@@ -32,6 +33,7 @@ struct LockedInAppRoot: View {
         flow: OnboardingFlow(),
         engine: OnboardingEngine()
     )
+    @StateObject private var walkthroughController = WalkthroughController()
     @State private var didInitializeMotionSession = false
 
     init() {
@@ -65,6 +67,7 @@ struct LockedInAppRoot: View {
                     coordinator: onboardingCoordinator,
                     onComplete: {
                         hasCompletedOnboarding = true
+                        maybeStartWalkthrough()
                     }
                 )
             }
@@ -75,6 +78,7 @@ struct LockedInAppRoot: View {
         .environmentObject(planStore)
         .environmentObject(appClock)
         .environmentObject(devRuntime)
+        .environmentObject(walkthroughController)
         .onAppear {
             if didInitializeMotionSession == false {
                 didInitializeMotionSession = true
@@ -94,18 +98,30 @@ struct LockedInAppRoot: View {
                 UserDefaults.standard.set(true, forKey: protocolResetKey)
             }
             commitmentSystemStore.runDailyIntegrityTick(referenceDate: appClock.now)
+            maybeStartWalkthrough()
         }
-        .onChange(of: scenePhase) { newPhase in
+        .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 commitmentSystemStore.runDailyIntegrityTick(referenceDate: appClock.now)
+                maybeStartWalkthrough()
             }
         }
-        .onChange(of: appClock.simulatedNow) { _ in
+        .onChange(of: appClock.simulatedNow) { _, _ in
             commitmentSystemStore.runDailyIntegrityTick(referenceDate: appClock.now)
+        }
+        .onChange(of: hasCompletedOnboarding) { _, _ in
+            maybeStartWalkthrough()
         }
     }
 
     private var appAppearanceMode: AppAppearanceMode {
         AppAppearanceMode(rawValue: appAppearanceModeRaw) ?? .dark
+    }
+
+    private func maybeStartWalkthrough() {
+        guard hasCompletedOnboarding else { return }
+        guard hasCompletedWalkthrough == false else { return }
+        guard walkthroughController.isActive == false else { return }
+        walkthroughController.start()
     }
 }

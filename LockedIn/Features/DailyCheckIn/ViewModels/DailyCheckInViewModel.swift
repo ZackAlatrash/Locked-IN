@@ -21,17 +21,17 @@ final class DailyCheckInViewModel: ObservableObject {
     init(
         commitmentStore: CommitmentSystemStore,
         planStore: PlanStore,
-        regulatorEngine: PlanRegulatorEngine = PlanRegulatorEngine(),
+        regulatorEngine: PlanRegulatorEngine? = nil,
         router: AppRouter,
         referenceDateProvider: @escaping () -> Date = { Date() },
-        calendar: Calendar = DateRules.isoCalendar
+        calendar: Calendar? = nil
     ) {
         self.commitmentStore = commitmentStore
         self.planStore = planStore
-        self.regulatorEngine = regulatorEngine
+        self.regulatorEngine = regulatorEngine ?? PlanRegulatorEngine()
         self.router = router
         self.referenceDateProvider = referenceDateProvider
-        self.calendar = calendar
+        self.calendar = calendar ?? DateRules.isoCalendar
     }
 
     var resolvingProtocol: DailyCheckInProtocolItem? {
