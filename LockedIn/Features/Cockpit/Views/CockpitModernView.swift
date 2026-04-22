@@ -25,6 +25,8 @@ struct CockpitModernView: View {
     let weeklyCompletionByDay: [Int]
     let capacityProtocols: [TodayTask]
     let upcomingProtocols: [UpcomingTask]
+    let walkthroughCheckInProtocolId: UUID?
+    let isCheckInWalkthroughActive: Bool
     let showEmbeddedHeader: Bool
     let onWeeklyActivityTap: () -> Void
     let onStreakTap: () -> Void
@@ -47,6 +49,7 @@ struct CockpitModernView: View {
     @State private var pendingUndoTaskId: UUID?
     @State private var pendingUndoResetTask: Task<Void, Never>?
     @State private var animatedReliabilityValue: Double = 0
+    @State private var didAutoScrollWalkthroughTarget = false
     @ScaledMetric(relativeTo: .largeTitle) private var reliabilityScoreFontSize: CGFloat = 58
     @ScaledMetric(relativeTo: .title2) private var ringSize: CGFloat = 222
     @ScaledMetric(relativeTo: .headline) private var ringStroke: CGFloat = 14
@@ -79,6 +82,8 @@ struct CockpitModernView: View {
         weeklyCompletionByDay: [Int],
         capacityProtocols: [TodayTask],
         upcomingProtocols: [UpcomingTask],
+        walkthroughCheckInProtocolId: UUID? = nil,
+        isCheckInWalkthroughActive: Bool = false,
         showEmbeddedHeader: Bool = true,
         onWeeklyActivityTap: @escaping () -> Void = {},
         onStreakTap: @escaping () -> Void = {},
@@ -108,6 +113,8 @@ struct CockpitModernView: View {
         self.weeklyCompletionByDay = weeklyCompletionByDay
         self.capacityProtocols = capacityProtocols
         self.upcomingProtocols = upcomingProtocols
+        self.walkthroughCheckInProtocolId = walkthroughCheckInProtocolId
+        self.isCheckInWalkthroughActive = isCheckInWalkthroughActive
         self.showEmbeddedHeader = showEmbeddedHeader
         self.onWeeklyActivityTap = onWeeklyActivityTap
         self.onStreakTap = onStreakTap
@@ -195,39 +202,64 @@ struct CockpitModernView: View {
         didAnimateCockpitPhase1SessionID == effectiveMotionSessionID
     }
 
+    private var trailingScrollSpace: CGFloat {
+        if isCheckInWalkthroughActive, walkthroughCheckInProtocolId != nil {
+            return 360
+        }
+        return 120
+    }
+
     var body: some View {
         ZStack {
             screenBackground
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    if showEmbeddedHeader {
-                        embeddedHeader
+            ScrollViewReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        if showEmbeddedHeader {
+                            embeddedHeader
+                        }
+
+                        systemStateBadge
+                            .padding(.top, 8)
+
+                        ringModule
+                            .padding(.top, 32)
+                            .padding(.bottom, 10)
+                            .opacity(showReliabilityModule ? 1 : 0)
+                            .offset(y: showReliabilityModule ? 0 : 12)
+
+                        weeklyStrip
+                            .padding(.top, 18)
+                            .opacity(showWeeklyStrip ? 1 : 0)
+                            .offset(y: showWeeklyStrip ? 0 : 12)
+
+                        activeProtocolsSection
+                            .padding(.top, 22)
+                            .opacity(showActiveSection ? 1 : 0)
+                            .offset(y: showActiveSection ? 0 : 14)
+
+                        Spacer(minLength: trailingScrollSpace)
                     }
-
-                    systemStateBadge
-                        .padding(.top, 8)
-
-                    ringModule
-                        .padding(.top, 32)
-                        .padding(.bottom, 10)
-                        .opacity(showReliabilityModule ? 1 : 0)
-                        .offset(y: showReliabilityModule ? 0 : 12)
-
-                    weeklyStrip
-                        .padding(.top, 18)
-                        .opacity(showWeeklyStrip ? 1 : 0)
-                        .offset(y: showWeeklyStrip ? 0 : 12)
-
-                    activeProtocolsSection
-                        .padding(.top, 22)
-                        .opacity(showActiveSection ? 1 : 0)
-                        .offset(y: showActiveSection ? 0 : 14)
-
-                    Spacer(minLength: 120)
+                    .padding(.horizontal, 16)
+                    .padding(.top, topPadding)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, topPadding)
+                .onAppear {
+                    scrollToWalkthroughProtocolIfNeeded(using: proxy)
+                }
+                .onChange(of: isCheckInWalkthroughActive) { _, isActive in
+                    if isActive == false {
+                        didAutoScrollWalkthroughTarget = false
+                    }
+                    scrollToWalkthroughProtocolIfNeeded(using: proxy)
+                }
+                .onChange(of: walkthroughCheckInProtocolId) { _, _ in
+                    didAutoScrollWalkthroughTarget = false
+                    scrollToWalkthroughProtocolIfNeeded(using: proxy)
+                }
+                .onChange(of: displayedCapacityTasks.map(\.nnId)) { _, _ in
+                    scrollToWalkthroughProtocolIfNeeded(using: proxy)
+                }
             }
         }
         .onAppear {
@@ -243,6 +275,7 @@ struct CockpitModernView: View {
         }
         .onDisappear {
             clearPendingUndo()
+            didAutoScrollWalkthroughTarget = false
         }
     }
 }
@@ -475,9 +508,14 @@ private extension CockpitModernView {
 
             checkInInlineCard
 
+            if isCheckInWalkthroughActive, walkthroughCheckInProtocolId != nil {
+                walkthroughCheckInGuidanceCard
+            }
+
             VStack(spacing: 10) {
-                ForEach(Array(capacityProtocols.prefix(3).enumerated()), id: \.element.id) { index, task in
+                ForEach(Array(displayedCapacityTasks.enumerated()), id: \.element.id) { index, task in
                     protocolRow(task)
+                        .id(task.nnId)
                         .opacity(revealedProtocolRows > index ? 1 : 0)
                         .offset(y: revealedProtocolRows > index ? 0 : 10)
                 }
@@ -487,6 +525,53 @@ private extension CockpitModernView {
                 upcomingPreviewSection
             }
         }
+    }
+
+    var displayedCapacityTasks: [TodayTask] {
+        let defaultTasks = Array(capacityProtocols.prefix(3))
+        guard isCheckInWalkthroughActive, let targetId = walkthroughCheckInProtocolId else { return defaultTasks }
+        guard defaultTasks.contains(where: { $0.nnId == targetId }) == false else { return defaultTasks }
+        guard let targetTask = capacityProtocols.first(where: { $0.nnId == targetId }) else { return defaultTasks }
+
+        if defaultTasks.isEmpty {
+            return [targetTask]
+        }
+
+        if defaultTasks.count >= 3 {
+            var adjusted = Array(defaultTasks.dropLast())
+            adjusted.append(targetTask)
+            return adjusted
+        }
+
+        var adjusted = defaultTasks
+        adjusted.append(targetTask)
+        return adjusted
+    }
+
+    var walkthroughCheckInGuidanceCard: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "scope")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(primary)
+                .padding(6)
+                .background(Circle().fill(primary.opacity(style == .dark ? 0.24 : 0.16)))
+
+            Text("This is your protocol. From here, you mark it as done. Complete it now.")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(textMain.opacity(0.95))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(glassCard.opacity(0.9))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(primary.opacity(0.52), lineWidth: 1.2)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 
     var capacitySummaryCard: some View {
@@ -718,6 +803,7 @@ private extension CockpitModernView {
 
     func protocolRow(_ task: TodayTask) -> some View {
         let paused = task.isPaused
+        let isWalkthroughTarget = isCheckInWalkthroughActive && task.nnId == walkthroughCheckInProtocolId
         let isUndoArmed = pendingUndoTaskId == task.nnId
         let canUndo = task.completionVisual != .none && !paused
         let completionTint: Color = {
@@ -763,8 +849,21 @@ private extension CockpitModernView {
                 .frame(width: 22, height: 22)
                 .padding(11)
                 .contentShape(Rectangle())
+                .overlay {
+                    if isWalkthroughTarget {
+                        Circle()
+                            .stroke(primary.opacity(0.9), lineWidth: 2)
+                            .frame(width: 34, height: 34)
+                            .shadow(color: primary.opacity(0.42), radius: 6, x: 0, y: 0)
+                    }
+                }
             }
             .buttonStyle(.plain)
+            .accessibilityHint(
+                isWalkthroughTarget
+                    ? "Tap to mark this walkthrough protocol as done"
+                    : "Marks protocol completion status"
+            )
 
             Button {
                 onProtocolTap(task.nnId)
@@ -827,9 +926,18 @@ private extension CockpitModernView {
         .background(glassCard)
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(glassStroke, lineWidth: 1)
+                .stroke(
+                    isWalkthroughTarget ? primary.opacity(0.85) : glassStroke,
+                    lineWidth: isWalkthroughTarget ? 1.8 : 1
+                )
         )
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .shadow(
+            color: isWalkthroughTarget ? primary.opacity(0.26) : .clear,
+            radius: isWalkthroughTarget ? 8 : 0,
+            x: 0,
+            y: 0
+        )
         .opacity(paused ? 0.72 : 1)
     }
 
@@ -877,6 +985,30 @@ private extension CockpitModernView {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.52) {
             didAnimateCockpitPhase1SessionID = effectiveMotionSessionID
+        }
+    }
+
+    func scrollToWalkthroughProtocolIfNeeded(using proxy: ScrollViewProxy) {
+        guard isCheckInWalkthroughActive else { return }
+        guard let targetId = walkthroughCheckInProtocolId else { return }
+        guard didAutoScrollWalkthroughTarget == false else { return }
+        guard displayedCapacityTasks.contains(where: { $0.nnId == targetId }) else { return }
+
+        let scrollAction = {
+            proxy.scrollTo(targetId, anchor: .center)
+            didAutoScrollWalkthroughTarget = true
+        }
+
+        if reduceMotion {
+            DispatchQueue.main.async {
+                scrollAction()
+            }
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                withAnimation(Theme.Animation.context) {
+                    scrollAction()
+                }
+            }
         }
     }
 

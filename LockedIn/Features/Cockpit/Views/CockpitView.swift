@@ -90,10 +90,19 @@ struct CockpitView: View {
             NavigationStack {
                 CreateNonNegotiableView(
                     accentColorOverride: accentColor,
-                    onSuccess: {
+                    onSuccess: { createdProtocolId in
+                        if walkthroughController.isActive {
+                            _ = walkthroughController.handleProtocolCreated(id: createdProtocolId)
+                            selectedTab = .plan
+                        }
                         showCreateNonNegotiable = false
                     },
                     onBack: {
+                        showCreateNonNegotiable = false
+                    },
+                    isWalkthroughCreationLocked: isWalkthroughCreationLocked,
+                    onExitWalkthrough: {
+                        walkthroughController.skip()
                         showCreateNonNegotiable = false
                     }
                 )
@@ -203,7 +212,7 @@ private extension CockpitView {
     var activeCockpitWalkthroughStep: WalkthroughStep? {
         guard walkthroughController.isActive else { return nil }
         switch walkthroughController.step {
-        case .cockpitIntro, .cockpitReliability, .cockpitStreak, .cockpitProtocols, .createName:
+        case .cockpitIntro, .cockpitReliability, .cockpitStreak, .cockpitProtocols, .createName, .checkInIntro:
             return walkthroughController.step
         default:
             return nil
@@ -212,6 +221,19 @@ private extension CockpitView {
 
     var isWaitingForAddProtocolTap: Bool {
         walkthroughController.isActive && walkthroughController.step == .createName
+    }
+
+    var isWalkthroughCreationLocked: Bool {
+        walkthroughController.isActive && walkthroughController.step == .createProtocol
+    }
+
+    var isWalkthroughCheckInActive: Bool {
+        walkthroughController.isActive && walkthroughController.step == .checkInIntro
+    }
+
+    var walkthroughCheckInProtocolId: UUID? {
+        guard isWalkthroughCheckInActive else { return nil }
+        return walkthroughController.walkthroughProtocolId
     }
 
     var modernCockpitContent: some View {
@@ -242,6 +264,8 @@ private extension CockpitView {
             weeklyCompletionByDay: weeklyCompletionByDay,
             capacityProtocols: viewModel.uiState.todayTasks,
             upcomingProtocols: viewModel.uiState.upcomingTasks,
+            walkthroughCheckInProtocolId: walkthroughCheckInProtocolId,
+            isCheckInWalkthroughActive: isWalkthroughCheckInActive,
             showEmbeddedHeader: false,
             onWeeklyActivityTap: { perform(.openWeeklyActivity) },
             onStreakTap: { perform(.openStreak) },
@@ -405,6 +429,13 @@ private extension CockpitView {
                             slot: released.slot
                         )
                     )
+                }
+                if walkthroughController.isActive,
+                   nnId == walkthroughController.walkthroughProtocolId {
+                    if walkthroughController.step == .checkInIntro {
+                        _ = walkthroughController.advance(to: .completeProtocol)
+                    }
+                    _ = walkthroughController.handleProtocolCompleted(id: nnId)
                 }
                 Haptics.success()
             } catch {

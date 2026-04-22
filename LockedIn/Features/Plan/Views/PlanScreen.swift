@@ -12,6 +12,7 @@ struct PlanScreen: View {
 
     @EnvironmentObject private var commitmentStore: CommitmentSystemStore
     @EnvironmentObject private var planStore: PlanStore
+    @EnvironmentObject private var walkthroughController: WalkthroughController
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var appClock: AppClock
     @Environment(\.colorScheme) private var colorScheme
@@ -30,6 +31,7 @@ struct PlanScreen: View {
     @State private var targetedSlotId: String?
     @State private var toast: PlanToast?
     @State private var pendingUndo: PlanUndoAction?
+    @State private var walkthroughFrames: [PlanWalkthroughFrameID: CGRect] = [:]
     @State private var revealedDayIds: Set<Date> = []
     @State private var didRunColumnEntrance = false
     @State private var recentlyLockedAllocationKeys: Set<String> = []
@@ -93,6 +95,7 @@ struct PlanScreen: View {
                     Haptics.selection()
                     showProfile = true
                 }
+                .disabled(isPlanningManualPlacementWalkthroughStep)
             }
         }
         .sheet(isPresented: $showProfile) {
@@ -125,6 +128,7 @@ struct PlanScreen: View {
                     let draftToApply = viewModel.draftAllocations
                     if viewModel.applyDraft() {
                         Haptics.success()
+                        walkthroughController.handleDraftApplied()
                         triggerRegulatorLockInAnimation(for: draftToApply)
                         showDraftAppliedToast(placementCount: draftToApply.count)
                     } else {
@@ -185,6 +189,9 @@ struct PlanScreen: View {
         .onChange(of: appClock.simulatedNow) { _, _ in
             viewModel.refresh(referenceDate: appClock.now)
         }
+        .onPreferenceChange(PlanWalkthroughFramePreferenceKey.self) { frames in
+            walkthroughFrames = frames
+        }
         .overlay(alignment: .top) {
             warningBanner
         }
@@ -195,10 +202,181 @@ struct PlanScreen: View {
                     .padding(.bottom, 22)
             }
         }
+        .overlay {
+            if let step = activePlanningWalkthroughStep {
+                PlanWalkthroughOverlay(
+                    step: step,
+                    isDarkMode: isDarkMode,
+                    highlightFrame: planningHighlightFrame(for: step),
+                    onContinue: {
+                        advancePlanningWalkthrough(from: step)
+                    },
+                    onSkip: {
+                        walkthroughController.skip()
+                    }
+                )
+                .ignoresSafeArea()
+                .zIndex(120)
+            }
+        }
     }
 }
 
 private extension PlanScreen {
+    var activePlanningWalkthroughStep: WalkthroughStep? {
+        guard walkthroughController.isActive else { return nil }
+        switch walkthroughController.step {
+        case .planningIntro, .planningQueue, .planningSelectProtocol,
+             .planningPlacedConfirmation, .planningRegulatorIntro, .planningRunRegulator, .planningCompleted:
+            return walkthroughController.step
+        default:
+            return nil
+        }
+    }
+
+    var isPlanningManualPlacementWalkthroughStep: Bool {
+        activePlanningWalkthroughStep != nil
+    }
+
+    // REGULATE button should be enabled only during the step that asks the user to tap it.
+    var isWalkthroughBlockingRegulate: Bool {
+        guard let step = activePlanningWalkthroughStep else { return false }
+        return step != .planningRunRegulator
+    }
+
+    var walkthroughProtocolId: UUID? {
+        walkthroughController.walkthroughProtocolId
+    }
+
+    func planningHighlightFrame(for step: WalkthroughStep) -> CGRect? {
+        switch step {
+        case .planningQueue:
+            return walkthroughFrames[.queueSection]?.expandedBy(dx: 8, dy: 8)
+        case .planningSelectProtocol:
+            guard let protocolId = walkthroughProtocolId else { return nil }
+            return walkthroughFrames[.protocolCard(protocolId)]?.expandedBy(dx: 8, dy: 8)
+        case .planningRegulatorIntro, .planningRunRegulator:
+            return walkthroughFrames[.regulateButton]?.expandedBy(dx: 12, dy: 10)
+        default:
+            return nil
+        }
+    }
+
+    func advancePlanningWalkthrough(from step: WalkthroughStep) {
+        switch step {
+        case .planningIntro:
+            _ = walkthroughController.advance(to: .planningQueue)
+        case .planningQueue:
+            _ = walkthroughController.advance(to: .planningSelectProtocol)
+        case .planningPlacedConfirmation:
+            _ = walkthroughController.advance(to: .planningRegulatorIntro)
+        case .planningRegulatorIntro:
+            _ = walkthroughController.advance(to: .planningRunRegulator)
+        case .planningCompleted:
+            _ = walkthroughController.advance(to: .checkInIntro)
+        default:
+            break
+        }
+    }
+
+    func handleQueueProtocolSelection(_ protocolId: UUID) {
+        guard canSelectQueueProtocol(protocolId) else {
+            Haptics.warning()
+            return
+        }
+
+        viewModel.selectProtocol(id: protocolId)
+
+        guard walkthroughController.isActive else { return }
+        guard walkthroughController.step == .planningSelectProtocol else { return }
+        guard protocolId == walkthroughProtocolId else { return }
+
+        _ = walkthroughController.advance(to: .planningSelectSlot)
+        withAnimation(reduceMotion ? .none : Theme.Animation.context) {
+            boardMode = .expandedWeek
+        }
+    }
+
+    func handleSlotPlacementTap(day: Date, slot: PlanSlot) {
+        let selectedProtocolId = viewModel.selectedQueueProtocolId
+        guard canPlaceAtSlot(day: day, slot: slot, protocolId: selectedProtocolId) else {
+            Haptics.warning()
+            return
+        }
+
+        guard let mutation = viewModel.placeSelectedProtocol(day: day, slot: slot) else {
+            Haptics.warning()
+            return
+        }
+
+        Haptics.success()
+        handleWalkthroughPlacementIfNeeded(
+            placedProtocolId: selectedProtocolId,
+            day: day,
+            slot: slot
+        )
+        showToast(for: mutation)
+    }
+
+    func handleWalkthroughPlacementIfNeeded(placedProtocolId: UUID?, day: Date, slot: PlanSlot) {
+        guard walkthroughController.isActive else { return }
+        guard walkthroughController.step == .planningSelectSlot else { return }
+        guard placedProtocolId == walkthroughProtocolId else { return }
+        _ = walkthroughController.advance(to: .planningPlacedConfirmation)
+    }
+
+    func canSelectQueueProtocol(_ protocolId: UUID) -> Bool {
+        guard walkthroughController.isActive else { return true }
+        guard let step = activePlanningWalkthroughStep else { return true }
+        guard let walkthroughProtocolId else { return false }
+
+        switch step {
+        case .planningSelectProtocol:
+            return protocolId == walkthroughProtocolId
+        default:
+            return false
+        }
+    }
+
+    func canEditQueueProtocol(_ protocolId: UUID) -> Bool {
+        guard walkthroughController.isActive else { return true }
+        guard activePlanningWalkthroughStep != nil else { return true }
+        return false
+    }
+
+    func canDragQueueProtocol(_ protocolId: UUID) -> Bool {
+        guard walkthroughController.isActive else { return true }
+        guard activePlanningWalkthroughStep != nil else { return true }
+        return false
+    }
+
+    func canPlaceAtSlot(day: Date, slot: PlanSlot, protocolId: UUID?) -> Bool {
+        guard walkthroughController.isActive else { return true }
+        guard let step = activePlanningWalkthroughStep else { return true }
+
+        switch step {
+        case .planningSelectSlot:
+            guard let protocolId, protocolId == walkthroughProtocolId else { return false }
+            return viewModel.validateProtocolPlacement(protocolId: protocolId, day: day, slot: slot).isAllowed
+        default:
+            return false
+        }
+    }
+
+    func canHandleDrop(payload: String, day: Date, slot: PlanSlot) -> Bool {
+        guard walkthroughController.isActive else { return true }
+        guard walkthroughController.step == .planningSelectSlot else {
+            return activePlanningWalkthroughStep == nil
+        }
+
+        if let protocolId = PlanDropPayload.protocolId(from: payload) {
+            guard protocolId == walkthroughProtocolId else { return false }
+            return viewModel.validateProtocolPlacement(protocolId: protocolId, day: day, slot: slot).isAllowed
+        }
+
+        return false
+    }
+
     @ViewBuilder
     var warningBanner: some View {
         if let warning = viewModel.warningMessage {
@@ -266,6 +444,7 @@ private extension PlanScreen {
                 Button {
                     Haptics.selection()
                     viewModel.runRegulator()
+                    walkthroughController.handleDraftGenerated()
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "slider.horizontal.3")
@@ -287,6 +466,8 @@ private extension PlanScreen {
                     )
                 }
                 .buttonStyle(.plain)
+                .planWalkthroughFrame(.regulateButton)
+                .disabled(isWalkthroughBlockingRegulate)
 
                 Button {
                     Haptics.selection()
@@ -313,6 +494,7 @@ private extension PlanScreen {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(boardMode == .expandedWeek ? "Focus today" : "Expand week")
+                .disabled(isPlanningManualPlacementWalkthroughStep)
             }
         }
     }
@@ -473,6 +655,7 @@ private extension PlanScreen {
                 }
             }
         }
+        .planWalkthroughFrame(.queueSection)
     }
 
     @ViewBuilder
@@ -512,7 +695,7 @@ private extension PlanScreen {
 
         let primaryAction = Button {
             Haptics.selection()
-            viewModel.selectProtocol(id: item.protocolId)
+            handleQueueProtocolSelection(item.protocolId)
         } label: {
             primaryContent
                 .padding(.horizontal, 12)
@@ -521,6 +704,7 @@ private extension PlanScreen {
                 .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
+        .disabled(canSelectQueueProtocol(item.protocolId) == false)
 
         let secondaryAction = Menu {
             Button {
@@ -538,9 +722,10 @@ private extension PlanScreen {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .disabled(canEditQueueProtocol(item.protocolId) == false)
 
         let card = ZStack(alignment: .trailing) {
-            if item.isDisabled {
+            if item.isDisabled || canDragQueueProtocol(item.protocolId) == false {
                 primaryAction
             } else {
                 primaryAction.draggable(payload) {
@@ -578,6 +763,7 @@ private extension PlanScreen {
             y: 0
         )
         .opacity(item.isDisabled ? 0.65 : 1)
+        .planWalkthroughFrame(.protocolCard(item.protocolId))
         .contextMenu {
             Button {
                 Haptics.selection()
@@ -586,6 +772,7 @@ private extension PlanScreen {
                 Label("Edit Protocol", systemImage: "slider.horizontal.3")
             }
         }
+        .allowsHitTesting(canSelectQueueProtocol(item.protocolId))
         card
     }
 
@@ -793,6 +980,7 @@ private extension PlanScreen {
                 updateTargetedSlot(slot.id, isTargeted: isTargeted)
             }
         )
+        .planWalkthroughFrame(.slot(slot.id))
     }
 
     func compactSlotCard(
@@ -867,8 +1055,8 @@ private extension PlanScreen {
                         .padding(6)
                 }
                 .buttonStyle(.plain)
-                .disabled(first.status.isInteractive == false)
-                .opacity(first.status.isInteractive ? 1 : 0.6)
+                .disabled(first.status.isInteractive == false || isPlanningManualPlacementWalkthroughStep)
+                .opacity(first.status.isInteractive && isPlanningManualPlacementWalkthroughStep == false ? 1 : 0.6)
                 .overlay(alignment: .bottomLeading) {
                     if first.status.isInteractive == false {
                         Text(first.status == .paused ? "PAUSED" : "SKIPPED")
@@ -885,7 +1073,7 @@ private extension PlanScreen {
                     }
                 }
 
-                if first.status.isInteractive {
+                if first.status.isInteractive && isPlanningManualPlacementWalkthroughStep == false {
                     baseChip.draggable(PlanDropPayload.allocationPayload(for: first.id)) {
                         allocationDragPreview(allocation: first)
                             .onAppear {
@@ -904,13 +1092,13 @@ private extension PlanScreen {
                 draftPreviewBadge(title: "DRAFT", tone: toneColor(for: .cyan), icon: "sparkles")
                     .padding(6)
             } else if slot.freeMinutes > 0 {
+                let canPlaceInSlot = canPlaceAtSlot(
+                    day: day.date,
+                    slot: slot.slot,
+                    protocolId: viewModel.selectedQueueProtocolId
+                )
                 Button {
-                    if let mutation = viewModel.placeSelectedProtocol(day: day.date, slot: slot.slot) {
-                        Haptics.success()
-                        showToast(for: mutation)
-                    } else {
-                        Haptics.warning()
-                    }
+                    handleSlotPlacementTap(day: day.date, slot: slot.slot)
                 } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 12, weight: .bold))
@@ -920,6 +1108,8 @@ private extension PlanScreen {
                 }
                 .buttonStyle(.plain)
                 .allowsHitTesting(activeDragPayload == nil)
+                .disabled(canPlaceInSlot == false)
+                .opacity(canPlaceInSlot ? 1 : 0.48)
             }
         }
         .shadow(
@@ -975,7 +1165,7 @@ private extension PlanScreen {
             }
 
             ForEach(slot.allocations) { allocation in
-                if allocation.status.isInteractive {
+                if allocation.status.isInteractive && isPlanningManualPlacementWalkthroughStep == false {
                     allocationChip(allocation, day: day.date, slot: slot.slot)
                         .draggable(PlanDropPayload.allocationPayload(for: allocation.id)) {
                             allocationDragPreview(allocation: allocation)
@@ -999,13 +1189,13 @@ private extension PlanScreen {
 
             if slot.freeMinutes > 0 {
                 let isDragInProgress = activeDragPayload != nil
+                let canPlaceInSlot = canPlaceAtSlot(
+                    day: day.date,
+                    slot: slot.slot,
+                    protocolId: viewModel.selectedQueueProtocolId
+                )
                 Button {
-                    if let mutation = viewModel.placeSelectedProtocol(day: day.date, slot: slot.slot) {
-                        Haptics.success()
-                        showToast(for: mutation)
-                    } else {
-                        Haptics.warning()
-                    }
+                    handleSlotPlacementTap(day: day.date, slot: slot.slot)
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "plus")
@@ -1040,6 +1230,8 @@ private extension PlanScreen {
                 }
                 .buttonStyle(.plain)
                 .allowsHitTesting(isDragInProgress == false)
+                .disabled(canPlaceInSlot == false)
+                .opacity(canPlaceInSlot ? 1 : 0.58)
             } else if slot.allocations.isEmpty {
                 Text("FULL")
                     .font(.caption2.weight(.black))
@@ -1144,8 +1336,8 @@ private extension PlanScreen {
             }
         }
         .buttonStyle(.plain)
-        .disabled(isInteractive == false)
-        .opacity(isInteractive ? 1 : 0.62)
+        .disabled(isInteractive == false || isPlanningManualPlacementWalkthroughStep)
+        .opacity(isInteractive && isPlanningManualPlacementWalkthroughStep == false ? 1 : 0.62)
     }
 
     func draftPreviewBadge(title: String, tone: Color, icon: String) -> some View {
@@ -1484,12 +1676,22 @@ private extension PlanScreen {
             targetedSlotId = nil
         }
 
+        guard canHandleDrop(payload: payload, day: day, slot: slot) else {
+            Haptics.warning()
+            return false
+        }
+
         if let protocolId = PlanDropPayload.protocolId(from: payload) {
             guard let mutation = viewModel.placeProtocol(protocolId: protocolId, day: day, slot: slot) else {
                 Haptics.warning()
                 return false
             }
             Haptics.success()
+            handleWalkthroughPlacementIfNeeded(
+                placedProtocolId: protocolId,
+                day: day,
+                slot: slot
+            )
             showToast(for: mutation)
             return true
         }
@@ -1515,10 +1717,11 @@ private extension PlanScreen {
 
         switch mutation {
         case .placed(let allocationId, let title, let day, let slot):
-            pendingUndo = .remove(allocationId: allocationId)
+            let shouldOfferUndo = walkthroughController.isActive == false || walkthroughController.step != .planningSelectSlot
+            pendingUndo = shouldOfferUndo ? .remove(allocationId: allocationId) : nil
             toast = PlanToast(
                 message: "\(title) scheduled on \(formatter.string(from: day).uppercased()) \(slot.title)",
-                undoLabel: "Undo"
+                undoLabel: shouldOfferUndo ? "Undo" : nil
             )
         case .moved(let allocationId, let title, let fromDay, let fromSlot, let toDay, let toSlot):
             pendingUndo = .move(allocationId: allocationId, day: fromDay, slot: fromSlot)
@@ -2724,3 +2927,207 @@ private enum PlanDropPayload {
         return UUID(uuidString: value)
     }
 }
+
+
+private enum PlanWalkthroughFrameID: Hashable {
+    case queueSection
+    case protocolCard(UUID)
+    case slot(String)
+    case regulateButton
+}
+
+private struct PlanWalkthroughFramePreferenceKey: PreferenceKey {
+    static var defaultValue: [PlanWalkthroughFrameID: CGRect] = [:]
+
+    static func reduce(
+        value: inout [PlanWalkthroughFrameID: CGRect],
+        nextValue: () -> [PlanWalkthroughFrameID: CGRect]
+    ) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    }
+}
+
+private extension View {
+    func planWalkthroughFrame(_ id: PlanWalkthroughFrameID) -> some View {
+        background(
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: PlanWalkthroughFramePreferenceKey.self,
+                    value: [id: proxy.frame(in: .global)]
+                )
+            }
+        )
+    }
+}
+
+private extension CGRect {
+    func expandedBy(dx: CGFloat, dy: CGFloat) -> CGRect {
+        insetBy(dx: -dx, dy: -dy)
+    }
+}
+
+#if DEBUG
+@MainActor
+private struct PlanWalkthroughPreviewHarness: View {
+    @StateObject private var commitmentStore: CommitmentSystemStore
+    @StateObject private var planStore: PlanStore
+    @StateObject private var router = AppRouter()
+    @StateObject private var appClock = AppClock()
+    @StateObject private var walkthroughController: WalkthroughController
+    @State private var selectedTab: MainTab = .plan
+    @State private var selectedStep: WalkthroughStep = .planningQueue
+    @State private var didSeed = false
+    @State private var seededProtocolId: UUID?
+
+    private let planningSteps: [WalkthroughStep] = [
+        .planningIntro,
+        .planningQueue,
+        .planningSelectProtocol,
+        .planningSelectSlot,
+    ]
+
+    init() {
+        let policyEngine = CommitmentPolicyEngine()
+        let nonNegotiableEngine = NonNegotiableEngine()
+        let commitmentStore = CommitmentSystemStore(
+            repository: InMemoryCommitmentSystemRepository(),
+            systemEngine: CommitmentSystemEngine(nonNegotiableEngine: nonNegotiableEngine),
+            nonNegotiableEngine: nonNegotiableEngine,
+            policy: policyEngine
+        )
+        let planStore = PlanStore(
+            repository: InMemoryPlanAllocationRepository(),
+            policy: policyEngine
+        )
+        let previewDefaults = UserDefaults(suiteName: "PlanWalkthroughPreview-\(UUID().uuidString)") ?? .standard
+        let walkthroughController = WalkthroughController(userDefaults: previewDefaults)
+
+        _commitmentStore = StateObject(wrappedValue: commitmentStore)
+        _planStore = StateObject(wrappedValue: planStore)
+        _walkthroughController = StateObject(wrappedValue: walkthroughController)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            previewToolbar
+            Divider()
+            NavigationStack {
+                PlanScreen(selectedTab: $selectedTab)
+            }
+        }
+        .environmentObject(commitmentStore)
+        .environmentObject(planStore)
+        .environmentObject(router)
+        .environmentObject(appClock)
+        .environmentObject(walkthroughController)
+        .onAppear {
+            seedPreviewIfNeeded()
+        }
+        .onChange(of: selectedStep) { _, _ in
+            applyPreviewWalkthroughStep()
+        }
+    }
+}
+
+@MainActor
+private extension PlanWalkthroughPreviewHarness {
+    var previewToolbar: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                Picker("Walkthrough Step", selection: $selectedStep) {
+                    ForEach(planningSteps, id: \.self) { step in
+                        Text(stepLabel(step)).tag(step)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Button("Reset Seed") {
+                    didSeed = false
+                    seedPreviewIfNeeded()
+                }
+            }
+
+            Text("Spotlight frames are measured in .global coordinates — no manual tuning needed.")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+    }
+
+    func seedPreviewIfNeeded() {
+        guard didSeed == false else {
+            applyPreviewWalkthroughStep()
+            return
+        }
+        didSeed = true
+
+        commitmentStore.clearAllNonNegotiables()
+        planStore.clearAllAllocations()
+
+        do {
+            let definition = NonNegotiableDefinition(
+                title: "Walkthrough Protocol",
+                frequencyPerWeek: 3,
+                mode: .session,
+                goalId: UUID(),
+                preferredExecutionSlot: .pm,
+                estimatedDurationMinutes: 45,
+                iconSystemName: "bolt.fill"
+            )
+            let protocolId = try commitmentStore.createNonNegotiable(
+                definition: definition,
+                totalLockDays: 21,
+                referenceDate: appClock.now
+            )
+            seededProtocolId = protocolId
+        } catch {
+            seededProtocolId = nil
+        }
+
+        planStore.refresh(
+            system: commitmentStore.system,
+            calendarEvents: [],
+            referenceDate: appClock.now
+        )
+
+        applyPreviewWalkthroughStep()
+    }
+
+    func applyPreviewWalkthroughStep() {
+        selectedTab = .plan
+        walkthroughController.start()
+        walkthroughController.walkthroughProtocolId = seededProtocolId
+        walkthroughController.step = selectedStep
+    }
+
+    func stepLabel(_ step: WalkthroughStep) -> String {
+        switch step {
+        case .planningIntro:
+            return "planningIntro"
+        case .planningQueue:
+            return "planningQueue"
+        case .planningSelectProtocol:
+            return "planningSelectProtocol"
+        case .planningSelectSlot:
+            return "planningSelectSlot"
+        default:
+            return "step"
+        }
+    }
+}
+
+struct PlanScreenWalkthrough_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            PlanWalkthroughPreviewHarness()
+                .preferredColorScheme(.dark)
+                .previewDisplayName("Planning Walkthrough • Dark")
+
+            PlanWalkthroughPreviewHarness()
+                .preferredColorScheme(.light)
+                .previewDisplayName("Planning Walkthrough • Light")
+        }
+    }
+}
+#endif

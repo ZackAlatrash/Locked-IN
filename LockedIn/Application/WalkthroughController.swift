@@ -10,8 +10,14 @@ enum WalkthroughStep: CaseIterable {
     case createName
     case createProtocol
     case planningIntro
-    case runRegulator
-    case applyPlan
+    case planningQueue
+    case planningSelectProtocol
+    case planningSelectSlot
+    case planningPlacedConfirmation
+    case planningRegulatorIntro
+    case planningRunRegulator
+    case planningApplyDraft
+    case planningCompleted
     case checkInIntro
     case completeProtocol
     case finished
@@ -27,8 +33,14 @@ private extension WalkthroughStep {
         .createName,
         .createProtocol,
         .planningIntro,
-        .runRegulator,
-        .applyPlan,
+        .planningQueue,
+        .planningSelectProtocol,
+        .planningSelectSlot,
+        .planningPlacedConfirmation,
+        .planningRegulatorIntro,
+        .planningRunRegulator,
+        .planningApplyDraft,
+        .planningCompleted,
         .checkInIntro,
         .completeProtocol,
         .finished,
@@ -110,15 +122,15 @@ final class WalkthroughController: ObservableObject {
 
     @discardableResult
     func handleDraftGenerated() -> Bool {
-        guard isActive, step == .runRegulator else { return false }
-        step = .applyPlan
+        guard isActive, step == .planningRunRegulator else { return false }
+        step = .planningApplyDraft
         return true
     }
 
     @discardableResult
     func handleDraftApplied() -> Bool {
-        guard isActive, step == .applyPlan else { return false }
-        step = .checkInIntro
+        guard isActive, step == .planningApplyDraft else { return false }
+        step = .planningCompleted
         return true
     }
 

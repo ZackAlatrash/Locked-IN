@@ -65,11 +65,12 @@ final class CommitmentSystemStore: ObservableObject {
         }
     }
 
+    @discardableResult
     func createNonNegotiable(
         definition: NonNegotiableDefinition,
         totalLockDays: Int,
         referenceDate: Date = Date()
-    ) throws {
+    ) throws -> UUID {
         let decision = policy.canCreate(definition: definition, in: system, at: referenceDate)
         guard decision.allowed else {
             throw CommitmentStoreError.policyDenied(decision.reason ?? .generic(message: "Create action blocked."))
@@ -84,12 +85,12 @@ final class CommitmentSystemStore: ObservableObject {
                 totalLockDays: totalLockDays
             )
             try systemEngine.add(nonNegotiable, to: &updated)
+            system = updated
+            persistSystem()
+            return nonNegotiable.id
         } catch {
             throw CommitmentStoreError.domain(error)
         }
-
-        system = updated
-        persistSystem()
     }
 
     @discardableResult

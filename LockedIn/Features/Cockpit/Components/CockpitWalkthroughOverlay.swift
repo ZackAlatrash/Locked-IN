@@ -7,11 +7,13 @@ struct CockpitWalkthroughOverlay: View {
     let onSkip: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var displayedHighlightFrame: SpotlightFrame?
+    @State private var spotlightPulse = false
 
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .bottom) {
-                if let frame = highlightFrame(in: proxy.size) {
+                if let frame = displayedHighlightFrame {
                     spotlightDimLayer(highlightFrame: frame, in: proxy.size)
 
                     spotlightOutline(highlightFrame: frame)
@@ -26,11 +28,89 @@ struct CockpitWalkthroughOverlay: View {
             }
             .animation(reduceMotion ? .none : Theme.Animation.context, value: step)
             .accessibilityAddTraits(.isModal)
+            .onAppear {
+                updateDisplayedFrame(for: step, size: proxy.size, animated: false)
+                if reduceMotion == false {
+                    spotlightPulse = true
+                }
+            }
+            .onChange(of: step) { _, newStep in
+                updateDisplayedFrame(for: newStep, size: proxy.size, animated: true)
+            }
+            .onChange(of: proxy.size) { _, _ in
+                updateDisplayedFrame(for: step, size: proxy.size, animated: false)
+            }
         }
     }
 }
 
 private extension CockpitWalkthroughOverlay {
+    struct SpotlightHoleShape: Shape {
+        var centerX: CGFloat
+        var centerY: CGFloat
+        var width: CGFloat
+        var height: CGFloat
+        var cornerRadius: CGFloat
+
+        var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, AnimatablePair<CGFloat, CGFloat>> {
+            get { AnimatablePair(AnimatablePair(centerX, centerY), AnimatablePair(width, height)) }
+            set {
+                centerX = newValue.first.first
+                centerY = newValue.first.second
+                width = newValue.second.first
+                height = newValue.second.second
+            }
+        }
+
+        func path(in rect: CGRect) -> Path {
+            let spotlightRect = CGRect(
+                x: centerX - width / 2,
+                y: centerY - height / 2,
+                width: width,
+                height: height
+            )
+            return RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .path(in: spotlightRect)
+        }
+    }
+
+    struct SpotlightCutoutShape: Shape {
+        var canvasSize: CGSize
+        var centerX: CGFloat
+        var centerY: CGFloat
+        var width: CGFloat
+        var height: CGFloat
+        var cornerRadius: CGFloat
+
+        var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, AnimatablePair<CGFloat, CGFloat>> {
+            get { AnimatablePair(AnimatablePair(centerX, centerY), AnimatablePair(width, height)) }
+            set {
+                centerX = newValue.first.first
+                centerY = newValue.first.second
+                width = newValue.second.first
+                height = newValue.second.second
+            }
+        }
+
+        func path(in rect: CGRect) -> Path {
+            let outer = CGRect(origin: .zero, size: canvasSize)
+            let spotlightRect = CGRect(
+                x: centerX - width / 2,
+                y: centerY - height / 2,
+                width: width,
+                height: height
+            )
+
+            var path = Path()
+            path.addRect(outer)
+            path.addPath(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .path(in: spotlightRect)
+            )
+            return path
+        }
+    }
+
     struct SpotlightConfig {
         let centerXRatio: CGFloat
         let centerYRatio: CGFloat
@@ -52,7 +132,7 @@ private extension CockpitWalkthroughOverlay {
         }
     }
 
-    struct SpotlightFrame {
+    struct SpotlightFrame: Equatable {
         let center: CGPoint
         let width: CGFloat
         let height: CGFloat
@@ -129,6 +209,20 @@ private extension CockpitWalkthroughOverlay {
             minHeight: 56,
             maxHeight: 96,
             cornerRadius: 24
+        )
+    }
+
+    var checkInSpotlightConfig: SpotlightConfig {
+        SpotlightConfig(
+            centerXRatio: 0.50,
+            centerYRatio: 0.51,
+            widthRatio: 0.96,
+            minWidth: 250,
+            maxWidth: 900,
+            heightRatio: 0.17,
+            minHeight: 120,
+            maxHeight: 220,
+            cornerRadius: 18
         )
     }
 
@@ -214,6 +308,12 @@ private extension CockpitWalkthroughOverlay {
                 message: "Tap Add Protocol to create your first commitment.",
                 continueTitle: nil
             )
+        case .checkInIntro:
+            return OverlayContent(
+                title: "Check In",
+                message: "This is your protocol. From here, you mark it as done. Complete it now.",
+                continueTitle: nil
+            )
         default:
             return OverlayContent(
                 title: "Walkthrough",
@@ -223,7 +323,19 @@ private extension CockpitWalkthroughOverlay {
         }
     }
 
-    func highlightFrame(in size: CGSize) -> SpotlightFrame? {
+    func updateDisplayedFrame(for step: WalkthroughStep, size: CGSize, animated: Bool) {
+        let targetFrame = highlightFrame(for: step, in: size)
+        guard animated, reduceMotion == false else {
+            displayedHighlightFrame = targetFrame
+            return
+        }
+
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.86, blendDuration: 0.16)) {
+            displayedHighlightFrame = targetFrame
+        }
+    }
+
+    func highlightFrame(for step: WalkthroughStep, in size: CGSize) -> SpotlightFrame? {
         switch step {
         case .cockpitIntro:
             return nil
@@ -235,6 +347,8 @@ private extension CockpitWalkthroughOverlay {
             return componentsSpotlightConfig.frame(in: size)
         case .createName:
             return addProtocolSpotlightConfig.frame(in: size)
+        case .checkInIntro:
+            return checkInSpotlightConfig.frame(in: size)
         default:
             return nil
         }
@@ -265,13 +379,14 @@ private extension CockpitWalkthroughOverlay {
     }
 
     func spotlightDimLayer(highlightFrame: SpotlightFrame, in size: CGSize) -> some View {
-        Path { path in
-            path.addRect(CGRect(origin: .zero, size: size))
-            path.addPath(
-                RoundedRectangle(cornerRadius: highlightFrame.cornerRadius, style: .continuous)
-                    .path(in: highlightFrame.rect)
-            )
-        }
+        SpotlightCutoutShape(
+            canvasSize: size,
+            centerX: highlightFrame.center.x,
+            centerY: highlightFrame.center.y,
+            width: highlightFrame.width,
+            height: highlightFrame.height,
+            cornerRadius: highlightFrame.cornerRadius
+        )
         .fill(
             Color.black.opacity(style == .dark ? 0.50 : 0.36),
             style: FillStyle(eoFill: true)
@@ -280,8 +395,28 @@ private extension CockpitWalkthroughOverlay {
     }
 
     func spotlightOutline(highlightFrame: SpotlightFrame) -> some View {
-        RoundedRectangle(cornerRadius: highlightFrame.cornerRadius, style: .continuous)
-            .path(in: highlightFrame.rect)
-            .stroke(highlightColor.opacity(0.95), lineWidth: 2)
+        let spotlightShape = SpotlightHoleShape(
+            centerX: highlightFrame.center.x,
+            centerY: highlightFrame.center.y,
+            width: highlightFrame.width,
+            height: highlightFrame.height,
+            cornerRadius: highlightFrame.cornerRadius
+        )
+
+        return ZStack {
+            spotlightShape
+                .stroke(highlightColor.opacity(0.95), lineWidth: 2)
+
+            spotlightShape
+                .stroke(
+                    highlightColor.opacity(spotlightPulse ? 0.34 : 0.20),
+                    lineWidth: spotlightPulse ? 6 : 4
+                )
+                .blur(radius: 2.5)
+                .animation(
+                    reduceMotion ? .none : .easeInOut(duration: 1.15).repeatForever(autoreverses: true),
+                    value: spotlightPulse
+                )
+        }
     }
 }

@@ -70,33 +70,44 @@ struct CreateNonNegotiableView: View {
     @State private var ritualPhase: LockInRitualPhase?
     @State private var ritualLockClosed = false
     @State private var ritualTask: Task<Void, Never>?
+    @State private var createdProtocolId: UUID?
     @FocusState private var isTitleFieldFocused: Bool
     private let accentColorOverride: Color?
+    private let isWalkthroughCreationLocked: Bool
 
-    let onSuccess: (() -> Void)?
+    let onSuccess: ((UUID) -> Void)?
     let onBack: (() -> Void)?
+    let onExitWalkthrough: (() -> Void)?
 
     init(
         accentColorOverride: Color? = nil,
-        onSuccess: (() -> Void)? = nil,
-        onBack: (() -> Void)? = nil
+        onSuccess: ((UUID) -> Void)? = nil,
+        onBack: (() -> Void)? = nil,
+        isWalkthroughCreationLocked: Bool = false,
+        onExitWalkthrough: (() -> Void)? = nil
     ) {
         _viewModel = StateObject(wrappedValue: CreateNonNegotiableViewModel())
         self.accentColorOverride = accentColorOverride
         self.onSuccess = onSuccess
         self.onBack = onBack
+        self.isWalkthroughCreationLocked = isWalkthroughCreationLocked
+        self.onExitWalkthrough = onExitWalkthrough
     }
 
     init(
         viewModel: CreateNonNegotiableViewModel,
         accentColorOverride: Color? = nil,
-        onSuccess: (() -> Void)? = nil,
-        onBack: (() -> Void)? = nil
+        onSuccess: ((UUID) -> Void)? = nil,
+        onBack: (() -> Void)? = nil,
+        isWalkthroughCreationLocked: Bool = false,
+        onExitWalkthrough: (() -> Void)? = nil
     ) {
         _viewModel = StateObject(wrappedValue: viewModel)
         self.accentColorOverride = accentColorOverride
         self.onSuccess = onSuccess
         self.onBack = onBack
+        self.isWalkthroughCreationLocked = isWalkthroughCreationLocked
+        self.onExitWalkthrough = onExitWalkthrough
     }
 
     var body: some View {
@@ -104,6 +115,9 @@ struct CreateNonNegotiableView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: Theme.Spacing.md) {
                     titleContext
+                    if isWalkthroughCreationLocked {
+                        walkthroughCreationWarningCard
+                    }
                     protocolDetailsCard
                     frequencyCard
                     schedulingProfileCard
@@ -144,22 +158,37 @@ struct CreateNonNegotiableView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    Haptics.selection()
-                    if let onBack {
-                        onBack()
-                    } else {
-                        dismiss()
+            if isWalkthroughCreationLocked == false {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        Haptics.selection()
+                        if let onBack {
+                            onBack()
+                        } else {
+                            dismiss()
+                        }
+                    } label: {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(headingColor.opacity(0.78))
+                            .frame(width: 34, height: 34)
+                            .background(Circle().fill(softFillColor))
                     }
-                } label: {
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(headingColor.opacity(0.78))
-                        .frame(width: 34, height: 34)
-                        .background(Circle().fill(softFillColor))
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+            }
+
+            if isWalkthroughCreationLocked {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Exit walkthrough") {
+                        Haptics.selection()
+                        onExitWalkthrough?()
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(subtitleColor.opacity(0.92))
+                    .disabled(viewModel.isSubmitting || ritualPhase != nil)
+                    .accessibilityHint("Ends walkthrough and closes protocol creation")
+                }
             }
         }
         .sheet(isPresented: $showingIconPicker) {
@@ -219,9 +248,11 @@ struct CreateNonNegotiableView: View {
             ritualTask = nil
             ritualPhase = nil
             ritualLockClosed = false
+            createdProtocolId = nil
         }
         .animation(.easeInOut(duration: 0.22), value: validationToast?.id)
         .animation(.easeInOut(duration: 0.22), value: ritualPhase != nil)
+        .interactiveDismissDisabled(viewModel.isSubmitting || isWalkthroughCreationLocked)
     }
 }
 
@@ -430,6 +461,35 @@ private extension CreateNonNegotiableView {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 2)
+    }
+
+    var walkthroughCreationWarningCard: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 7) {
+                Image(systemName: "exclamationmark.shield.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(cockpitAccentColor)
+                Text("WALKTHROUGH")
+                    .font(.system(size: 11, weight: .black))
+                    .tracking(1.1)
+                    .foregroundColor(subtitleColor)
+            }
+
+            Text("This becomes your first real protocol. Once locked in, it can't be edited. Choose carefully.")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(headingColor.opacity(0.92))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
+        .background(softFillColor)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(cockpitAccentColor.opacity(0.28), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 
     var protocolDetailsCard: some View {
@@ -751,7 +811,8 @@ private extension CreateNonNegotiableView {
 
     func performCreateSubmission() {
         Haptics.selection()
-        viewModel.submit(using: store, referenceDate: appClock.now) {
+        viewModel.submit(using: store, referenceDate: appClock.now) { createdId in
+            createdProtocolId = createdId
             startLockInRitualSequence()
         }
         if let toastMessage = validationToastMessage(from: viewModel.submissionErrorMessage) {
@@ -793,7 +854,9 @@ private extension CreateNonNegotiableView {
             try? await Task.sleep(nanoseconds: 1_100_000_000)
             guard Task.isCancelled == false else { return }
 
-            onSuccess?()
+            if let createdProtocolId {
+                onSuccess?(createdProtocolId)
+            }
             dismiss()
         }
     }

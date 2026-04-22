@@ -175,7 +175,7 @@ final class CreateNonNegotiableViewModel: ObservableObject {
     func submit(
         using store: CommitmentSystemStore,
         referenceDate: Date = Date(),
-        onSuccess: () -> Void
+        onSuccess: (UUID) -> Void
     ) {
         guard validateForm() else { return }
         guard let effectiveDuration = resolvedDurationMinutes() else { return }
@@ -195,13 +195,13 @@ final class CreateNonNegotiableViewModel: ObservableObject {
                 iconSystemName: selectedIconSystemName
             )
 
-            try store.createNonNegotiable(
+            let createdProtocolId = try store.createNonNegotiable(
                 definition: definition,
                 totalLockDays: totalLockDays,
                 referenceDate: referenceDate
             )
             clearErrors()
-            onSuccess()
+            onSuccess(createdProtocolId)
         } catch {
             let mapped = map(error: error)
             showValidationError = true

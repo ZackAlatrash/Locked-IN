@@ -113,6 +113,7 @@
 		A10000000000000000000050 /* RecoveryProtocolSelectionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000050 /* RecoveryProtocolSelectionCard.swift */; };
 		A10000000000000000000051 /* WalkthroughController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000051 /* WalkthroughController.swift */; };
 		A10000000000000000000052 /* CockpitWalkthroughOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000052 /* CockpitWalkthroughOverlay.swift */; };
+		A10000000000000000000053 /* PlanWalkthroughOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000053 /* PlanWalkthroughOverlay.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -225,6 +226,7 @@
 		A20000000000000000000050 /* RecoveryProtocolSelectionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecoveryProtocolSelectionCard.swift; path = LockedIn/Features/Recovery/Components/RecoveryProtocolSelectionCard.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000051 /* WalkthroughController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WalkthroughController.swift; path = LockedIn/Application/WalkthroughController.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000052 /* CockpitWalkthroughOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CockpitWalkthroughOverlay.swift; path = LockedIn/Features/Cockpit/Components/CockpitWalkthroughOverlay.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000053 /* PlanWalkthroughOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanWalkthroughOverlay.swift; path = LockedIn/Features/Plan/Components/PlanWalkthroughOverlay.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -285,6 +287,7 @@
 				A2000000000000000000002E /* PlanModels.swift */,
 				A2000000000000000000002F /* PlanViewModel.swift */,
 				A20000000000000000000030 /* PlanScreen.swift */,
+				A20000000000000000000053 /* PlanWalkthroughOverlay.swift */,
 				A20000000000000000000031 /* PlanRegulation.swift */,
 				A20000000000000000000032 /* PlanRegulatorEngine.swift */,
 				A20000000000000000000033 /* PlanRegulatorSimulation.swift */,
@@ -619,6 +622,7 @@
 				A1000000000000000000002E /* PlanModels.swift in Sources */,
 				A1000000000000000000002F /* PlanViewModel.swift in Sources */,
 				A10000000000000000000030 /* PlanScreen.swift in Sources */,
+				A10000000000000000000053 /* PlanWalkthroughOverlay.swift in Sources */,
 				A10000000000000000000031 /* PlanRegulation.swift in Sources */,
 				A10000000000000000000032 /* PlanRegulatorEngine.swift in Sources */,
 				A10000000000000000000033 /* PlanRegulatorSimulation.swift in Sources */,
