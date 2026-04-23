@@ -43,6 +43,8 @@ struct CockpitView: View {
 
     @State private var actionErrorMessage: String?
     @State private var completionToastMessage: String?
+    @State private var cockpitWalkthroughFrames: [CockpitWalkthroughFrameID: CGRect] = [:]
+    @State private var showSkipWalkthroughConfirm = false
 
     init(
         selectedTab: Binding<MainTab> = .constant(.cockpit),
@@ -55,6 +57,15 @@ struct CockpitView: View {
     var body: some View {
         ZStack {
             modernCockpitContent
+                .onPreferenceChange(CockpitWalkthroughFramePreferenceKey.self) { frames in
+                    cockpitWalkthroughFrames = frames
+                }
+        }
+        .alert("Skip Walkthrough?", isPresented: $showSkipWalkthroughConfirm) {
+            Button("Skip", role: .destructive) { walkthroughController.skip() }
+            Button("Continue", role: .cancel) {}
+        } message: {
+            Text("You can restart the walkthrough anytime from Settings.")
         }
         .navigationTitle("Cockpit")
         .navigationBarTitleDisplayMode(.large)
@@ -169,11 +180,12 @@ struct CockpitView: View {
                 CockpitWalkthroughOverlay(
                     step: step,
                     style: cockpitStyle,
+                    highlightFrame: cockpitHighlightFrame(for: step),
                     onContinue: {
                         advanceCockpitWalkthrough(from: step)
                     },
                     onSkip: {
-                        walkthroughController.skip()
+                        showSkipWalkthroughConfirm = true
                     }
                 )
                 .transition(.opacity.combined(with: .scale(scale: 0.98)))
@@ -578,6 +590,23 @@ private extension CockpitView {
         return "\(protocolTitle) wasn't scheduled today. \(releasedDaySlotLabel(day: releasedDayStart, slot: slot)) was removed."
     }
 
+    func cockpitHighlightFrame(for step: WalkthroughStep) -> CGRect? {
+        switch step {
+        case .cockpitReliability:
+            return cockpitWalkthroughFrames[.ringModule]?.expandedBy(dx: 16, dy: 12)
+        case .cockpitStreak:
+            return cockpitWalkthroughFrames[.weeklyStrip]?.expandedBy(dx: 10, dy: 8)
+        case .cockpitProtocols:
+            return cockpitWalkthroughFrames[.protocolsSection]?.expandedBy(dx: 8, dy: 8)
+        case .createName:
+            return cockpitWalkthroughFrames[.addProtocolButton]?.expandedBy(dx: 14, dy: 10)
+        case .checkInIntro:
+            return cockpitWalkthroughFrames[.walkthroughProtocolRow]?.expandedBy(dx: 10, dy: 8)
+        default:
+            return nil
+        }
+    }
+
     func advanceCockpitWalkthrough(from step: WalkthroughStep) {
         switch step {
         case .cockpitIntro:
@@ -862,6 +891,45 @@ private struct CockpitNonNegotiableDetailsSheet: View {
             .background(cardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
+    }
+}
+
+// MARK: - Walkthrough frame infrastructure
+
+enum CockpitWalkthroughFrameID: Hashable {
+    case ringModule
+    case weeklyStrip
+    case protocolsSection
+    case addProtocolButton
+    case walkthroughProtocolRow
+}
+
+struct CockpitWalkthroughFramePreferenceKey: PreferenceKey {
+    static var defaultValue: [CockpitWalkthroughFrameID: CGRect] = [:]
+    static func reduce(
+        value: inout [CockpitWalkthroughFrameID: CGRect],
+        nextValue: () -> [CockpitWalkthroughFrameID: CGRect]
+    ) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    }
+}
+
+extension View {
+    func cockpitWalkthroughFrame(_ id: CockpitWalkthroughFrameID) -> some View {
+        background(
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: CockpitWalkthroughFramePreferenceKey.self,
+                    value: [id: proxy.frame(in: .global)]
+                )
+            }
+        )
+    }
+}
+
+private extension CGRect {
+    func expandedBy(dx: CGFloat, dy: CGFloat) -> CGRect {
+        insetBy(dx: -dx, dy: -dy)
     }
 }
 

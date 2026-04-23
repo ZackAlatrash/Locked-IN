@@ -32,6 +32,7 @@ struct PlanScreen: View {
     @State private var toast: PlanToast?
     @State private var pendingUndo: PlanUndoAction?
     @State private var walkthroughFrames: [PlanWalkthroughFrameID: CGRect] = [:]
+    @State private var showSkipWalkthroughConfirm = false
     @State private var revealedDayIds: Set<Date> = []
     @State private var didRunColumnEntrance = false
     @State private var recentlyLockedAllocationKeys: Set<String> = []
@@ -86,6 +87,12 @@ struct PlanScreen: View {
                 .padding(.top, Theme.Spacing.navLargeTitleContentTopInset)
                 .padding(.bottom, 36)
             }
+        }
+        .alert("Skip Walkthrough?", isPresented: $showSkipWalkthroughConfirm) {
+            Button("Skip", role: .destructive) { walkthroughController.skip() }
+            Button("Continue", role: .cancel) {}
+        } message: {
+            Text("You can restart the walkthrough anytime from Settings.")
         }
         .navigationTitle("Plan")
         .navigationBarTitleDisplayMode(.large)
@@ -192,6 +199,7 @@ struct PlanScreen: View {
         .onPreferenceChange(PlanWalkthroughFramePreferenceKey.self) { frames in
             walkthroughFrames = frames
         }
+        .toolbar(activePlanningWalkthroughStep != nil ? .hidden : .automatic, for: .tabBar)
         .overlay(alignment: .top) {
             warningBanner
         }
@@ -212,7 +220,7 @@ struct PlanScreen: View {
                         advancePlanningWalkthrough(from: step)
                     },
                     onSkip: {
-                        walkthroughController.skip()
+                        showSkipWalkthroughConfirm = true
                     }
                 )
                 .ignoresSafeArea()
@@ -273,7 +281,9 @@ private extension PlanScreen {
         case .planningRegulatorIntro:
             _ = walkthroughController.advance(to: .planningRunRegulator)
         case .planningCompleted:
-            _ = walkthroughController.advance(to: .checkInIntro)
+            if walkthroughController.advance(to: .logsIntro) {
+                selectedTab = .logs
+            }
         default:
             break
         }

@@ -1,8 +1,8 @@
 import SwiftUI
 
-struct CockpitWalkthroughOverlay: View {
+struct LogsWalkthroughOverlay: View {
     let step: WalkthroughStep
-    let style: CockpitModernStyle
+    let isDarkMode: Bool
     let highlightFrame: CGRect?
     let onContinue: () -> Void
     let onSkip: () -> Void
@@ -19,7 +19,7 @@ struct CockpitWalkthroughOverlay: View {
                     spotlightOutline(highlightFrame: frame)
                         .allowsHitTesting(false)
                 } else {
-                    Color.black.opacity(style == .dark ? 0.50 : 0.36)
+                    Color.black.opacity(isDarkMode ? 0.50 : 0.36)
                         .allowsHitTesting(false)
                 }
 
@@ -42,7 +42,7 @@ struct CockpitWalkthroughOverlay: View {
     }
 }
 
-private extension CockpitWalkthroughOverlay {
+private extension LogsWalkthroughOverlay {
     struct SpotlightHoleShape: Shape {
         var centerX: CGFloat
         var centerY: CGFloat
@@ -111,46 +111,28 @@ private extension CockpitWalkthroughOverlay {
     struct OverlayContent {
         let title: String
         let message: String
-        let continueTitle: String?
+        let continueTitle: String
     }
 
     var overlayContent: OverlayContent {
         switch step {
-        case .cockpitIntro:
+        case .logsIntro:
             return OverlayContent(
-                title: "Cockpit",
-                message: "Your command center. Reliability score, streak, and today's protocols all live here.",
+                title: "Diagnostic Log",
+                message: "This is your permanent record. Every protocol session you complete or miss gets logged here automatically — nothing to do manually.",
                 continueTitle: "Next"
             )
-        case .cockpitReliability:
+        case .logsMatrix:
             return OverlayContent(
-                title: "Reliability Score",
-                message: "This ring tracks how consistently you follow through. It rises when you complete sessions on time and drops when you miss them.",
+                title: "28-Day Integrity Matrix",
+                message: "Each square is a day. Blue = completed, red = violation or miss, yellow = extra-only. Your adherence percentage updates in real time as you log sessions.",
                 continueTitle: "Next"
             )
-        case .cockpitStreak:
+        case .logsHistory:
             return OverlayContent(
-                title: "Weekly Activity",
-                message: "Each circle is a day of the current week. A checkmark means at least one session completed that day. The streak badge shows your consecutive active days.",
-                continueTitle: "Next"
-            )
-        case .cockpitProtocols:
-            return OverlayContent(
-                title: "Today's Protocols",
-                message: "Your active commitments for today. Each one has a completion button — tap it after finishing the real-world work to log the session.",
-                continueTitle: "Next"
-            )
-        case .createName:
-            return OverlayContent(
-                title: "Create Your First Protocol",
-                message: "Tap Add Protocol to set up your first commitment.",
-                continueTitle: nil
-            )
-        case .checkInIntro:
-            return OverlayContent(
-                title: "Complete a Session",
-                message: "Tap the checkmark on your protocol once you finish. This logs it to your record and updates your reliability score.",
-                continueTitle: nil
+                title: "Session History",
+                message: "Every event appears here as a timeline entry with timestamps. Use Filter to drill down by event type, protocol, or date range.",
+                continueTitle: "Done"
             )
         default:
             return OverlayContent(title: "", message: "", continueTitle: "Continue")
@@ -158,15 +140,13 @@ private extension CockpitWalkthroughOverlay {
     }
 
     var calloutCard: some View {
-        let content = overlayContent
-
-        return VStack(alignment: .leading, spacing: 14) {
-            Text(content.title)
+        VStack(alignment: .leading, spacing: 14) {
+            Text(overlayContent.title)
                 .font(.system(size: 18, weight: .black))
                 .foregroundColor(textPrimary)
                 .accessibilityAddTraits(.isHeader)
 
-            Text(content.message)
+            Text(overlayContent.message)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -180,19 +160,15 @@ private extension CockpitWalkthroughOverlay {
                 }
                 .buttonStyle(.bordered)
                 .tint(buttonSecondaryTint)
-                .accessibilityLabel("Skip walkthrough")
 
-                if let continueTitle = content.continueTitle {
-                    Button(action: onContinue) {
-                        Text(continueTitle)
-                            .font(.system(size: 14, weight: .black))
-                            .frame(maxWidth: .infinity)
-                            .frame(minHeight: 44)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(highlightColor)
-                    .accessibilityLabel(continueTitle)
+                Button(action: onContinue) {
+                    Text(overlayContent.continueTitle)
+                        .font(.system(size: 14, weight: .black))
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 44)
                 }
+                .buttonStyle(.borderedProminent)
+                .tint(highlightColor)
             }
         }
         .padding(18)
@@ -207,28 +183,28 @@ private extension CockpitWalkthroughOverlay {
         .shadow(color: Color.black.opacity(0.32), radius: 20, x: 0, y: 10)
     }
 
-    var highlightColor: Color {
-        style == .dark ? Color(hex: "#22D3EE") : Color(hex: "#0369A1")
-    }
-
     var cardFill: Color {
-        style == .dark ? Color(hex: "#0F172A").opacity(0.95) : Color.white.opacity(0.95)
+        isDarkMode ? Color(hex: "#0F172A").opacity(0.95) : Color.white.opacity(0.95)
     }
 
     var cardStroke: Color {
-        style == .dark ? Color.white.opacity(0.20) : Color.black.opacity(0.12)
+        isDarkMode ? Color.white.opacity(0.20) : Color.black.opacity(0.12)
     }
 
     var textPrimary: Color {
-        style == .dark ? .white : Color(hex: "#0F172A")
+        isDarkMode ? .white : Color(hex: "#0F172A")
     }
 
     var textSecondary: Color {
-        style == .dark ? Color.white.opacity(0.82) : Color(hex: "#334155")
+        isDarkMode ? Color.white.opacity(0.82) : Color(hex: "#334155")
     }
 
     var buttonSecondaryTint: Color {
-        style == .dark ? Color.white.opacity(0.30) : Color.black.opacity(0.18)
+        isDarkMode ? Color.white.opacity(0.30) : Color.black.opacity(0.18)
+    }
+
+    var highlightColor: Color {
+        isDarkMode ? Color(hex: "#22D3EE") : Color(hex: "#0369A1")
     }
 
     func updateDisplayedFrame(to frame: CGRect?, animated: Bool) {
@@ -252,7 +228,7 @@ private extension CockpitWalkthroughOverlay {
             cornerRadius: metrics.cornerRadius
         )
         .fill(
-            Color.black.opacity(style == .dark ? 0.50 : 0.36),
+            Color.black.opacity(isDarkMode ? 0.50 : 0.36),
             style: FillStyle(eoFill: true)
         )
         .allowsHitTesting(false)
@@ -267,7 +243,6 @@ private extension CockpitWalkthroughOverlay {
             height: metrics.height,
             cornerRadius: metrics.cornerRadius
         )
-
         return ZStack {
             shape
                 .stroke(highlightColor.opacity(0.95), lineWidth: 2)
@@ -290,7 +265,7 @@ private extension CockpitWalkthroughOverlay {
             center: CGPoint(x: frame.midX, y: frame.midY),
             width: max(frame.width, 44),
             height: max(frame.height, 44),
-            cornerRadius: min(24, max(12, min(frame.width, frame.height) * 0.14))
+            cornerRadius: min(26, max(10, min(frame.width, frame.height) * 0.12))
         )
     }
 }

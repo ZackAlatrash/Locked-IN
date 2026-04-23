@@ -114,6 +114,7 @@
 		A10000000000000000000051 /* WalkthroughController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000051 /* WalkthroughController.swift */; };
 		A10000000000000000000052 /* CockpitWalkthroughOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000052 /* CockpitWalkthroughOverlay.swift */; };
 		A10000000000000000000053 /* PlanWalkthroughOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000053 /* PlanWalkthroughOverlay.swift */; };
+		A10000000000000000000054 /* LogsWalkthroughOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000054 /* LogsWalkthroughOverlay.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -227,6 +228,7 @@
 		A20000000000000000000051 /* WalkthroughController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WalkthroughController.swift; path = LockedIn/Application/WalkthroughController.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000052 /* CockpitWalkthroughOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CockpitWalkthroughOverlay.swift; path = LockedIn/Features/Cockpit/Components/CockpitWalkthroughOverlay.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000053 /* PlanWalkthroughOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanWalkthroughOverlay.swift; path = LockedIn/Features/Plan/Components/PlanWalkthroughOverlay.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000054 /* LogsWalkthroughOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LogsWalkthroughOverlay.swift; path = LockedIn/Features/Cockpit/Components/LogsWalkthroughOverlay.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -258,6 +260,7 @@
 				A2000000000000000000000A /* CockpitNonNegotiableCard.swift */,
 				A2000000000000000000000B /* CockpitKpiCard.swift */,
 				A20000000000000000000052 /* CockpitWalkthroughOverlay.swift */,
+				A20000000000000000000054 /* LogsWalkthroughOverlay.swift */,
 				A2000000000000000000000C /* FitnessLiquidGlassNavDemoView.swift */,
 				A2000000000000000000000D /* CockpitModernView.swift */,
 				A2000000000000000000000E /* LiquidGlassNavDemos.swift */,
@@ -582,6 +585,7 @@
 				A1000000000000000000000A /* CockpitNonNegotiableCard.swift in Sources */,
 				A1000000000000000000000B /* CockpitKpiCard.swift in Sources */,
 				A10000000000000000000052 /* CockpitWalkthroughOverlay.swift in Sources */,
+				A10000000000000000000054 /* LogsWalkthroughOverlay.swift in Sources */,
 				A1000000000000000000000C /* FitnessLiquidGlassNavDemoView.swift in Sources */,
 				A1000000000000000000000D /* CockpitModernView.swift in Sources */,
 				A1000000000000000000000E /* LiquidGlassNavDemos.swift in Sources */,

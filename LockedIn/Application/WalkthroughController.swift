@@ -18,6 +18,9 @@ enum WalkthroughStep: CaseIterable {
     case planningRunRegulator
     case planningApplyDraft
     case planningCompleted
+    case logsIntro
+    case logsMatrix
+    case logsHistory
     case checkInIntro
     case completeProtocol
     case finished
@@ -41,6 +44,9 @@ private extension WalkthroughStep {
         .planningRunRegulator,
         .planningApplyDraft,
         .planningCompleted,
+        .logsIntro,
+        .logsMatrix,
+        .logsHistory,
         .checkInIntro,
         .completeProtocol,
         .finished,

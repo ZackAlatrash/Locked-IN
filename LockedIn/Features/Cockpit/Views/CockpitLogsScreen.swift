@@ -4,6 +4,7 @@ struct CockpitLogsScreen: View {
     @Binding var selectedTab: MainTab
     @EnvironmentObject private var store: CommitmentSystemStore
     @EnvironmentObject private var appClock: AppClock
+    @EnvironmentObject private var walkthroughController: WalkthroughController
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("phase1MotionSessionID") private var motionSessionID = ""
@@ -18,6 +19,8 @@ struct CockpitLogsScreen: View {
     @State private var revealedHistoryCount = 0
     @State private var showAllHistory = false
     @State private var showFiltersSheet = false
+    @State private var walkthroughFrames: [LogsWalkthroughFrameID: CGRect] = [:]
+    @State private var showSkipWalkthroughConfirm = false
     @State private var selectedEventTypes: Set<LogFilterEventType> = []
     @State private var selectedTimeRange: LogTimeRange = .allTime
     @State private var customStartDate = DateRules.isoCalendar.date(byAdding: .day, value: -6, to: Date()) ?? Date()
@@ -48,23 +51,54 @@ struct CockpitLogsScreen: View {
         ZStack {
             pageBackground
 
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    header
-                    integrityMatrixCard
-                        .opacity(showIntegritySection ? 1 : 0)
-                        .offset(y: showIntegritySection ? 0 : 14)
-                    performanceCards
-                        .opacity(showPerformanceSection ? 1 : 0)
-                        .offset(y: showPerformanceSection ? 0 : 14)
-                    sessionHistory
-                        .opacity(showHistorySection ? 1 : 0)
-                        .offset(y: showHistorySection ? 0 : 14)
+            ScrollViewReader { scrollProxy in
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        header
+                            .id("logsTop")
+                        integrityMatrixCard
+                            .logsWalkthroughFrame(.matrixCard)
+                            .opacity(showIntegritySection ? 1 : 0)
+                            .offset(y: showIntegritySection ? 0 : 14)
+                        performanceCards
+                            .opacity(showPerformanceSection ? 1 : 0)
+                            .offset(y: showPerformanceSection ? 0 : 14)
+                        sessionHistory
+                            .logsWalkthroughFrame(.historySection)
+                            .id("sessionHistoryAnchor")
+                            .opacity(showHistorySection ? 1 : 0)
+                            .offset(y: showHistorySection ? 0 : 14)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, Theme.Spacing.navLargeTitleContentTopInset)
+                    .padding(.bottom, walkthroughController.step == .logsHistory ? 420 : 36)
+                    .animation(.easeInOut(duration: 0.4), value: walkthroughController.step == .logsHistory)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, Theme.Spacing.navLargeTitleContentTopInset)
-                .padding(.bottom, 36)
+                .onChange(of: walkthroughController.step) { _, newStep in
+                    if newStep == .logsHistory {
+                        withAnimation(.easeInOut(duration: 0.45)) {
+                            scrollProxy.scrollTo("sessionHistoryAnchor", anchor: .center)
+                        }
+                    } else if newStep == .logsMatrix || newStep == .logsIntro || !walkthroughController.isActive {
+                        withAnimation(.easeInOut(duration: 0.4)) {
+                            scrollProxy.scrollTo("logsTop", anchor: .top)
+                        }
+                    }
+                }
+                .onChange(of: walkthroughController.isActive) { _, isActive in
+                    if isActive == false {
+                        withAnimation(.easeInOut(duration: 0.4)) {
+                            scrollProxy.scrollTo("logsTop", anchor: .top)
+                        }
+                    }
+                }
             }
+        }
+        .alert("Skip Walkthrough?", isPresented: $showSkipWalkthroughConfirm) {
+            Button("Skip", role: .destructive) { walkthroughController.skip() }
+            Button("Continue", role: .cancel) {}
+        } message: {
+            Text("You can restart the walkthrough anytime from Settings.")
         }
         .navigationTitle("Diagnostic Log")
         .navigationBarTitleDisplayMode(.large)
@@ -91,6 +125,27 @@ struct CockpitLogsScreen: View {
         .sheet(isPresented: $showFiltersSheet) {
             filterSheet
                 .presentationSizing(.fitted)
+        }
+        .onPreferenceChange(LogsWalkthroughFramePreferenceKey.self) { frames in
+            walkthroughFrames = frames
+        }
+        .toolbar(activeLogsWalkthroughStep != nil ? .hidden : .automatic, for: .tabBar)
+        .overlay {
+            if let step = activeLogsWalkthroughStep {
+                LogsWalkthroughOverlay(
+                    step: step,
+                    isDarkMode: isDarkMode,
+                    highlightFrame: logsHighlightFrame(for: step),
+                    onContinue: {
+                        advanceLogsWalkthrough(from: step)
+                    },
+                    onSkip: {
+                        showSkipWalkthroughConfirm = true
+                    }
+                )
+                .ignoresSafeArea()
+                .zIndex(120)
+            }
         }
     }
 }
@@ -819,6 +874,42 @@ private extension CockpitLogsScreen {
         }
     }
 
+    var activeLogsWalkthroughStep: WalkthroughStep? {
+        guard walkthroughController.isActive else { return nil }
+        switch walkthroughController.step {
+        case .logsIntro, .logsMatrix, .logsHistory:
+            return walkthroughController.step
+        default:
+            return nil
+        }
+    }
+
+    func logsHighlightFrame(for step: WalkthroughStep) -> CGRect? {
+        switch step {
+        case .logsMatrix:
+            return walkthroughFrames[.matrixCard]?.expandedBy(dx: 8, dy: 8)
+        case .logsHistory:
+            return walkthroughFrames[.historySection]?.expandedBy(dx: 8, dy: 8)
+        default:
+            return nil
+        }
+    }
+
+    func advanceLogsWalkthrough(from step: WalkthroughStep) {
+        switch step {
+        case .logsIntro:
+            _ = walkthroughController.advance(to: .logsMatrix)
+        case .logsMatrix:
+            _ = walkthroughController.advance(to: .logsHistory)
+        case .logsHistory:
+            if walkthroughController.advance(to: .checkInIntro) {
+                selectedTab = .cockpit
+            }
+        default:
+            break
+        }
+    }
+
     var isDarkMode: Bool { colorScheme == .dark }
     var isRecoveryThemeActive: Bool { store.isSystemStable == false }
 
@@ -1537,4 +1628,41 @@ private enum CockpitLogsDateFormatters {
         formatter.dateFormat = "MMM d"
         return formatter
     }()
+}
+
+// MARK: - Walkthrough frame infrastructure
+
+private enum LogsWalkthroughFrameID: Hashable {
+    case matrixCard
+    case historySection
+}
+
+private struct LogsWalkthroughFramePreferenceKey: PreferenceKey {
+    static var defaultValue: [LogsWalkthroughFrameID: CGRect] = [:]
+
+    static func reduce(
+        value: inout [LogsWalkthroughFrameID: CGRect],
+        nextValue: () -> [LogsWalkthroughFrameID: CGRect]
+    ) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    }
+}
+
+private extension View {
+    func logsWalkthroughFrame(_ id: LogsWalkthroughFrameID) -> some View {
+        background(
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: LogsWalkthroughFramePreferenceKey.self,
+                    value: [id: proxy.frame(in: .global)]
+                )
+            }
+        )
+    }
+}
+
+private extension CGRect {
+    func expandedBy(dx: CGFloat, dy: CGFloat) -> CGRect {
+        insetBy(dx: -dx, dy: -dy)
+    }
 }

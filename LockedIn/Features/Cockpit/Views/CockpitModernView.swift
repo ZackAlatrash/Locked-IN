@@ -220,24 +220,30 @@ struct CockpitModernView: View {
                             embeddedHeader
                         }
 
-                        systemStateBadge
-                            .padding(.top, 8)
+                        VStack(spacing: 0) {
+                            systemStateBadge
+                                .padding(.top, 8)
 
-                        ringModule
-                            .padding(.top, 32)
-                            .padding(.bottom, 10)
-                            .opacity(showReliabilityModule ? 1 : 0)
-                            .offset(y: showReliabilityModule ? 0 : 12)
+                            ringModule
+                                .padding(.top, 32)
+                                .padding(.bottom, 10)
+                                .opacity(showReliabilityModule ? 1 : 0)
+                                .offset(y: showReliabilityModule ? 0 : 12)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .cockpitWalkthroughFrame(.ringModule)
 
                         weeklyStrip
                             .padding(.top, 18)
                             .opacity(showWeeklyStrip ? 1 : 0)
                             .offset(y: showWeeklyStrip ? 0 : 12)
+                            .cockpitWalkthroughFrame(.weeklyStrip)
 
                         activeProtocolsSection
                             .padding(.top, 22)
                             .opacity(showActiveSection ? 1 : 0)
                             .offset(y: showActiveSection ? 0 : 14)
+                            .cockpitWalkthroughFrame(.protocolsSection)
 
                         Spacer(minLength: trailingScrollSpace)
                     }
@@ -508,10 +514,6 @@ private extension CockpitModernView {
 
             checkInInlineCard
 
-            if isCheckInWalkthroughActive, walkthroughCheckInProtocolId != nil {
-                walkthroughCheckInGuidanceCard
-            }
-
             VStack(spacing: 10) {
                 ForEach(Array(displayedCapacityTasks.enumerated()), id: \.element.id) { index, task in
                     protocolRow(task)
@@ -546,32 +548,6 @@ private extension CockpitModernView {
         var adjusted = defaultTasks
         adjusted.append(targetTask)
         return adjusted
-    }
-
-    var walkthroughCheckInGuidanceCard: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "scope")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(primary)
-                .padding(6)
-                .background(Circle().fill(primary.opacity(style == .dark ? 0.24 : 0.16)))
-
-            Text("This is your protocol. From here, you mark it as done. Complete it now.")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(textMain.opacity(0.95))
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(glassCard.opacity(0.9))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(primary.opacity(0.52), lineWidth: 1.2)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .accessibilityElement(children: .combine)
     }
 
     var capacitySummaryCard: some View {
@@ -721,6 +697,7 @@ private extension CockpitModernView {
         }
         .buttonStyle(CockpitPressScaleButtonStyle())
         .accessibilityLabel("Create protocol")
+        .cockpitWalkthroughFrame(.addProtocolButton)
     }
 
     var checkInButton: some View {
@@ -939,6 +916,18 @@ private extension CockpitModernView {
             y: 0
         )
         .opacity(paused ? 0.72 : 1)
+        .background(
+            Group {
+                if isWalkthroughTarget {
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: CockpitWalkthroughFramePreferenceKey.self,
+                            value: [.walkthroughProtocolRow: proxy.frame(in: .global)]
+                        )
+                    }
+                }
+            }
+        )
     }
 
     func runEntranceIfNeeded() {

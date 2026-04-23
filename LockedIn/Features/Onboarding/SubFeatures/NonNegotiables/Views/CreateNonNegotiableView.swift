@@ -71,6 +71,7 @@ struct CreateNonNegotiableView: View {
     @State private var ritualLockClosed = false
     @State private var ritualTask: Task<Void, Never>?
     @State private var createdProtocolId: UUID?
+    @State private var isKeyboardCurrentlyVisible = false
     @FocusState private var isTitleFieldFocused: Bool
     private let accentColorOverride: Color?
     private let isWalkthroughCreationLocked: Bool
@@ -131,7 +132,7 @@ struct CreateNonNegotiableView: View {
 
             bottomCTA
         }
-        .opacity(ritualPhase == nil ? 1 : 0)
+        .allowsHitTesting(ritualPhase == nil)
         .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity, alignment: .top)
         .background(backgroundLayer.ignoresSafeArea())
@@ -149,7 +150,11 @@ struct CreateNonNegotiableView: View {
                 LockInRitualOverlay(
                     phase: ritualPhase,
                     lockClosed: ritualLockClosed,
-                    accentColor: cockpitAccentColor
+                    accentColor: cockpitAccentColor,
+                    protocolName: viewModel.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        ? "New Protocol"
+                        : viewModel.title,
+                    protocolIcon: viewModel.selectedIconSystemName
                 )
                 .transition(.opacity)
                 .zIndex(10)
@@ -252,6 +257,12 @@ struct CreateNonNegotiableView: View {
         }
         .animation(.easeInOut(duration: 0.22), value: validationToast?.id)
         .animation(.easeInOut(duration: 0.22), value: ritualPhase != nil)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            isKeyboardCurrentlyVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in
+            isKeyboardCurrentlyVisible = false
+        }
         .interactiveDismissDisabled(viewModel.isSubmitting || isWalkthroughCreationLocked)
     }
 }
@@ -820,9 +831,34 @@ private extension CreateNonNegotiableView {
         }
     }
 
+    func waitForKeyboardToDismiss() async {
+        guard isKeyboardCurrentlyVisible else { return }
+        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            var done = false
+            var token: NSObjectProtocol?
+            func finish() {
+                guard !done else { return }
+                done = true
+                token.map { NotificationCenter.default.removeObserver($0) }
+                cont.resume()
+            }
+            token = NotificationCenter.default.addObserver(
+                forName: UIResponder.keyboardDidHideNotification,
+                object: nil, queue: .main
+            ) { _ in finish() }
+            // Safety fallback in case the notification never fires
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { finish() }
+        }
+    }
+
     func startLockInRitualSequence() {
+        isTitleFieldFocused = false
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         ritualTask?.cancel()
         ritualTask = Task { @MainActor in
+            await waitForKeyboardToDismiss()
+            guard Task.isCancelled == false else { return }
+
             ritualLockClosed = false
             withAnimation(.easeInOut(duration: 0.24)) {
                 ritualPhase = .preparing
@@ -851,7 +887,7 @@ private extension CreateNonNegotiableView {
             }
             Haptics.success()
 
-            try? await Task.sleep(nanoseconds: 1_100_000_000)
+            try? await Task.sleep(nanoseconds: 1_800_000_000)
             guard Task.isCancelled == false else { return }
 
             if let createdProtocolId {
@@ -1406,68 +1442,205 @@ private struct LockInRitualOverlay: View {
     let phase: LockInRitualPhase
     let lockClosed: Bool
     let accentColor: Color
+    let protocolName: String
+    let protocolIcon: String
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @State private var sealProgress: CGFloat = 0
+    @State private var lockScale: CGFloat = 0.5
+    @State private var lockOpacity: CGFloat = 0
+    @State private var glowOpacity: CGFloat = 0
+    @State private var glowScale: CGFloat = 1.0
+    @State private var warningOpacity: CGFloat = 0
+    @State private var cardScale: CGFloat = 0.88
+    @State private var cardOpacity: CGFloat = 0
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.001)
+            // Blurred + dimmed backdrop — blurs the form behind it
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .ignoresSafeArea()
+            Color.black.opacity(0.28)
                 .ignoresSafeArea()
 
-            VStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(accentColor.opacity(0.16))
-                        .frame(width: 74, height: 74)
-                        .scaleEffect(lockClosed ? 1.02 : 0.96)
+            // Centered popup card
+            VStack(alignment: .center, spacing: 20) {
 
-                    Image(systemName: lockClosed ? "lock.fill" : "lock.open.fill")
-                        .font(.system(size: 28, weight: .black))
-                        .foregroundColor(accentColor)
-                        .scaleEffect(lockClosed ? 1 : 0.92)
+                // ── Protocol identity row ─────────────────────────
+                HStack(spacing: 14) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .fill(accentColor.opacity(0.15))
+                            .frame(width: 46, height: 46)
+                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .stroke(accentColor.opacity(0.28), lineWidth: 1)
+                            .frame(width: 46, height: 46)
+                        Image(systemName: protocolIcon)
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(accentColor)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(phase == .success ? "ACTIVATED" : "ACTIVATING")
+                            .font(.system(size: 10, weight: .heavy, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .tracking(2)
+                            .animation(.none, value: phase)
+                        Text(protocolName)
+                            .font(.system(size: 16, weight: .black))
+                            .foregroundColor(.primary)
+                            .lineLimit(2)
+                    }
+                    Spacer()
                 }
-                .animation(.spring(response: 0.34, dampingFraction: 0.72), value: lockClosed)
 
-                Text(primaryText)
-                    .font(.system(size: 21, weight: .black))
-                    .foregroundColor(.primary)
+                Divider()
 
-                Text(secondaryText)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary.opacity(0.9))
-                    .multilineTextAlignment(.center)
+                // ── Seal animation ────────────────────────────────
+                ZStack {
+                    // Ambient glow pulse on lock close
+                    Circle()
+                        .fill(accentColor.opacity(0.10))
+                        .frame(width: 108, height: 108)
+                        .scaleEffect(glowScale)
+                        .opacity(glowOpacity)
+                        .blur(radius: 6)
+
+                    // Guide ring
+                    Circle()
+                        .stroke(Color.primary.opacity(0.07), lineWidth: 1)
+                        .frame(width: 96, height: 96)
+
+                    // Sealing ring draws itself
+                    Circle()
+                        .trim(from: 0, to: sealProgress)
+                        .stroke(
+                            AngularGradient(
+                                gradient: Gradient(colors: [
+                                    accentColor.opacity(0),
+                                    accentColor.opacity(0.55),
+                                    accentColor
+                                ]),
+                                center: .center,
+                                startAngle: .degrees(-90),
+                                endAngle: .degrees(270)
+                            ),
+                            style: StrokeStyle(lineWidth: 2, lineCap: .round)
+                        )
+                        .frame(width: 96, height: 96)
+                        .rotationEffect(.degrees(-90))
+
+                    // Lock badge
+                    ZStack {
+                        Circle()
+                            .fill(accentColor.opacity(0.16))
+                            .frame(width: 64, height: 64)
+                        Circle()
+                            .stroke(accentColor.opacity(lockClosed ? 0.40 : 0.15), lineWidth: 1)
+                            .frame(width: 64, height: 64)
+                        Image(systemName: lockClosed ? "lock.fill" : "lock.open.fill")
+                            .font(.system(size: 26, weight: .black))
+                            .foregroundColor(accentColor)
+                            .scaleEffect(lockClosed ? 1.0 : 0.86)
+                            .animation(.spring(response: 0.34, dampingFraction: 0.72), value: lockClosed)
+                    }
+                    .scaleEffect(lockScale)
+                    .opacity(lockOpacity)
+                }
+                .frame(width: 108, height: 108)
+
+                // ── Status text ───────────────────────────────────
+                VStack(spacing: 6) {
+                    Text(primaryText)
+                        .font(.system(size: 20, weight: .black))
+                        .foregroundColor(.primary)
+                        .animation(.none, value: phase)
+
+                    Text(secondaryText)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .animation(.none, value: phase)
+
+                    HStack(spacing: 5) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.orange.opacity(0.80))
+                        Text("Cannot be modified or deleted")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.secondary)
+                    }
+                    .opacity(warningOpacity)
+                    .padding(.top, 2)
+                }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 18)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            .padding(22)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(.regularMaterial)
             )
-            .shadow(color: .black.opacity(0.28), radius: 16, x: 0, y: 8)
-            .padding(.horizontal, 26)
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(Color.primary.opacity(0.10), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.22), radius: 28, x: 0, y: 12)
+            .padding(.horizontal, 24)
+            .scaleEffect(cardScale)
+            .opacity(cardOpacity)
         }
         .allowsHitTesting(true)
+        .onAppear {
+            withAnimation(reduceMotion ? .none : .spring(response: 0.46, dampingFraction: 0.80)) {
+                cardScale = 1
+                cardOpacity = 1
+            }
+            withAnimation(reduceMotion ? .none : .spring(response: 0.52, dampingFraction: 0.78).delay(0.10)) {
+                lockScale = 1
+                lockOpacity = 1
+            }
+        }
+        .onChange(of: phase) { _, newPhase in
+            switch newPhase {
+            case .locking:
+                withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.82)) {
+                    sealProgress = 1
+                }
+            case .success:
+                withAnimation(reduceMotion ? .none : .easeOut(duration: 0.35).delay(0.20)) {
+                    warningOpacity = 1
+                }
+            default:
+                break
+            }
+        }
+        .onChange(of: lockClosed) { _, closed in
+            guard closed else { return }
+            withAnimation(reduceMotion ? .none : .easeOut(duration: 0.16)) {
+                glowOpacity = 1
+                glowScale = 1.30
+            }
+            withAnimation(reduceMotion ? .none : .easeIn(duration: 0.50).delay(0.16)) {
+                glowOpacity = 0
+                glowScale = 1.0
+            }
+        }
     }
 
     private var primaryText: String {
         switch phase {
-        case .preparing:
-            return "Locking in"
-        case .locking:
-            return lockClosed ? "Locked" : "Locking in"
-        case .success:
-            return "Locked in"
+        case .preparing: return "Preparing"
+        case .locking:   return "Sealing"
+        case .success:   return "Protocol Sealed"
         }
     }
 
     private var secondaryText: String {
         switch phase {
-        case .preparing:
-            return "Final check before activation."
-        case .locking:
-            return "Applying your commitment."
-        case .success:
-            return "This commitment is now active."
+        case .preparing: return "Finalizing your commitment."
+        case .locking:   return "Applying permanent record."
+        case .success:   return "Your commitment is now active."
         }
     }
 }
