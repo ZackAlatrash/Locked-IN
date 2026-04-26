@@ -17,11 +17,8 @@ final class OnboardingEngine {
     /// Determines if the user can advance from the current step
     func canAdvance(from step: OnboardingStep, data: OnboardingData) -> ValidationResult {
         switch step {
-        case .identityWarning, .failureLoop, .coreDifferentiation, .nonNegotiables, .aiRegulator:
+        case .welcome, .identityWarning, .failureLoop, .coreDifferentiation:
             return .valid
-
-        case .userHistory:
-            return validateUserHistory(data)
 
         case .commitmentAgreement:
             return validateCommitment(data)
@@ -30,14 +27,7 @@ final class OnboardingEngine {
 
     /// Determines if the user can go back from the current step
     func canGoBack(from step: OnboardingStep) -> Bool {
-        step != .identityWarning
-    }
-
-    private func validateUserHistory(_ data: OnboardingData) -> ValidationResult {
-        guard data.selectedUserHistoryOption != nil else {
-            return .invalid(reason: .userHistoryNotSelected)
-        }
-        return .valid
+        step != .welcome
     }
 
     private func validateCommitment(_ data: OnboardingData) -> ValidationResult {
@@ -50,3 +40,4 @@ final class OnboardingEngine {
         return .valid
     }
 }
+

@@ -2,13 +2,9 @@
 //  ProgressIndicator.swift
 //  LockedIn
 //
-//  Reusable segmented progress indicator component
-//  Design sourced from Google Stitch MCP
-//
-//  Stitch CSS:
-//    flex gap-1.5 h-1 w-full
-//    flex-1 rounded-full bg-primary shadow-[0_0_10px_rgba(234,42,51,0.5)]
-//    flex-1 rounded-full bg-white/10
+//  Segmented step progress bar — one capsule pill per onboarding step.
+//  Segment completion animates with the same spring as the screen transition
+//  so both move in perfect sync.
 //
 
 import SwiftUI
@@ -16,75 +12,65 @@ import SwiftUI
 struct ProgressIndicator: View {
     let totalSteps: Int
     let currentStep: Int
-    /// 0 to 1 — animates the NEXT segment filling (loading effect)
-    var animatingProgress: CGFloat = 0
-    
+    var activeColor: Color = Theme.Colors.progressActive
+
     var body: some View {
-        HStack(spacing: 6) { // gap-1.5 = 6px
+        HStack(spacing: 4) {
             ForEach(0..<totalSteps, id: \.self) { index in
-                if index == currentStep && animatingProgress > 0 {
-                    // The segment currently being filled (loading animation)
-                    ProgressSegmentAnimating(progress: animatingProgress)
-                } else {
-                    ProgressSegment(isActive: index < currentStep)
-                }
+                ProgressSegmentView(
+                    isComplete: index < currentStep,
+                    activeColor: activeColor
+                )
             }
         }
-        .frame(height: 4) // h-1 = 4px
+        .frame(height: 5)
     }
 }
 
-// MARK: - Progress Segment (Static)
-private struct ProgressSegment: View {
-    let isActive: Bool
-    
-    var body: some View {
-        RoundedRectangle(cornerRadius: Theme.CornerRadius.full) // rounded-full
-            .fill(isActive ? Theme.Colors.progressActive : Theme.Colors.progressInactive)
-            .frame(height: 4)
-            .shadow(
-                color: isActive ? Theme.Colors.authority.opacity(0.5) : .clear,
-                radius: isActive ? 10 : 0
-            )
-            .animation(.easeInOut(duration: Theme.Animation.defaultDuration), value: isActive)
-    }
-}
+// MARK: - Single Segment
 
-// MARK: - Progress Segment (Animating — loading fill effect)
-private struct ProgressSegmentAnimating: View {
-    let progress: CGFloat // 0 to 1
-    
+private struct ProgressSegmentView: View {
+    let isComplete: Bool
+    let activeColor: Color
+
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                // Inactive background
-                RoundedRectangle(cornerRadius: Theme.CornerRadius.full)
-                    .fill(Theme.Colors.progressInactive)
-                
-                // Active fill (animates width from 0 to full)
-                RoundedRectangle(cornerRadius: Theme.CornerRadius.full)
-                    .fill(Theme.Colors.progressActive)
-                    .frame(width: geo.size.width * progress)
-                    .shadow(
-                        color: Theme.Colors.authority.opacity(0.5),
-                        radius: 10
+        ZStack {
+            // Track
+            Capsule()
+                .fill(Color.white.opacity(0.08))
+
+            // Fill — scales in from leading edge when segment completes
+            if isComplete {
+                Capsule()
+                    .fill(activeColor)
+                    .transition(
+                        .asymmetric(
+                            insertion: .scale(scale: 0, anchor: .leading).combined(with: .opacity),
+                            removal:   .scale(scale: 0, anchor: .trailing).combined(with: .opacity)
+                        )
                     )
+                    // Soft glow under active segments
+                    .shadow(color: activeColor.opacity(0.45), radius: 5, y: 1)
             }
         }
-        .frame(height: 4)
+        .frame(height: 5)
+        // Same spring as the screen transition — they animate in lock-step
+        .animation(.spring(response: 0.3, dampingFraction: 0.92), value: isComplete)
     }
 }
 
 // MARK: - Preview
+
 struct ProgressIndicator_Previews: PreviewProvider {
     static var previews: some View {
         VStack(spacing: Theme.Spacing.xl) {
-            ProgressIndicator(totalSteps: 7, currentStep: 1)
-            ProgressIndicator(totalSteps: 7, currentStep: 3)
-            ProgressIndicator(totalSteps: 7, currentStep: 7)
+            ProgressIndicator(totalSteps: 8, currentStep: 1)
+            ProgressIndicator(totalSteps: 8, currentStep: 3)
+            ProgressIndicator(totalSteps: 8, currentStep: 6)
+            ProgressIndicator(totalSteps: 8, currentStep: 8)
         }
-        .padding()
-        .background(Theme.Colors.backgroundPrimary)
+        .padding(Theme.Spacing.xl)
+        .background(Color(hex: "#020617"))
         .previewLayout(.sizeThatFits)
     }
 }

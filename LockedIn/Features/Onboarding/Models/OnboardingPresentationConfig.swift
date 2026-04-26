@@ -26,9 +26,18 @@ struct OnboardingPresentationConfig {
         let stepLabel = String(format: "Step %02d / %02d", stepNumber, totalSteps)
         
         switch step {
-        case .identityWarning:
+        case .welcome:
             return OnboardingPresentationConfig(
                 showBackButton: false,
+                showSkipButton: false,
+                ctaTitle: "Enter",
+                ctaSubtitle: "",
+                stepLabel: stepLabel
+            )
+
+        case .identityWarning:
+            return OnboardingPresentationConfig(
+                showBackButton: true,
                 showSkipButton: false,
                 ctaTitle: "I Understand",
                 ctaSubtitle: "Proceeding implies absolute commitment",
@@ -44,39 +53,12 @@ struct OnboardingPresentationConfig {
                 stepLabel: stepLabel
             )
             
-        case .userHistory:
-            return OnboardingPresentationConfig(
-                showBackButton: true,
-                showSkipButton: true,
-                ctaTitle: "Continue",
-                ctaSubtitle: "The Dichotomy of Control",
-                stepLabel: stepLabel
-            )
-            
         case .coreDifferentiation:
             return OnboardingPresentationConfig(
                 showBackButton: true,
                 showSkipButton: true,
                 ctaTitle: "I Understand",
                 ctaSubtitle: "No man is free who is not master of himself",
-                stepLabel: stepLabel
-            )
-            
-        case .nonNegotiables:
-            return OnboardingPresentationConfig(
-                showBackButton: true,
-                showSkipButton: true,
-                ctaTitle: "Continue",
-                ctaSubtitle: "Locked In: discipline over motivation",
-                stepLabel: stepLabel
-            )
-            
-        case .aiRegulator:
-            return OnboardingPresentationConfig(
-                showBackButton: true,
-                showSkipButton: false,
-                ctaTitle: "Accept Regulation",
-                ctaSubtitle: "Authority verified by Locked In protocol",
                 stepLabel: stepLabel
             )
             

@@ -13,11 +13,11 @@ struct WelcomeContentView: View {
 
     private let accentColor = Color(hex: "#22D3EE")
 
-    @State private var glowPulse        = false
-    @State private var sealAppeared     = false
-    @State private var sealPulse        = false
-    @State private var nameAppeared     = false
-    @State private var taglineAppeared  = false
+    @State private var glowPulse       = false
+    @State private var sealAppeared    = false
+    @State private var sealPulse       = false
+    @State private var nameAppeared    = false
+    @State private var taglineAppeared = false
     @State private var subtitleAppeared = false
 
     var body: some View {

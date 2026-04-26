@@ -2,399 +2,515 @@
 //  PaywallContentView.swift
 //  LockedIn
 //
-//  Standalone Paywall screen with blue/green theme
-//  Appears after onboarding completion
+//  "The Enforcement Layer" — paywall presented after the commitment agreement.
+//  Feels like the natural next step: revealing the infrastructure that enforces
+//  what the user just signed. Same visual language as the rest of onboarding —
+//  navy gradient, cyan accent, document aesthetic.
 //
 
 import SwiftUI
 
+// MARK: - Pricing Plan
+
+private enum PricingPlan {
+    case monthly, annual
+
+    var priceLabel: String { self == .monthly ? "$7.99" : "$59.99" }
+    var periodLabel: String { self == .monthly ? "/ month" : "/ year" }
+    var subLabel: String {
+        self == .monthly ? "cancel anytime" : "$5.00/mo billed annually"
+    }
+}
+
+// MARK: - View
+
 struct PaywallContentView: View {
-    // Callback for when user starts trial or dismisses
     var onStartTrial: (() -> Void)?
-    var onDismiss: (() -> Void)?
-    
-    // Blue/Green theme colors
-    private let accentBlue = Color(hex: "00D4FF")
-    private let accentGreen = Color(hex: "00FF88")
-    private let gradientStart = Color(hex: "0066FF")
-    private let gradientEnd = Color(hex: "00CC88")
-    
-    // Screen-specific text
-    private let headline = "Unlock Your Full Potential"
-    private let subheadline = "Join thousands who have transformed their discipline with Locked In Premium."
-    
-    // Features list
-    private let features = [
-        "Unlimited deep work protocols",
-        "Advanced biometric habit security",
-        "Full data visualization & insights",
-        "Priority AI coaching access"
-    ]
-    
+    var onDismiss:    (() -> Void)?
+
+    private let accentColor = Color(hex: "#22D3EE")
+
+    @State private var heroVisible         = false
+    @State private var socialProofVisible  = false
+    @State private var capabilitiesVisible = false
+    @State private var pricingVisible      = false
+    @State private var glowPulse           = false
+    @State private var dismissVisible      = false
+    @State private var selectedPlan        = PricingPlan.annual
+
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Full-screen dark background
-                backgroundLayer
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .clipped()
-                
-                // Decorative glow effects - clipped to bounds
-                decorativeGlows
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .clipped()
-                
-                // Main content - ScrollView for smaller screens
+        GeometryReader { proxy in
+            let hPad        = Theme.Spacing.xl
+            let contentWidth = min(max(0, proxy.size.width - hPad * 2), 460)
+
+            VStack(spacing: 0) {
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        // Dismiss button
-                        HStack {
-                            Spacer()
-                            Button(action: {
-                                onDismiss?()
-                            }) {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 20, weight: .medium))
-                                    .foregroundColor(Color.white.opacity(0.6))
-                                    .frame(width: 44, height: 44)
-                                    .background(
-                                        Circle()
-                                            .fill(Color.white.opacity(0.1))
-                                    )
-                            }
-                            .padding(.trailing, Theme.Spacing.xl)
-                        }
-                        .padding(.top, geometry.safeAreaInsets.top + 20)
-                        
-                        // Spacer that adapts to screen size
-                        Spacer(minLength: geometry.size.height * 0.05)
-                        
-                        // Liquid Glass Card
-                        liquidGlassCard
-                            .padding(.horizontal, Theme.Spacing.lg)
-                        
-                        // Bottom spacer for safe area
-                        Spacer(minLength: geometry.safeAreaInsets.bottom + 20)
+                    VStack(spacing: Theme.Spacing.xxl) {
+                        Spacer().frame(height: 100)
+
+                        socialProofBar
+                            .opacity(socialProofVisible ? 1 : 0)
+                            .offset(y: socialProofVisible ? 0 : 10)
+
+                        heroSection
+                            .opacity(heroVisible ? 1 : 0)
+                            .offset(y: heroVisible ? 0 : 12)
+
+                        capabilitiesSection
+                            .opacity(capabilitiesVisible ? 1 : 0)
+                            .offset(y: capabilitiesVisible ? 0 : 12)
+
+                        pricingSection
+                            .opacity(pricingVisible ? 1 : 0)
+                            .offset(y: pricingVisible ? 0 : 12)
+
+                        Spacer().frame(height: 40)
                     }
-                    .frame(minHeight: geometry.size.height)
-                    .frame(maxWidth: .infinity) // Constrain width to screen bounds
+                    .frame(width: contentWidth, alignment: .leading)
+                    .padding(.bottom, Theme.Spacing.xl)
+                    .frame(width: proxy.size.width)
                 }
+                .frame(width: proxy.size.width)
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .background(backgroundLayer)
+            .clipped()
+            .overlay(alignment: .topTrailing) {
+                dismissButton
             }
         }
         .ignoresSafeArea()
+        .onAppear {
+            withAnimation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true)) {
+                glowPulse = true
+            }
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.85)) {
+                socialProofVisible = true
+            }
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.85).delay(0.10)) {
+                heroVisible = true
+            }
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.85).delay(0.25)) {
+                capabilitiesVisible = true
+            }
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.85).delay(0.40)) {
+                pricingVisible = true
+            }
+            withAnimation(.easeInOut(duration: 0.3).delay(1.5)) {
+                dismissVisible = true
+            }
+        }
     }
 }
 
-// MARK: - Background Layer
+// MARK: - Background
+
 private extension PaywallContentView {
     var backgroundLayer: some View {
         ZStack {
-            // Base dark background
-            Theme.Colors.backgroundPrimary
-            
-            // Dashboard preview gradient overlay
             LinearGradient(
-                gradient: Gradient(colors: [
-                    Theme.Colors.backgroundPrimary.opacity(0.6),
-                    Theme.Colors.backgroundPrimary.opacity(0.95)
-                ]),
+                colors: [Color(hex: "#1A243D"), Color(hex: "#020617")],
                 startPoint: .top,
                 endPoint: .bottom
             )
-            
-            // Subtle grid pattern effect - scaled to fit screen
-            VStack(spacing: 30) {
-                ForEach(0..<6) { _ in
-                    HStack(spacing: 20) {
-                        ForEach(0..<5) { _ in
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.white.opacity(0.03))
-                                .frame(width: 50, height: 30)
-                        }
-                    }
-                }
-            }
-            .opacity(0.5)
-            .scaleEffect(0.9)
-            .rotationEffect(.degrees(-5))
+
+            // Seal glow — pulses slowly
+            Circle()
+                .fill(accentColor.opacity(glowPulse ? 0.07 : 0.04))
+                .frame(width: 460, height: 460)
+                .blur(radius: 90)
+                .allowsHitTesting(false)
+
+            // Ambient top-left glow
+            Circle()
+                .fill(accentColor.opacity(0.05))
+                .frame(width: 260, height: 260)
+                .blur(radius: 90)
+                .offset(x: -80, y: -220)
+                .allowsHitTesting(false)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
+        .clipped()
     }
-    
-    var decorativeGlows: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Top right blue glow - constrained to screen
-                Circle()
-                    .fill(accentBlue.opacity(0.2))
-                    .frame(width: 300, height: 300)
-                    .blur(radius: 100)
-                    .offset(x: geometry.size.width * 0.25, y: -geometry.size.height * 0.2)
-                
-                // Bottom left green glow - constrained to screen
-                Circle()
-                    .fill(accentGreen.opacity(0.15))
-                    .frame(width: 350, height: 350)
-                    .blur(radius: 100)
-                    .offset(x: -geometry.size.width * 0.3, y: geometry.size.height * 0.3)
-                
-                // Center subtle gradient glow - constrained
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [accentBlue, accentGreen]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                        .opacity(0.1)
-                    )
-                    .frame(width: min(400, geometry.size.width), height: min(400, geometry.size.width))
-                    .blur(radius: 120)
-                    .offset(y: geometry.size.height * 0.05)
-            }
+
+    var dismissButton: some View {
+        Button {
+            onDismiss?()
+        } label: {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 26, weight: .regular))
+                .foregroundColor(Color.white.opacity(0.25))
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
         }
-        .allowsHitTesting(false)
+        .padding(.trailing, Theme.Spacing.md)
+        .padding(.top, 56)
+        .opacity(dismissVisible ? 1 : 0)
     }
 }
 
-// MARK: - Liquid Glass Card
+// MARK: - Social Proof
+
 private extension PaywallContentView {
-    var liquidGlassCard: some View {
-        VStack(spacing: Theme.Spacing.xl) {
-            // Header Section
-            headerSection
-            
-            // Features List
-            featuresSection
-            
-            // CTA Section
-            ctaSection
+    var socialProofBar: some View {
+        HStack(spacing: Theme.Spacing.xs) {
+            // Stars
+            HStack(spacing: 2) {
+                ForEach(0..<5, id: \.self) { _ in
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(accentColor)
+                }
+            }
+
+            Text("4.9")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(Color.white)
+
+            Text("·")
+                .font(.system(size: 11))
+                .foregroundColor(Color.white.opacity(0.25))
+
+            Text("\"I haven't skipped a session in 47 days.\"")
+                .font(.custom("Inter", size: 12).italic())
+                .foregroundColor(Color.white.opacity(0.45))
+                .lineLimit(1)
+                .truncationMode(.tail)
         }
-        .padding(Theme.Spacing.xl)
-        .background(
-            // Liquid glass effect
-            ZStack {
-                // Base glass background
-                RoundedRectangle(cornerRadius: Theme.CornerRadius.lg)
-                    .fill(Theme.Colors.glassBackground)
-                
-                // Subtle gradient overlay for depth
-                RoundedRectangle(cornerRadius: Theme.CornerRadius.lg)
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.white.opacity(0.05),
-                                Color.clear,
-                                Color.black.opacity(0.1)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                
-                // Border
-                RoundedRectangle(cornerRadius: Theme.CornerRadius.lg)
-                    .stroke(Theme.Colors.glassBorder, lineWidth: 1)
-            }
-        )
-        .shadow(
-            color: Color.black.opacity(0.4),
-            radius: 32,
-            x: 0,
-            y: 8
-        )
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
-    
-    var headerSection: some View {
-        VStack(alignment: .center, spacing: Theme.Spacing.md) {
-            // Premium badge with gradient
-            HStack(spacing: Theme.Spacing.xs) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 14))
-                    .foregroundColor(accentGreen)
-                
-                Text("PREMIUM ACCESS")
-                    .font(Theme.Typography.caption())
-                    .fontWeight(.bold)
-                    .foregroundStyle(
-                        LinearGradient(
-                            gradient: Gradient(colors: [accentBlue, accentGreen]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+}
+
+// MARK: - Hero
+
+private extension PaywallContentView {
+    var heroSection: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.md) {
+            // Top rule + protocol label
+            HStack {
+                Rectangle()
+                    .fill(Color.white.opacity(0.10))
+                    .frame(height: 1)
+
+                Text("ENFORCEMENT PROTOCOL")
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                    .tracking(2)
+                    .foregroundColor(Color.white.opacity(0.30))
+                    .fixedSize()
             }
-            .padding(.horizontal, Theme.Spacing.md)
-            .padding(.vertical, Theme.Spacing.xs)
-            .background(
-                Capsule()
-                    .fill(Color.white.opacity(0.05))
-            )
-            
-            // Headline with gradient - responsive font size
-            Text(headline)
-                .font(.system(size: 32, weight: .black))
+
+            Text("Built for people who\ndon't make excuses.")
+                .font(.custom("Inter", size: 30).weight(.heavy))
                 .tracking(-0.5)
-                .foregroundStyle(
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.white, accentBlue.opacity(0.8)]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
                 .lineSpacing(2)
-                .fixedSize(horizontal: false, vertical: true)
-                .multilineTextAlignment(.center)
-            
-            // Subheadline
-            Text(subheadline)
-                .font(Theme.Typography.bodyLarge())
-                .foregroundColor(Theme.Colors.textSecondary)
+                .foregroundColor(Theme.Colors.textPrimary)
+                .multilineTextAlignment(.leading)
+
+            Text("Your commitment is now backed by\ninfrastructure that doesn't negotiate.")
+                .font(.custom("Inter", size: 14))
+                .foregroundColor(Color.white.opacity(0.45))
                 .lineSpacing(4)
-                .fixedSize(horizontal: false, vertical: true)
+
+            // Stat anchor
+            HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.xs) {
+                Text("2.4M")
+                    .font(.custom("Inter", size: 28).weight(.heavy))
+                    .foregroundColor(accentColor)
+                Text("non-negotiables locked")
+                    .font(.custom("Inter", size: 13))
+                    .foregroundColor(Color.white.opacity(0.40))
+            }
+            .padding(.top, Theme.Spacing.xxs)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// MARK: - Capabilities
+
+private extension PaywallContentView {
+    struct Capability: Identifiable {
+        var id   : String { index }
+        let index: String
+        let icon : String
+        let title: String
+        let sub  : String
+    }
+
+    var capabilities: [Capability] { [
+        Capability(index: "01", icon: "lock.shield.fill",  title: "Non-Negotiables Lock",  sub: "Your rules can't be edited away at 2am."),
+        Capability(index: "02", icon: "bolt.fill",          title: "Streak Intelligence",    sub: "You'll see a streak break coming before it happens."),
+        Capability(index: "03", icon: "doc.text.fill",      title: "Emergency Protocol",     sub: "You can unlock — but you'll have to explain yourself first."),
+        Capability(index: "04", icon: "chart.bar.fill",     title: "Full Insights",          sub: "See exactly where your discipline is breaking."),
+    ] }
+
+    var capabilitiesSection: some View {
+        GlassCard {
+            VStack(spacing: 0) {
+                ForEach(Array(capabilities.enumerated()), id: \.element.id) { idx, cap in
+                    capabilityRow(cap, isLast: idx == capabilities.count - 1)
+                }
+            }
+            .padding(.horizontal, Theme.Spacing.lg)
+        }
+    }
+
+    func capabilityRow(_ cap: Capability, isLast: Bool) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: Theme.Spacing.md) {
+                Text(cap.index)
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundColor(accentColor.opacity(0.5))
+                    .frame(width: 24, alignment: .leading)
+
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.06))
+                        .frame(width: 32, height: 32)
+                    Image(systemName: cap.icon)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(accentColor.opacity(0.8))
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(cap.title)
+                        .font(.custom("Inter", size: 14).weight(.semibold))
+                        .foregroundColor(Theme.Colors.textPrimary)
+                    Text(cap.sub)
+                        .font(.custom("Inter", size: 12))
+                        .foregroundColor(Color.white.opacity(0.40))
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer()
+            }
+            .padding(.vertical, Theme.Spacing.md)
+
+            if !isLast {
+                Rectangle()
+                    .fill(Color.white.opacity(0.06))
+                    .frame(height: 1)
+            }
+        }
+    }
+}
+
+// MARK: - Pricing + CTA
+
+private extension PaywallContentView {
+    var pricingSection: some View {
+        VStack(spacing: Theme.Spacing.lg) {
+            // Plan selector
+            planSelector
+
+            // Price display
+            VStack(alignment: .leading, spacing: Theme.Spacing.xxs) {
+                HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.xs) {
+                    Text(selectedPlan.priceLabel)
+                        .font(.custom("Inter", size: 40).weight(.heavy))
+                        .foregroundColor(Theme.Colors.textPrimary)
+                        .contentTransition(.numericText())
+                        .animation(.spring(response: 0.3, dampingFraction: 0.75), value: selectedPlan == .annual)
+                    Text(selectedPlan.periodLabel)
+                        .font(.custom("Inter", size: 16))
+                        .foregroundColor(Color.white.opacity(0.40))
+                }
+                Text(selectedPlan.subLabel)
+                    .font(.custom("Inter", size: 12))
+                    .foregroundColor(Color.white.opacity(0.35))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Trial timeline
+            trialTimeline
+
+            // CTA
+            PrimaryButton(
+                title: "LOCK IN THE TRIAL",
+                showArrow: true,
+                backgroundColor: accentColor,
+                foregroundColor: Color(hex: "#020617"),
+                action: { onStartTrial?() }
+            )
+
+            // Fine print
+            Text("then $59.99/year · cancel anytime")
+                .font(.custom("Inter", size: 11))
+                .foregroundColor(Color.white.opacity(0.28))
+                .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
+
+            Button {
+                // restore purchases
+            } label: {
+                Text("Restore Purchases")
+                    .font(.custom("Inter", size: 11).weight(.medium))
+                    .foregroundColor(Color.white.opacity(0.35))
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    // MARK: Plan Selector
+
+    var planSelector: some View {
+        HStack(spacing: Theme.Spacing.sm) {
+            planPill(.monthly, label: "MONTHLY", price: "$7.99/mo")
+            planPill(.annual,  label: "ANNUAL",  price: "$59.99/yr", badge: "BEST VALUE")
+        }
+    }
+
+    func planPill(_ plan: PricingPlan, label: String, price: String, badge: String? = nil) -> some View {
+        let isSelected = selectedPlan == plan
+
+        return Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                selectedPlan = plan
+            }
+        } label: {
+            ZStack(alignment: .topTrailing) {
+                HStack(spacing: Theme.Spacing.xs) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(label)
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .tracking(1.5)
+                        Text(price)
+                            .font(.custom("Inter", size: 13).weight(.semibold))
+                    }
+                    .foregroundColor(isSelected ? Color(hex: "#020617") : Color.white.opacity(0.55))
+
+                    Spacer()
+                }
+                .padding(.horizontal, Theme.Spacing.md)
+                .padding(.vertical, Theme.Spacing.sm)
+                .frame(maxWidth: .infinity)
+                .background(
+                    Capsule()
+                        .fill(isSelected ? accentColor : Color.white.opacity(0.06))
+                        .overlay(
+                            Capsule()
+                                .stroke(isSelected ? Color.clear : Color.white.opacity(0.10), lineWidth: 1)
+                        )
+                )
+
+                if let badge = badge {
+                    Text(badge)
+                        .font(.system(size: 7, weight: .bold, design: .monospaced))
+                        .tracking(0.8)
+                        .foregroundColor(isSelected ? Color(hex: "#020617") : accentColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule()
+                                .fill(isSelected ? Color.white.opacity(0.25) : accentColor.opacity(0.18))
+                        )
+                        .offset(x: -8, y: -8)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: Trial Timeline
+
+    var trialTimeline: some View {
+        VStack(spacing: Theme.Spacing.xs) {
+            // Row 1 — labels
+            HStack(spacing: 0) {
+                tlLabel("TODAY",      active: true)
+                Color.clear.frame(maxWidth: .infinity)
+                tlLabel("DAY 7",      active: false)
+                Color.clear.frame(maxWidth: .infinity)
+                tlLabel("YOU DECIDE", active: false)
+            }
+
+            // Row 2 — circles + dashed connector
+            ZStack {
+                TrialDashLine()
+                    .stroke(
+                        Color.white.opacity(0.12),
+                        style: StrokeStyle(lineWidth: 1, dash: [5, 4])
+                    )
+
+                HStack(spacing: 0) {
+                    tlCircle(filled: true)
+                    Color.clear.frame(maxWidth: .infinity)
+                    tlCircle(filled: false)
+                    Color.clear.frame(maxWidth: .infinity)
+                    tlCircle(filled: false)
+                }
+            }
+            .frame(height: 10)
+
+            // Row 3 — descriptions
+            HStack(spacing: 0) {
+                tlDesc("Full access\nunlocked",          active: true)
+                Color.clear.frame(maxWidth: .infinity)
+                tlDesc("Free trial\nends",               active: false)
+                Color.clear.frame(maxWidth: .infinity)
+                tlDesc("Keep it or walk\naway — no charge", active: false)
+            }
+        }
+    }
+
+    @ViewBuilder
+    func tlLabel(_ text: String, active: Bool) -> some View {
+        Text(text)
+            .font(.system(size: 9, weight: .semibold, design: .monospaced))
+            .tracking(1.5)
+            .foregroundColor(active ? accentColor : Color.white.opacity(0.28))
+            .frame(maxWidth: .infinity)
+            .multilineTextAlignment(.center)
+    }
+
+    @ViewBuilder
+    func tlCircle(filled: Bool) -> some View {
+        ZStack {
+            if filled {
+                Circle()
+                    .fill(accentColor)
+                    .frame(width: 10, height: 10)
+            } else {
+                Circle()
+                    .stroke(Color.white.opacity(0.22), lineWidth: 1.5)
+                    .frame(width: 10, height: 10)
+            }
         }
         .frame(maxWidth: .infinity)
     }
-    
-    var featuresSection: some View {
-        VStack(spacing: Theme.Spacing.md) {
-            Divider()
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [accentBlue.opacity(0.3), accentGreen.opacity(0.3)]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-            
-            ForEach(features, id: \.self) { feature in
-                HStack(spacing: Theme.Spacing.sm) {
-                    // Checkmark with gradient background
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [accentBlue.opacity(0.3), accentGreen.opacity(0.3)]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 28, height: 28)
-                        
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(accentGreen)
-                    }
-                    
-                    Text(feature)
-                        .font(Theme.Typography.bodyMedium())
-                        .fontWeight(.medium)
-                        .foregroundColor(Theme.Colors.textPrimary.opacity(0.9))
-                    
-                    Spacer()
-                }
-            }
-            
-            Divider()
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [accentBlue.opacity(0.3), accentGreen.opacity(0.3)]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-        }
-    }
-    
-    var ctaSection: some View {
-        VStack(spacing: Theme.Spacing.md) {
-            // Trial button with blue/green gradient
-            Button(action: {
-                onStartTrial?()
-            }) {
-                HStack(spacing: Theme.Spacing.sm) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color.white)
-                    
-                    Text("START FREE TRIAL")
-                        .font(Theme.Typography.buttonLarge())
-                        .fontWeight(.bold)
-                        .tracking(Theme.Typography.letterSpacingWide * 12)
-                        .foregroundColor(Color.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                    
-                    Spacer(minLength: 8)
-                    
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(Color.white)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .frame(height: 56)
-                .padding(.horizontal, Theme.Spacing.md)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [gradientStart, gradientEnd]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .cornerRadius(Theme.CornerRadius.sm)
-                .shadow(
-                    color: accentBlue.opacity(0.4),
-                    radius: 24,
-                    x: 0,
-                    y: 12
-                )
-            }
-            .buttonStyle(PaywallButtonStyle())
-            
-            // Pricing info
-            VStack(spacing: Theme.Spacing.xxs) {
-                Text("7-day free trial, then $59.99/year")
-                    .font(Theme.Typography.bodyMedium())
-                    .foregroundColor(Theme.Colors.textSecondary)
-                
-                Text("Cancel anytime. No commitment required.")
-                    .font(Theme.Typography.captionSmall())
-                    .foregroundColor(Theme.Colors.textMuted)
-            }
+
+    @ViewBuilder
+    func tlDesc(_ text: String, active: Bool) -> some View {
+        Text(text)
+            .font(.custom("Inter", size: 10))
+            .foregroundColor(active ? Color.white.opacity(0.50) : Color.white.opacity(0.25))
             .multilineTextAlignment(.center)
-            
-            // Restore purchases link
-            Button(action: {
-                // Restore purchases action
-            }) {
-                Text("Restore Purchases")
-                    .font(Theme.Typography.caption())
-                    .foregroundColor(accentBlue)
-                    .underline()
-            }
-        }
+            .lineSpacing(2)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity)
     }
 }
 
-// MARK: - Button Style
-private struct PaywallButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .opacity(configuration.isPressed ? 0.9 : 1.0)
-            .animation(
-                .easeInOut(duration: Theme.Animation.defaultDuration),
-                value: configuration.isPressed
-            )
+// MARK: - Dashed Line Shape
+
+private struct TrialDashLine: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to:    CGPoint(x: rect.minX, y: rect.midY))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        return p
     }
 }
 
 // MARK: - Preview
+
 struct PaywallContentView_Previews: PreviewProvider {
     static var previews: some View {
         PaywallContentView(
-            onStartTrial: { print("Start trial tapped") },
-            onDismiss: { print("Dismiss tapped") }
+            onStartTrial: { print("trial") },
+            onDismiss:    { print("dismiss") }
         )
         .ignoresSafeArea()
         .preferredColorScheme(.dark)

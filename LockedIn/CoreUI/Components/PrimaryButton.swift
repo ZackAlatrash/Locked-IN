@@ -17,46 +17,52 @@ import SwiftUI
 struct PrimaryButton: View {
     let title: String
     let showArrow: Bool
+    var backgroundColor: Color = Theme.Colors.authority
+    var foregroundColor: Color = Theme.Colors.textPrimary
     let action: () -> Void
-    
+
     init(
         title: String,
         showArrow: Bool = true,
+        backgroundColor: Color = Theme.Colors.authority,
+        foregroundColor: Color = Theme.Colors.textPrimary,
         action: @escaping () -> Void
     ) {
         self.title = title
         self.showArrow = showArrow
+        self.backgroundColor = backgroundColor
+        self.foregroundColor = foregroundColor
         self.action = action
     }
-    
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 0) {
-                // Title on left (uppercase, bold, tracking-wide)
                 Text(title.uppercased())
                     .font(Theme.Typography.buttonLarge())
-                    .tracking(Theme.Typography.letterSpacingWide * 18) // tracking-wide relative to font size
-                    .foregroundColor(Theme.Colors.textPrimary)
+                    .tracking(Theme.Typography.letterSpacingWide * 18)
+                    .foregroundColor(foregroundColor)
                     .lineLimit(1)
                     .layoutPriority(1)
-                
+                    .contentTransition(.opacity)
+                    .animation(.easeInOut(duration: 0.2), value: title)
+
                 Spacer(minLength: 16)
-                
-                // Arrow on right
+
                 if showArrow {
                     Image(systemName: "arrow.right")
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(Theme.Colors.textPrimary)
+                        .foregroundColor(foregroundColor)
                         .frame(width: 24)
                 }
             }
+            .padding(.horizontal, Theme.Spacing.xxl)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(height: 64) // h-16 = 64px
-            .padding(.horizontal, Theme.Spacing.xxl) // px-8 = 32px
-            .background(Theme.Colors.authority)
-            .cornerRadius(Theme.CornerRadius.sm) // rounded-lg = 8px
+            .frame(height: 64)
+            .background(backgroundColor)
+            .cornerRadius(Theme.CornerRadius.lg) // 16px — matches main app card radius
             .shadow(
-                color: Theme.Colors.authority.opacity(0.3),
+                color: backgroundColor.opacity(0.3),
                 radius: 25,
                 x: 0,
                 y: 8

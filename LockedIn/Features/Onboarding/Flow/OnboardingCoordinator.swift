@@ -21,13 +21,12 @@ final class OnboardingCoordinator: ObservableObject {
     @Published private(set) var currentStep: OnboardingStep
     @Published private(set) var isTransitioning = false
 
-    let userHistoryVM: UserHistoryViewModel
     let commitmentAgreementVM: CommitmentAgreementViewModel
 
     private var cancellables = Set<AnyCancellable>()
 
     init(
-        initialStep: OnboardingStep = .identityWarning,
+        initialStep: OnboardingStep = .welcome,
         flow: OnboardingFlow,
         engine: OnboardingEngine
     ) {
@@ -35,7 +34,6 @@ final class OnboardingCoordinator: ObservableObject {
         self.flow = flow
         self.engine = engine
 
-        self.userHistoryVM = UserHistoryViewModel()
         self.commitmentAgreementVM = CommitmentAgreementViewModel()
 
         bindScreenViewModels()
@@ -43,8 +41,6 @@ final class OnboardingCoordinator: ObservableObject {
 
     var canAdvanceCurrentStep: Bool {
         switch currentStep {
-        case .userHistory:
-            return userHistoryVM.isValid
         case .commitmentAgreement:
             return commitmentAgreementVM.isValid
         default:
@@ -90,10 +86,6 @@ final class OnboardingCoordinator: ObservableObject {
     }
 
     private func bindScreenViewModels() {
-        userHistoryVM.objectWillChange
-            .sink { [weak self] _ in self?.objectWillChange.send() }
-            .store(in: &cancellables)
-
         commitmentAgreementVM.objectWillChange
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
@@ -103,12 +95,8 @@ final class OnboardingCoordinator: ObservableObject {
         guard case .invalid(let reason) = validation else { return }
 
         switch reason {
-        case .nonNegotiableIncomplete:
-            break
         case .termsNotAccepted, .nameEmpty:
             commitmentAgreementVM.showValidationError = true
-        case .userHistoryNotSelected:
-            break
         }
     }
 
@@ -125,7 +113,6 @@ final class OnboardingCoordinator: ObservableObject {
         let commitmentData = commitmentAgreementVM.exportData()
 
         return OnboardingData(
-            selectedUserHistoryOption: userHistoryVM.exportData(),
             hasAcceptedTerms: commitmentData.hasAcceptedTerms,
             fullName: commitmentData.fullName
         )

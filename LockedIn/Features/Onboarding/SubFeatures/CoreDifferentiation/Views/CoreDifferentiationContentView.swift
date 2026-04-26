@@ -10,40 +10,44 @@
 import SwiftUI
 
 struct CoreDifferentiationContentView: View {
-    
+
+    private let accentColor = Color(hex: "#22D3EE")
+
     var body: some View {
         ZStack {
-            // Full-screen background
-            Theme.Colors.backgroundPrimary
-            
-            // Main content — fixed layout for consistent CTA position
+            backgroundLayer
+
             VStack(spacing: 0) {
-                // Space for header overlay — fixed height
                 Spacer().frame(height: 160)
-                
-                // Headline & Body — compact
+
                 headlineSection
                     .padding(.top, Theme.Spacing.xs)
                     .padding(.bottom, Theme.Spacing.md)
-                
-                // Comparison Diagram (2 columns) — fixed height
+
                 comparisonDiagram
                     .frame(height: 180)
-                    .padding(.bottom, Theme.Spacing.md)
-                
-                // Descriptive list below diagram — compact
+                    .padding(.bottom, Theme.Spacing.xl)   // more room before the list
+
                 descriptiveList
-                
-                // Push CTA space to bottom
+
                 Spacer()
-                
-                // Space for CTA button — fixed height to match other screens
                 Spacer().frame(height: 140)
             }
             .padding(.horizontal, Theme.Spacing.xl)
         }
     }
+}
 
+// MARK: - Background
+private extension CoreDifferentiationContentView {
+    var backgroundLayer: some View {
+        LinearGradient(
+            colors: [Color(hex: "#1A243D"), Color(hex: "#020617")],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .ignoresSafeArea()
+    }
 }
 
 // MARK: - Headline Section
@@ -55,7 +59,7 @@ private extension CoreDifferentiationContentView {
                 Text("Locked In removes")
                     .foregroundColor(Theme.Colors.textPrimary)
                 Text("negotiation.")
-                    .foregroundColor(Theme.Colors.authority)
+                    .foregroundColor(accentColor)
                     .italic()
             }
             .font(.system(size: 28, weight: .heavy))
@@ -184,17 +188,17 @@ private extension CoreDifferentiationContentView {
             Text("LOCKED IN")
                 .font(Theme.Typography.caption())
                 .tracking(Theme.Typography.letterSpacingWidest * 6)
-                .foregroundColor(Theme.Colors.authority)
-            
+                .foregroundColor(accentColor)
+
             // Card content
             ZStack {
-                // Locked glass background (red gradient border)
+                // Locked glass background (cyan gradient border)
                 RoundedRectangle(cornerRadius: Theme.CornerRadius.lg)
                     .fill(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                Theme.Colors.authority.opacity(0.1),
-                                Color(hex: "#110808").opacity(0.4)
+                                accentColor.opacity(0.08),
+                                Color(hex: "#020617").opacity(0.4)
                             ]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -206,50 +210,50 @@ private extension CoreDifferentiationContentView {
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: Theme.CornerRadius.lg)
-                            .stroke(Theme.Colors.authority.opacity(0.3), lineWidth: 1)
+                            .stroke(accentColor.opacity(0.25), lineWidth: 1)
                     )
-                
+
                 // Glow effect
                 Circle()
-                    .fill(Theme.Colors.authority.opacity(0.2))
+                    .fill(accentColor.opacity(0.12))
                     .frame(width: 80, height: 80)
                     .blur(radius: 40)
                     .offset(x: 30, y: -30)
-                
+
                 VStack(spacing: Theme.Spacing.xs) {
                     // Header with lock icon
                     HStack(spacing: Theme.Spacing.xs) {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(Theme.Colors.authority)
-                        
+                            .foregroundColor(accentColor)
+
                         RoundedRectangle(cornerRadius: 2)
-                            .fill(Theme.Colors.authority)
+                            .fill(accentColor)
                             .frame(width: 56, height: 4)
-                            .shadow(color: Theme.Colors.authority.opacity(0.5), radius: 6)
-                        
+                            .shadow(color: accentColor.opacity(0.4), radius: 6)
+
                         Spacer()
                     }
-                    
+
                     // Locked items (solid) — all 3 items
                     VStack(spacing: Theme.Spacing.xxs) {
                         lockedItem(width: 40)
                         lockedItem(width: 52)
                         lockedItem(width: 32)
                     }
-                    
+
                     Spacer(minLength: 4)
-                    
+
                     // No backdoors footer
                     VStack(spacing: 2) {
                         Rectangle()
-                            .fill(Theme.Colors.authority.opacity(0.3))
+                            .fill(accentColor.opacity(0.25))
                             .frame(height: 1)
-                        
+
                         Text("NO BACKDOORS")
                             .font(.system(size: 7, weight: .bold))
                             .tracking(1.5)
-                            .foregroundColor(Theme.Colors.authority.opacity(0.8))
+                            .foregroundColor(accentColor.opacity(0.8))
                     }
                 }
                 .padding(.horizontal, Theme.Spacing.sm)
@@ -263,22 +267,22 @@ private extension CoreDifferentiationContentView {
             RoundedRectangle(cornerRadius: 3)
                 .fill(Color.white)
                 .frame(width: width, height: 8)
-            
+
             Spacer()
-            
+
             Image(systemName: "lock.fill")
                 .font(.system(size: 10))
-                .foregroundColor(Theme.Colors.authority)
+                .foregroundColor(accentColor)
         }
         .padding(.horizontal, Theme.Spacing.xs)
         .padding(.vertical, 4)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(Theme.Colors.authority.opacity(0.2))
+                .fill(accentColor.opacity(0.12))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 6)
-                .stroke(Theme.Colors.authority.opacity(0.4), lineWidth: 1)
+                .stroke(accentColor.opacity(0.3), lineWidth: 1)
         )
     }
 }
@@ -308,15 +312,15 @@ private extension CoreDifferentiationContentView {
             // Icon container
             ZStack {
                 RoundedRectangle(cornerRadius: Theme.CornerRadius.sm)
-                    .fill(Theme.Colors.authority.opacity(0.1))
+                    .fill(accentColor.opacity(0.1))
                     .overlay(
                         RoundedRectangle(cornerRadius: Theme.CornerRadius.sm)
-                            .stroke(Theme.Colors.authority.opacity(0.2), lineWidth: 1)
+                            .stroke(accentColor.opacity(0.2), lineWidth: 1)
                     )
                 
                 Image(systemName: icon)
                     .font(.system(size: 18))
-                    .foregroundColor(Theme.Colors.authority)
+                    .foregroundColor(accentColor)
             }
             .frame(width: 32, height: 32)
             
@@ -339,17 +343,18 @@ private extension CoreDifferentiationContentView {
             // Image container
             ZStack {
                 RoundedRectangle(cornerRadius: Theme.CornerRadius.sm)
-                    .fill(Theme.Colors.authority.opacity(0.1))
+                    .fill(accentColor.opacity(0.1))
                     .overlay(
                         RoundedRectangle(cornerRadius: Theme.CornerRadius.sm)
-                            .stroke(Theme.Colors.authority.opacity(0.2), lineWidth: 1)
+                            .stroke(accentColor.opacity(0.2), lineWidth: 1)
                     )
                 
                 Image(imageName)
                     .resizable()
+                    .renderingMode(.template)
                     .scaledToFit()
                     .frame(width: 20, height: 20)
-                    .foregroundColor(Theme.Colors.authority)
+                    .foregroundColor(accentColor)
             }
             .frame(width: 32, height: 32)
             

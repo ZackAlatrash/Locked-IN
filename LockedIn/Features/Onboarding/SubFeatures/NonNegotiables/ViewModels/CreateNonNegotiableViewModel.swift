@@ -1,6 +1,16 @@
 import Foundation
 import Combine
 
+// Legacy backward-compat type used by CreateNonNegotiableContentView shims.
+// Defined here since it was removed from OnboardingData when those onboarding
+// screens were retired.
+enum NonNegotiableFrequency: CaseIterable, Equatable {
+    case daily
+    case weekdays
+    case weekends
+    case custom
+}
+
 @MainActor
 final class CreateNonNegotiableViewModel: ObservableObject {
     struct GoalOption: Identifiable, Equatable {

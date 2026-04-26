@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		404BE58F2F9AD6F80028D4ED /* WelcomeContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 404BE58E2F9AD6F80028D4ED /* WelcomeContentView.swift */; };
+		404BE5912F9C33070028D4ED /* icons8-gavel-100.png in Resources */ = {isa = PBXBuildFile; fileRef = 404BE5902F9C33060028D4ED /* icons8-gavel-100.png */; };
 		40A77A482F3CD39800BC4E39 /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A382F3CD39800BC4E39 /* GlassCard.swift */; };
 		40A77A492F3CD39800BC4E39 /* ProgressIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */; };
 		40A77A4C2F3CD39800BC4E39 /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A392F3CD39800BC4E39 /* PrimaryButton.swift */; };
@@ -118,6 +120,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		404BE58E2F9AD6F80028D4ED /* WelcomeContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeContentView.swift; sourceTree = "<group>"; };
+		404BE5902F9C33060028D4ED /* icons8-gavel-100.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icons8-gavel-100.png"; sourceTree = "<group>"; };
 		40A779F22F3CCA1E00BC4E39 /* LockedIn.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LockedIn.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		40A77A382F3CD39800BC4E39 /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GlassCard.swift; path = LockedIn/CoreUI/Components/GlassCard.swift; sourceTree = SOURCE_ROOT; };
 		40A77A392F3CD39800BC4E39 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PrimaryButton.swift; path = LockedIn/CoreUI/Components/PrimaryButton.swift; sourceTree = SOURCE_ROOT; };
@@ -329,6 +333,7 @@
 				40A77A8A2F3DB20000BC4E39 /* UserHistoryViewModel.swift */,
 				40A77A8B2F3DB30000BC4E39 /* CreateNonNegotiableViewModel.swift */,
 				40A77A8C2F3DB40000BC4E39 /* CommitmentAgreementViewModel.swift */,
+				404BE58E2F9AD6F80028D4ED /* WelcomeContentView.swift */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -488,6 +493,7 @@
 		40A77A882F3DB00000BC4E39 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				404BE5902F9C33060028D4ED /* icons8-gavel-100.png */,
 				40A77A5A2F3CD80000BC4E39 /* Assets.xcassets */,
 				40A77A782F3D700000BC4E39 /* Inter-VariableFont_opsz,wght.ttf */,
 				40A77A792F3D800000BC4E39 /* Info.plist */,
@@ -558,6 +564,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				40A77A592F3CD80000BC4E39 /* Assets.xcassets in Resources */,
+				404BE5912F9C33070028D4ED /* icons8-gavel-100.png in Resources */,
 				40A77A772F3D700000BC4E39 /* Inter-VariableFont_opsz,wght.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -581,6 +588,7 @@
 				A10000000000000000000035 /* MotionRuntime.swift in Sources */,
 				A10000000000000000000036 /* AppRouter.swift in Sources */,
 				A10000000000000000000008 /* CockpitViewModel.swift in Sources */,
+				404BE58F2F9AD6F80028D4ED /* WelcomeContentView.swift in Sources */,
 				A10000000000000000000009 /* CockpitUIModel.swift in Sources */,
 				A1000000000000000000000A /* CockpitNonNegotiableCard.swift in Sources */,
 				A1000000000000000000000B /* CockpitKpiCard.swift in Sources */,

@@ -9,13 +9,11 @@
 import Foundation
 
 enum OnboardingStep: CaseIterable, Identifiable, Equatable {
+    case welcome
     case identityWarning
     case failureLoop
-    case userHistory
     case coreDifferentiation
-    case nonNegotiables
-    case aiRegulator
     case commitmentAgreement
-    
+
     var id: String { String(describing: self) }
 }

@@ -26,9 +26,9 @@ struct GlassCard<Content: View>: View {
         content()
             .background(
                 ZStack {
-                    // Blur backdrop simulation
+                    // Blur backdrop simulation — navy matches main app glass surface
                     RoundedRectangle(cornerRadius: Theme.CornerRadius.lg)
-                        .fill(Color(hex: "#0f0808").opacity(0.65))
+                        .fill(Color(hex: "#0F172A").opacity(0.72))
                     
                     // Subtle highlight gradient at top
                     RoundedRectangle(cornerRadius: Theme.CornerRadius.lg)
