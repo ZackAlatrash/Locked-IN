@@ -5,6 +5,7 @@ import Combine
 final class PlanViewModel: ObservableObject {
     @Published private(set) var currentWeekDays: [PlanDayModel] = []
     @Published private(set) var queueItems: [PlanQueueItem] = []
+    @Published private(set) var completedThisWeekItems: [PlanQueueItem] = []
     @Published private(set) var selectedQueueProtocolId: UUID?
     @Published private(set) var todaySummary: PlanTodaySummary = .empty
     @Published private(set) var structureStatus: PlanStructureStatus = .unstructured
@@ -83,6 +84,10 @@ final class PlanViewModel: ObservableObject {
 
         planStore.$queueItems
             .sink { [weak self] in self?.queueItems = $0 }
+            .store(in: &cancellables)
+
+        planStore.$completedThisWeekItems
+            .sink { [weak self] in self?.completedThisWeekItems = $0 }
             .store(in: &cancellables)
 
         planStore.$selectedQueueProtocolId

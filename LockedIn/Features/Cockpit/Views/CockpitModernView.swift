@@ -801,7 +801,61 @@ private extension CockpitModernView {
         }()
         let showCompletionCheck = task.completionVisual != .none
 
-        return HStack(spacing: 4) {
+        return HStack(spacing: 0) {
+            Image(systemName: ProtocolIconCatalog.resolvedSymbolName(task.iconSystemName, fallback: "scope"))
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(paused ? textSecondary : primary.opacity(0.72))
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+
+            Button {
+                onProtocolTap(task.nnId)
+            } label: {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(task.title)
+                        .font(.headline.weight(.semibold))
+                        .foregroundColor(paused ? textSecondary : textMain)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(task.subtitle.uppercased())
+                        .font(.caption2.weight(.medium))
+                        .tracking(1.2)
+                        .foregroundColor(paused ? textSecondary.opacity(0.86) : textSecondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if isUndoArmed {
+                        Text("TAP AGAIN TO UNDO")
+                            .font(.caption2.weight(.bold))
+                            .tracking(1.2)
+                            .foregroundColor(Color(hex: "F59E0B"))
+                            .lineLimit(1)
+                    }
+                }
+                .layoutPriority(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 14)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if paused {
+                Text("PAUSED")
+                    .font(.caption.weight(.black))
+                    .tracking(0.8)
+                    .foregroundColor(textSecondary)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.horizontal, pausedBadgeHorizontalPadding)
+                    .padding(.vertical, pausedBadgeVerticalPadding)
+                    .frame(minHeight: pausedBadgeMinHeight)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(style == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08))
+                    )
+                    .padding(.trailing, 8)
+            }
+
             Button {
                 if task.isCtaEnabled {
                     clearPendingUndo()
@@ -841,65 +895,7 @@ private extension CockpitModernView {
                     ? "Tap to mark this walkthrough protocol as done"
                     : "Marks protocol completion status"
             )
-
-            Button {
-                onProtocolTap(task.nnId)
-            } label: {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(task.title)
-                            .font(.headline.weight(.semibold))
-                            .foregroundColor(paused ? textSecondary : textMain)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Text(task.subtitle.uppercased())
-                            .font(.caption2.weight(.medium))
-                            .tracking(1.2)
-                            .foregroundColor(paused ? textSecondary.opacity(0.86) : textSecondary)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        if isUndoArmed {
-                            Text("TAP AGAIN TO UNDO")
-                                .font(.caption2.weight(.bold))
-                                .tracking(1.2)
-                                .foregroundColor(Color(hex: "F59E0B"))
-                                .lineLimit(1)
-                        }
-                    }
-                    .layoutPriority(1)
-
-                    Spacer()
-
-                    if paused {
-                        Text("PAUSED")
-                            .font(.caption.weight(.black))
-                            .tracking(0.8)
-                            .foregroundColor(textSecondary)
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .padding(.horizontal, pausedBadgeHorizontalPadding)
-                            .padding(.vertical, pausedBadgeVerticalPadding)
-                            .frame(minHeight: pausedBadgeMinHeight)
-                            .background(
-                                Capsule(style: .continuous)
-                                    .fill(style == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.08))
-                            )
-                    }
-
-                    Image(systemName: ProtocolIconCatalog.resolvedSymbolName(task.iconSystemName, fallback: "scope"))
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(paused ? textSecondary : primary.opacity(0.72))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 6)
-                .padding(.trailing, 14)
-                .padding(.vertical, 14)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
         }
-        .padding(.leading, 8)
         .background(glassCard)
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)

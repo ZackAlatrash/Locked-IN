@@ -432,6 +432,13 @@ private extension CockpitView {
                     } else {
                         showCompletionToast("Logged as EXTRA.")
                     }
+                } else if case .movedToToday(let moved) = reconciliation {
+                    showCompletionToast(
+                        movedToTodayToastMessage(
+                            protocolTitle: protocolModel.definition.title,
+                            slot: moved.slot
+                        )
+                    )
                 } else if case .released(let released) = reconciliation {
                     showCompletionToast(
                         releasedToastMessage(
@@ -578,6 +585,10 @@ private extension CockpitView {
         formatter.locale = .current
         formatter.dateFormat = "EEE"
         return "\(formatter.string(from: day).uppercased()) \(slot.title)"
+    }
+
+    func movedToTodayToastMessage(protocolTitle: String, slot: PlanSlot) -> String {
+        return "\(protocolTitle) moved to today's \(slot.title) slot."
     }
 
     func releasedToastMessage(protocolTitle: String, completionDate: Date, releasedDay: Date, slot: PlanSlot) -> String {

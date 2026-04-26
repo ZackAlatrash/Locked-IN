@@ -111,6 +111,11 @@ struct PlanScreen: View {
             }
         }
         .sheet(item: $viewModel.selectedAllocation) { allocation in
+            let display = viewModel.currentWeekDays
+                .flatMap { $0.slots }
+                .flatMap { $0.allocations }
+                .first(where: { $0.id == allocation.id })
+            let canMarkDone = display.map { $0.isCompleted == false && $0.status.isInteractive } ?? false
             PlanAllocationEditorSheet(
                 allocation: allocation,
                 weekDays: viewModel.currentWeekDays,
@@ -120,7 +125,11 @@ struct PlanScreen: View {
                 },
                 onRemove: {
                     viewModel.removeAllocation(allocationId: allocation.id)
-                }
+                },
+                onMarkDone: canMarkDone ? {
+                    guard let d = display else { return }
+                    markAllocationDone(d)
+                } : nil
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
@@ -131,6 +140,7 @@ struct PlanScreen: View {
                 draftCount: viewModel.draftAllocations.count,
                 summary: viewModel.regulatorSummary,
                 hasDraft: viewModel.hasDraft,
+                isWalkthroughApplyStep: walkthroughController.isActive && walkthroughController.step == .planningApplyDraft,
                 onApply: {
                     let draftToApply = viewModel.draftAllocations
                     if viewModel.applyDraft() {
@@ -138,6 +148,11 @@ struct PlanScreen: View {
                         walkthroughController.handleDraftApplied()
                         triggerRegulatorLockInAnimation(for: draftToApply)
                         showDraftAppliedToast(placementCount: draftToApply.count)
+                    } else if walkthroughController.isActive && walkthroughController.step == .planningApplyDraft {
+                        // No new placements were generated (week is already full from the previous
+                        // walkthrough step), but the user still needs to advance past this step.
+                        Haptics.success()
+                        walkthroughController.handleDraftApplied()
                     } else {
                         Haptics.warning()
                     }
@@ -234,7 +249,7 @@ private extension PlanScreen {
     var activePlanningWalkthroughStep: WalkthroughStep? {
         guard walkthroughController.isActive else { return nil }
         switch walkthroughController.step {
-        case .planningIntro, .planningQueue, .planningSelectProtocol,
+        case .planningIntro, .planningQueue, .planningSelectProtocol, .planningSelectSlot,
              .planningPlacedConfirmation, .planningRegulatorIntro, .planningRunRegulator, .planningCompleted:
             return walkthroughController.step
         default:
@@ -263,6 +278,8 @@ private extension PlanScreen {
         case .planningSelectProtocol:
             guard let protocolId = walkthroughProtocolId else { return nil }
             return walkthroughFrames[.protocolCard(protocolId)]?.expandedBy(dx: 8, dy: 8)
+        case .planningSelectSlot:
+            return walkthroughFrames[.todayColumn]?.expandedBy(dx: 10, dy: 10)
         case .planningRegulatorIntro, .planningRunRegulator:
             return walkthroughFrames[.regulateButton]?.expandedBy(dx: 12, dy: 10)
         default:
@@ -367,6 +384,7 @@ private extension PlanScreen {
         switch step {
         case .planningSelectSlot:
             guard let protocolId, protocolId == walkthroughProtocolId else { return false }
+            guard DateRules.startOfDay(day) == DateRules.startOfDay(appClock.now) else { return false }
             return viewModel.validateProtocolPlacement(protocolId: protocolId, day: day, slot: slot).isAllowed
         default:
             return false
@@ -378,6 +396,8 @@ private extension PlanScreen {
         guard walkthroughController.step == .planningSelectSlot else {
             return activePlanningWalkthroughStep == nil
         }
+
+        guard DateRules.startOfDay(day) == DateRules.startOfDay(appClock.now) else { return false }
 
         if let protocolId = PlanDropPayload.protocolId(from: payload) {
             guard protocolId == walkthroughProtocolId else { return false }
@@ -400,7 +420,13 @@ private extension PlanScreen {
     }
 
     var shouldShowQueueSection: Bool {
-        viewModel.queueItems.isEmpty == false || viewModel.hasTrackableProtocols == false
+        viewModel.queueItems.isEmpty == false ||
+        viewModel.completedThisWeekItems.isEmpty == false ||
+        viewModel.hasTrackableProtocols == false
+    }
+
+    var isForcingTodayPlacement: Bool {
+        walkthroughController.isActive && walkthroughController.step == .planningSelectSlot
     }
 
     var allScheduledCue: some View {
@@ -664,6 +690,28 @@ private extension PlanScreen {
                     .padding(.vertical, 2)
                 }
             }
+
+            if viewModel.completedThisWeekItems.isEmpty == false {
+                HStack {
+                    Text("DONE THIS WEEK")
+                        .font(.caption.weight(.bold))
+                        .fontDesign(.monospaced)
+                        .tracking(1.3)
+                        .foregroundColor(textMuted)
+                    Spacer()
+                }
+                .padding(.top, 2)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(viewModel.completedThisWeekItems) { item in
+                            completedQueueCard(item)
+                        }
+                    }
+                    .padding(.horizontal, 1)
+                    .padding(.vertical, 2)
+                }
+            }
         }
         .planWalkthroughFrame(.queueSection)
     }
@@ -786,6 +834,42 @@ private extension PlanScreen {
         card
     }
 
+    @ViewBuilder
+    func completedQueueCard(_ item: PlanQueueItem) -> some View {
+        let tone = toneColor(for: item.tone)
+
+        HStack(spacing: 10) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(tone.opacity(0.7))
+                .frame(width: 18)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.title)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundColor(textMuted)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("DONE")
+                    .font(.caption2.weight(.black))
+                    .fontDesign(.monospaced)
+                    .foregroundColor(tone.opacity(0.6))
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .frame(minWidth: queueCardBaseWidth, maxWidth: queueCardBaseWidth + 32, alignment: .leading)
+        .background(glassCard(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(tone.opacity(0.22), lineWidth: 1)
+        )
+        .opacity(0.65)
+    }
+
     var todayAtGlanceSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("TODAY AT A GLANCE")
@@ -854,6 +938,18 @@ private extension PlanScreen {
             .onChange(of: boardMode) { _, _ in
                 centerActiveDay(using: proxy)
             }
+            .onChange(of: isForcingTodayPlacement) { _, forcing in
+                if forcing {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.4)) {
+                            proxy.scrollTo(
+                                viewModel.currentWeekDays.first(where: { $0.isToday })?.id ?? viewModel.currentWeekDays.first?.id,
+                                anchor: .center
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -912,6 +1008,7 @@ private extension PlanScreen {
                     .stroke(day.isToday ? todayAccent.opacity(0.5) : columnStroke, lineWidth: day.isToday ? 1.6 : 1)
                     .shadow(color: day.isToday ? todayAccent.opacity(isDarkMode ? 0.35 : 0.15) : .clear, radius: 8, x: 0, y: 0)
             )
+            .planWalkthroughFrame(day.isToday ? .todayColumn : .slot("noop-\(day.id.timeIntervalSince1970)"))
 
             if day.isToday {
                 Text("TODAY")
@@ -923,6 +1020,8 @@ private extension PlanScreen {
                     .background(Capsule().fill(day.isToday ? todayAccent : Color.gray))
             }
         }
+        .opacity(isForcingTodayPlacement && day.isToday == false ? 0.28 : 1)
+        .allowsHitTesting(isForcingTodayPlacement == false || day.isToday)
     }
 
     func slotCard(day: PlanDayModel, slot: PlanSlotModel, isCompact: Bool) -> some View {
@@ -1083,7 +1182,7 @@ private extension PlanScreen {
                     }
                 }
 
-                if first.status.isInteractive && isPlanningManualPlacementWalkthroughStep == false {
+                if first.status.isInteractive && first.isCompleted == false && isPlanningManualPlacementWalkthroughStep == false {
                     baseChip.draggable(PlanDropPayload.allocationPayload(for: first.id)) {
                         allocationDragPreview(allocation: first)
                             .onAppear {
@@ -1175,7 +1274,7 @@ private extension PlanScreen {
             }
 
             ForEach(slot.allocations) { allocation in
-                if allocation.status.isInteractive && isPlanningManualPlacementWalkthroughStep == false {
+                if allocation.status.isInteractive && allocation.isCompleted == false && isPlanningManualPlacementWalkthroughStep == false {
                     allocationChip(allocation, day: day.date, slot: slot.slot)
                         .draggable(PlanDropPayload.allocationPayload(for: allocation.id)) {
                             allocationDragPreview(allocation: allocation)
@@ -1270,7 +1369,7 @@ private extension PlanScreen {
 
     func allocationChip(_ allocation: PlanAllocationDisplay, day: Date, slot: PlanSlot) -> some View {
         let isRecentlyLocked = isRecentlyLockedAllocation(protocolId: allocation.protocolId, day: day, slot: slot)
-        let isInteractive = allocation.status.isInteractive
+        let isInteractive = allocation.status.isInteractive && allocation.isCompleted == false
         let isPaused = allocation.status == .paused
         return Button {
             viewModel.editAllocation(allocationId: allocation.id)
@@ -1302,7 +1401,12 @@ private extension PlanScreen {
                     )
             )
             .overlay(alignment: .trailing) {
-                if isRecentlyLocked {
+                if allocation.isCompleted {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(toneColor(for: allocation.tone).opacity(0.85))
+                        .padding(.trailing, 7)
+                } else if isRecentlyLocked {
                     HStack(spacing: 4) {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 8, weight: .black))
@@ -1330,7 +1434,7 @@ private extension PlanScreen {
             .scaleEffect(isRecentlyLocked ? (lockInPulseActive ? 1.03 : 1.0) : 1)
             .animation(reduceMotion ? .none : Theme.Animation.snappy, value: lockInPulseActive)
             .overlay(alignment: .bottomLeading) {
-                if isInteractive == false {
+                if allocation.status == .paused || allocation.status == .skippedDueToRecovery {
                     Text(allocation.status == .paused ? "PAUSED" : "SKIPPED")
                         .font(.caption2.weight(.black))
                         .fontDesign(.monospaced)
@@ -1774,29 +1878,66 @@ private extension PlanScreen {
             viewModel.removeAllocation(allocationId: allocationId)
         case .move(let allocationId, let day, let slot):
             _ = viewModel.moveAllocation(allocationId: allocationId, to: day, slot: slot)
+        case .undoCompletion(let protocolId):
+            do {
+                try commitmentStore.undoLatestCompletionToday(for: protocolId, at: appClock.now)
+                commitmentStore.runDailyIntegrityTick(referenceDate: appClock.now)
+                viewModel.refresh(referenceDate: appClock.now)
+            } catch {
+                // Undo window expired or no completion found — silently dismiss.
+            }
         }
 
         toast = nil
         self.pendingUndo = nil
     }
 
+    func markAllocationDone(_ allocation: PlanAllocationDisplay) {
+        let now = appClock.now
+        guard let protocolModel = commitmentStore.system.nonNegotiables.first(where: { $0.id == allocation.protocolId }) else {
+            return
+        }
+        do {
+            let outcome = try commitmentStore.recordCompletionDetailed(for: allocation.protocolId, at: now)
+            let reconciliation = planStore.reconcileAfterCompletion(
+                protocolId: allocation.protocolId,
+                mode: protocolModel.definition.mode,
+                completionDate: outcome.date,
+                completionKind: outcome.kind
+            )
+            commitmentStore.runDailyIntegrityTick(referenceDate: now)
+            viewModel.refresh(referenceDate: now)
+            Haptics.success()
+
+            var message = "\(allocation.title) marked as done."
+            if case .movedToToday(let info) = reconciliation {
+                message = "\(allocation.title) moved to today's \(info.slot.title) slot."
+            }
+            pendingUndo = outcome.kind == .counted ? .undoCompletion(protocolId: allocation.protocolId) : nil
+            toast = PlanToast(message: message, undoLabel: outcome.kind == .counted ? "Undo" : nil)
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 4_800_000_000)
+                if toast != nil {
+                    toast = nil
+                    self.pendingUndo = nil
+                }
+            }
+        } catch {
+            Haptics.warning()
+        }
+    }
+
     func planToastView(_ toast: PlanToast) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.callout.weight(.bold))
+                .font(.system(size: 16, weight: .bold))
                 .foregroundColor(toneColor(for: .cyan))
 
             Text(toast.message)
                 .font(.footnote.weight(.semibold))
                 .foregroundColor(textMain)
                 .lineLimit(2)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(.regularMaterial)
-                        .opacity(isDarkMode ? 0.52 : 0.62)
-                )
+                .fixedSize(horizontal: false, vertical: true)
 
             Spacer(minLength: 0)
 
@@ -1808,11 +1949,26 @@ private extension PlanScreen {
                 .font(.caption.weight(.black))
                 .fontDesign(.monospaced)
                 .foregroundColor(toneColor(for: .cyan))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(toneColor(for: .cyan).opacity(isDarkMode ? 0.14 : 0.10))
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(toneColor(for: .cyan).opacity(0.35), lineWidth: 1)
+                )
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(glassCard(cornerRadius: 14))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(glassCard(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(toneColor(for: .cyan).opacity(isDarkMode ? 0.28 : 0.20), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(isDarkMode ? 0.35 : 0.12), radius: 12, x: 0, y: 4)
     }
 
     func centerActiveDay(using proxy: ScrollViewProxy) {
@@ -2319,6 +2475,7 @@ private struct PlanToast {
 private enum PlanUndoAction {
     case remove(allocationId: UUID)
     case move(allocationId: UUID, day: Date, slot: PlanSlot)
+    case undoCompletion(protocolId: UUID)
 }
 
 private struct PlanRegulatorSheet: View {
@@ -2326,6 +2483,7 @@ private struct PlanRegulatorSheet: View {
     let draftCount: Int
     let summary: PlanRegulatorSummary
     let hasDraft: Bool
+    let isWalkthroughApplyStep: Bool
     let onApply: () -> Void
     let onDiscard: () -> Void
 
@@ -2393,14 +2551,14 @@ private struct PlanRegulatorSheet: View {
                     .buttonStyle(.bordered)
                     .tint(accent.opacity(colorScheme == .dark ? 0.9 : 0.8))
 
-                    Button("Apply Draft") {
+                    Button(hasDraft ? "Apply Draft" : "Continue") {
                         Haptics.selection()
                         onApply()
                         dismiss()
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(accent)
-                    .disabled(hasDraft == false)
+                    .disabled(hasDraft == false && isWalkthroughApplyStep == false)
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
@@ -2537,6 +2695,7 @@ private struct PlanAllocationEditorSheet: View {
     let titleForProtocol: (UUID) -> String
     let onMove: (Date, PlanSlot) -> Void
     let onRemove: () -> Void
+    let onMarkDone: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
     @State private var selectedDay: Date
@@ -2547,13 +2706,15 @@ private struct PlanAllocationEditorSheet: View {
         weekDays: [PlanDayModel],
         titleForProtocol: @escaping (UUID) -> String,
         onMove: @escaping (Date, PlanSlot) -> Void,
-        onRemove: @escaping () -> Void
+        onRemove: @escaping () -> Void,
+        onMarkDone: (() -> Void)? = nil
     ) {
         self.allocation = allocation
         self.weekDays = weekDays
         self.titleForProtocol = titleForProtocol
         self.onMove = onMove
         self.onRemove = onRemove
+        self.onMarkDone = onMarkDone
         _selectedDay = State(initialValue: allocation.day)
         _selectedSlot = State(initialValue: allocation.slot)
     }
@@ -2583,6 +2744,16 @@ private struct PlanAllocationEditorSheet: View {
                         Haptics.success()
                         onMove(selectedDay, selectedSlot)
                         dismiss()
+                    }
+                }
+
+                if let onMarkDone {
+                    Section {
+                        Button("Mark as Done") {
+                            Haptics.success()
+                            onMarkDone()
+                            dismiss()
+                        }
                     }
                 }
 
@@ -2944,6 +3115,7 @@ private enum PlanWalkthroughFrameID: Hashable {
     case protocolCard(UUID)
     case slot(String)
     case regulateButton
+    case todayColumn
 }
 
 private struct PlanWalkthroughFramePreferenceKey: PreferenceKey {

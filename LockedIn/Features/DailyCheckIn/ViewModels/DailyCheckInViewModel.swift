@@ -10,6 +10,7 @@ final class DailyCheckInViewModel: ObservableObject {
     @Published private(set) var recommendation: DailyCheckInRecommendationModel?
     @Published private(set) var warningMessage: String?
     @Published private(set) var toastMessage: String?
+    @Published private(set) var pendingUndoProtocolId: UUID?
 
     private let commitmentStore: CommitmentSystemStore
     private let planStore: PlanStore
@@ -193,8 +194,15 @@ final class DailyCheckInViewModel: ObservableObject {
     }
 
     func markDone(protocolId: UUID) {
+        // If this protocol is already pending undo, treat this as the undo tap.
+        if pendingUndoProtocolId == protocolId {
+            undoLastCompletion(for: protocolId)
+            return
+        }
+
         warningMessage = nil
         toastMessage = nil
+        clearPendingUndo()
         do {
             guard let protocolModel = commitmentStore.system.nonNegotiables.first(where: { $0.id == protocolId }) else {
                 warningMessage = "Protocol is no longer available."
@@ -215,6 +223,9 @@ final class DailyCheckInViewModel: ObservableObject {
                 } else {
                     toastMessage = "Logged as EXTRA."
                 }
+            } else if case .movedToToday(let moved) = reconciliation {
+                toastMessage = "\(protocolModel.definition.title) moved to today's \(moved.slot.title) slot."
+                armPendingUndo(for: protocolId)
             } else if case .released(let released) = reconciliation {
                 let completionDay = DateRules.startOfDay(now, calendar: calendar)
                 let tomorrow = DateRules.addingDays(1, to: completionDay, calendar: calendar)
@@ -224,6 +235,9 @@ final class DailyCheckInViewModel: ObservableObject {
                 } else {
                     toastMessage = "\(protocolModel.definition.title) wasn't scheduled today. \(weekdayLabel(for: releasedDay)) \(released.slot.title) was removed."
                 }
+                armPendingUndo(for: protocolId)
+            } else {
+                armPendingUndo(for: protocolId)
             }
             refresh()
         } catch {
@@ -233,6 +247,26 @@ final class DailyCheckInViewModel: ObservableObject {
                 warningMessage = "Unable to mark protocol done right now."
             }
         }
+    }
+
+    private func armPendingUndo(for protocolId: UUID) {
+        pendingUndoProtocolId = protocolId
+    }
+
+    private func undoLastCompletion(for protocolId: UUID) {
+        pendingUndoProtocolId = nil
+        toastMessage = nil
+        do {
+            try commitmentStore.undoLatestCompletionToday(for: protocolId, at: referenceDateProvider())
+            commitmentStore.runDailyIntegrityTick(referenceDate: referenceDateProvider())
+            refresh()
+        } catch {
+            // No completion to undo — silently ignore.
+        }
+    }
+
+    private func clearPendingUndo() {
+        pendingUndoProtocolId = nil
     }
 
     func openResolve(protocolId: UUID) {

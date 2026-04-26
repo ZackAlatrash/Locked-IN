@@ -54,7 +54,7 @@ struct DailyCheckInFlowView: View {
         .onChange(of: viewModel.toastMessage) { _, message in
             guard let message else { return }
             Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 2_200_000_000)
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
                 viewModel.consumeToastMessage(message)
             }
         }
@@ -108,20 +108,34 @@ private extension DailyCheckInFlowView {
     var toastOverlay: some View {
         VStack(spacing: 8) {
             if let toast = viewModel.toastMessage {
-                Text(toast)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#111827"))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(colorScheme == .dark ? Color.white.opacity(0.14) : Color.black.opacity(0.08))
-                    )
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .stroke(colorScheme == .dark ? Color.white.opacity(0.24) : Color.black.opacity(0.14), lineWidth: 1)
-                    )
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                HStack(spacing: 10) {
+                    Text(toast)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(colorScheme == .dark ? .white : Color(hex: "#111827"))
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Spacer(minLength: 0)
+
+                    Button {
+                        Haptics.selection()
+                        viewModel.consumeToastMessage(toast)
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(colorScheme == .dark ? Color.white.opacity(0.55) : Color(hex: "#111827").opacity(0.45))
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(colorScheme == .dark ? Color.white.opacity(0.14) : Color.black.opacity(0.08))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(colorScheme == .dark ? Color.white.opacity(0.24) : Color.black.opacity(0.14), lineWidth: 1)
+                )
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
 
             if let warning = viewModel.warningMessage {
@@ -169,7 +183,8 @@ private extension DailyCheckInFlowView {
                                     Haptics.softImpact()
                                     viewModel.markDone(protocolId: item.protocolId)
                                 },
-                                isRecoveryThemeActive: isRecoveryThemeActive
+                                isRecoveryThemeActive: isRecoveryThemeActive,
+                                isUndoPending: viewModel.pendingUndoProtocolId == item.protocolId
                             )
                         }
                     }

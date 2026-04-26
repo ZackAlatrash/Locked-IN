@@ -4,6 +4,7 @@ struct DailyCheckInProtocolRow: View {
     let item: DailyCheckInProtocolItem
     let onMarkDone: () -> Void
     let isRecoveryThemeActive: Bool
+    let isUndoPending: Bool
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -35,14 +36,19 @@ struct DailyCheckInProtocolRow: View {
     }
 
     private var actionTitle: String {
-        item.actionTitle.uppercased()
+        isUndoPending ? "TAP TO UNDO" : item.actionTitle.uppercased()
     }
 
     private var protocolIconName: String {
         ProtocolIconCatalog.resolvedSymbolName(item.iconSystemName, fallback: "bolt.fill")
     }
 
+    private var undoTone: Color {
+        colorScheme == .dark ? Color(hex: "#F59E0B") : Color(hex: "#D97706")
+    }
+
     private var actionBackground: Color {
+        if isUndoPending { return undoTone.opacity(0.14) }
         if item.canMarkDone == false {
             return colorScheme == .dark ? Color(hex: "#353438") : Color(hex: "#E5E7EB")
         }
@@ -50,6 +56,7 @@ struct DailyCheckInProtocolRow: View {
     }
 
     private var actionBorder: Color {
+        if isUndoPending { return undoTone.opacity(0.5) }
         if item.canMarkDone == false {
             return colorScheme == .dark ? Color(hex: "#849495").opacity(0.24) : Color.black.opacity(0.14)
         }
@@ -57,6 +64,7 @@ struct DailyCheckInProtocolRow: View {
     }
 
     private var actionText: Color {
+        if isUndoPending { return undoTone }
         if item.canMarkDone == false {
             return mutedText
         }
@@ -128,7 +136,7 @@ struct DailyCheckInProtocolRow: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(actionBorder, lineWidth: 1)
             )
-            .disabled(item.canMarkDone == false)
+            .disabled(item.canMarkDone == false && isUndoPending == false)
             .accessibilityHint(item.actionDisabledReason ?? "")
 
             if item.canMarkDone == false, let actionDisabledReason = item.actionDisabledReason {

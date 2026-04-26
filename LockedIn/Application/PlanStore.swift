@@ -45,12 +45,14 @@ struct ReleasedAllocationInfo: Equatable {
 enum PlanCompletionReconciliationOutcome: Equatable {
     case none
     case released(ReleasedAllocationInfo)
+    case movedToToday(ReleasedAllocationInfo)
 }
 
 @MainActor
 final class PlanStore: ObservableObject {
     @Published private(set) var currentWeekDays: [PlanDayModel] = []
     @Published private(set) var queueItems: [PlanQueueItem] = []
+    @Published private(set) var completedThisWeekItems: [PlanQueueItem] = []
     @Published private(set) var selectedQueueProtocolId: UUID?
     @Published private(set) var todaySummary: PlanTodaySummary = .empty
     @Published private(set) var structureStatus: PlanStructureStatus = .unstructured
@@ -403,6 +405,23 @@ final class PlanStore: ObservableObject {
         }
 
         allAllocations.removeAll { $0.id == candidate.allocation.id }
+
+        let todaySlot = slotForCurrentTime(completionDate)
+        let descriptor = protocolsById[protocolId]
+        let todayAllocation = PlanAllocation(
+            id: UUID(),
+            protocolId: protocolId,
+            weekId: completionWeekId,
+            day: completionDayStart,
+            slot: todaySlot,
+            startTime: nil,
+            durationMinutes: descriptor?.estimatedDurationMinutes,
+            createdAt: Date(),
+            updatedAt: Date(),
+            status: .active
+        )
+        allAllocations.append(todayAllocation)
+
         do {
             try repository.save(allAllocations)
         } catch {
@@ -411,13 +430,20 @@ final class PlanStore: ObservableObject {
         }
 
         refreshWithLastContext()
-        return .released(
+        return .movedToToday(
             ReleasedAllocationInfo(
                 protocolId: protocolId,
-                day: candidate.allocation.day,
-                slot: candidate.allocation.slot
+                day: completionDayStart,
+                slot: todaySlot
             )
         )
+    }
+
+    private func slotForCurrentTime(_ date: Date) -> PlanSlot {
+        let hour = calendar.component(.hour, from: date)
+        if hour < 12 { return .am }
+        if hour < 18 { return .pm }
+        return .eve
     }
 
     func clearAllAllocations() {
@@ -585,6 +611,7 @@ private extension PlanStore {
         let icon: String
         let completionsThisWeek: Int
         let completionsTodayCount: Int
+        let completionDaysThisWeek: Set<Date>
     }
 
     struct PlanSlotSnapshot {
@@ -689,12 +716,16 @@ private extension PlanStore {
 
         for (index, nn) in managed.enumerated() {
             let tone = PlanTone.allCases[index % PlanTone.allCases.count]
-            let completionsThisWeek = nn.completions.filter {
+            let countedThisWeek = nn.completions.filter {
                 $0.weekId == weekId && $0.kind == .counted
+            }
+            let completionsThisWeek = countedThisWeek.count
+            let completionsTodayCount = countedThisWeek.filter {
+                DateRules.startOfDay($0.date, calendar: calendar) == today
             }.count
-            let completionsTodayCount = nn.completions.filter {
-                $0.kind == .counted && DateRules.startOfDay($0.date, calendar: calendar) == today
-            }.count
+            let completionDaysThisWeek = Set(countedThisWeek.map {
+                DateRules.startOfDay($0.date, calendar: calendar)
+            })
 
             result[nn.id] = PlanProtocolDescriptor(
                 id: nn.id,
@@ -707,7 +738,8 @@ private extension PlanStore {
                 tone: tone,
                 icon: nn.definition.iconSystemName,
                 completionsThisWeek: completionsThisWeek,
-                completionsTodayCount: completionsTodayCount
+                completionsTodayCount: completionsTodayCount,
+                completionDaysThisWeek: completionDaysThisWeek
             )
         }
 
@@ -775,41 +807,51 @@ private extension PlanStore {
 
     func buildQueue(referenceDate: Date) {
         _ = referenceDate
-        queueItems = protocolsById.values.compactMap { descriptor in
+        var pending: [PlanQueueItem] = []
+        var completed: [PlanQueueItem] = []
+
+        for descriptor in protocolsById.values {
             let plannedThisWeek = weekAllocations.filter {
                 $0.protocolId == descriptor.id && $0.status == .active
             }.count
 
             let weeklyTarget = effectiveWeeklyTarget(for: descriptor, in: weekInterval)
-            let remaining: Int
-            switch descriptor.mode {
-            case .daily:
-                remaining = max(0, weeklyTarget - descriptor.completionsThisWeek - plannedThisWeek)
-            case .session:
-                remaining = max(0, weeklyTarget - descriptor.completionsThisWeek - plannedThisWeek)
+            let remaining = max(0, weeklyTarget - descriptor.completionsThisWeek - plannedThisWeek)
+
+            if remaining > 0 || descriptor.state == .suspended {
+                pending.append(PlanQueueItem(
+                    id: descriptor.id,
+                    protocolId: descriptor.id,
+                    title: descriptor.title,
+                    icon: descriptor.icon,
+                    remainingCount: remaining,
+                    durationLabel: "\(descriptor.estimatedDurationMinutes)m",
+                    requiredMinutes: descriptor.estimatedDurationMinutes,
+                    isDisabled: descriptor.state == .suspended,
+                    mode: descriptor.mode,
+                    tone: descriptor.tone
+                ))
+            } else if descriptor.completionsThisWeek >= weeklyTarget && weeklyTarget > 0 {
+                completed.append(PlanQueueItem(
+                    id: descriptor.id,
+                    protocolId: descriptor.id,
+                    title: descriptor.title,
+                    icon: descriptor.icon,
+                    remainingCount: 0,
+                    durationLabel: "\(descriptor.estimatedDurationMinutes)m",
+                    requiredMinutes: descriptor.estimatedDurationMinutes,
+                    isDisabled: false,
+                    mode: descriptor.mode,
+                    tone: descriptor.tone
+                ))
             }
-
-            guard remaining > 0 || descriptor.state == .suspended else { return nil }
-
-            return PlanQueueItem(
-                id: descriptor.id,
-                protocolId: descriptor.id,
-                title: descriptor.title,
-                icon: descriptor.icon,
-                remainingCount: remaining,
-                durationLabel: "\(descriptor.estimatedDurationMinutes)m",
-                requiredMinutes: descriptor.estimatedDurationMinutes,
-                isDisabled: descriptor.state == .suspended,
-                mode: descriptor.mode,
-                tone: descriptor.tone
-            )
         }
-        .sorted { lhs, rhs in
-            if lhs.isDisabled != rhs.isDisabled {
-                return lhs.isDisabled == false
-            }
+
+        queueItems = pending.sorted { lhs, rhs in
+            if lhs.isDisabled != rhs.isDisabled { return lhs.isDisabled == false }
             return lhs.title < rhs.title
         }
+        completedThisWeekItems = completed.sorted { $0.title < $1.title }
     }
 
     func buildWeekDays(referenceDate: Date) {
@@ -828,6 +870,7 @@ private extension PlanStore {
                 let displays = allocations.compactMap { allocation -> PlanAllocationDisplay? in
                     guard let descriptor = protocolsById[allocation.protocolId] else { return nil }
                     let minutes = allocation.durationMinutes ?? descriptor.estimatedDurationMinutes
+                    let completed = descriptor.completionDaysThisWeek.contains(dayStart)
                     return PlanAllocationDisplay(
                         id: allocation.id,
                         protocolId: allocation.protocolId,
@@ -836,7 +879,8 @@ private extension PlanStore {
                         icon: descriptor.icon,
                         durationLabel: "\(minutes)m",
                         durationMinutes: minutes,
-                        status: allocation.status
+                        status: allocation.status,
+                        isCompleted: completed
                     )
                 }
 

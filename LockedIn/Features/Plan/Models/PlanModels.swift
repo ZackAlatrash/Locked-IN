@@ -174,6 +174,7 @@ struct PlanAllocationDisplay: Identifiable {
     let durationLabel: String
     let durationMinutes: Int
     let status: PlanAllocationStatus
+    let isCompleted: Bool
 }
 
 enum PlanAllocationStatus: String, Codable, Equatable {

@@ -62,6 +62,8 @@ func runPlanCompletionReconciliationSimulation() {
             completionKind: .counted
         )
         switch firstOutcome {
+        case .movedToToday(let info):
+            print("Reconciliation moved to today: \(info.day) slot: \(info.slot.title)")
         case .released(let info):
             print("Reconciliation release day: \(info.day) slot: \(info.slot.title) (expected THU PM)")
         case .none:
