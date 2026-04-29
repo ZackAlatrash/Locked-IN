@@ -620,6 +620,34 @@ final class CommitmentSystemStore: ObservableObject {
         persistSystem()
     }
 
+    // MARK: - Walkthrough stash
+
+    private static let walkthroughStashKey = "walkthroughSystemStash"
+
+    var hasWalkthroughStash: Bool {
+        UserDefaults.standard.data(forKey: Self.walkthroughStashKey) != nil
+    }
+
+    func stashAndClearForWalkthrough() {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        if let data = try? encoder.encode(system) {
+            UserDefaults.standard.set(data, forKey: Self.walkthroughStashKey)
+        }
+        system = CommitmentSystem(nonNegotiables: [], createdAt: system.createdAt)
+        persistSystem()
+    }
+
+    func restoreFromWalkthroughStash() {
+        defer { UserDefaults.standard.removeObject(forKey: Self.walkthroughStashKey) }
+        guard let data = UserDefaults.standard.data(forKey: Self.walkthroughStashKey) else { return }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        guard let stashed = try? decoder.decode(CommitmentSystem.self, from: data) else { return }
+        system = stashed
+        persistSystem()
+    }
+
     func nonNegotiable(id: UUID) -> NonNegotiable? {
         system.nonNegotiables.first(where: { $0.id == id })
     }

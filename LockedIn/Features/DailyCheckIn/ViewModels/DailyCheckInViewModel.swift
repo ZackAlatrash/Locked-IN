@@ -236,6 +236,9 @@ final class DailyCheckInViewModel: ObservableObject {
                     toastMessage = "\(protocolModel.definition.title) wasn't scheduled today. \(weekdayLabel(for: releasedDay)) \(released.slot.title) was removed."
                 }
                 armPendingUndo(for: protocolId)
+            } else if case .autoAssigned(let assigned) = reconciliation {
+                toastMessage = "\(protocolModel.definition.title) added to today's \(assigned.slot.title) slot."
+                armPendingUndo(for: protocolId)
             } else {
                 armPendingUndo(for: protocolId)
             }

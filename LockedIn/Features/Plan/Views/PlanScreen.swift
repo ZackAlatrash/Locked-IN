@@ -41,7 +41,7 @@ struct PlanScreen: View {
     @ScaledMetric(relativeTo: .body) private var regularDayWidth: CGFloat = 194
     @ScaledMetric(relativeTo: .body) private var todayDayWidth: CGFloat = 198
     @ScaledMetric(relativeTo: .body) private var compactSlotHeight: CGFloat = 150
-    @ScaledMetric(relativeTo: .body) private var expandedSlotHeight: CGFloat = 188
+    @ScaledMetric(relativeTo: .body) private var expandedSlotHeight: CGFloat = 216
     @ScaledMetric(relativeTo: .body) private var queueCardBaseWidth: CGFloat = 228
 
     private var isDarkMode: Bool { colorScheme == .dark }
@@ -1035,7 +1035,7 @@ private extension PlanScreen {
                 expandedSlotCard(day: day, slot: slot, feedback: dropFeedback, draftItems: draftItems)
             }
         }
-        .frame(minHeight: slotHeight(isCompact: isCompact), alignment: .top)
+        .frame(height: slotHeight(isCompact: isCompact), alignment: .top)
         .overlay(alignment: .topLeading) {
             if let message = dropFeedback.message {
                 Text(message)
@@ -1354,6 +1354,7 @@ private extension PlanScreen {
         }
         .padding(8)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .clipped()
         .background(glassCard(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -1912,6 +1913,8 @@ private extension PlanScreen {
             var message = "\(allocation.title) marked as done."
             if case .movedToToday(let info) = reconciliation {
                 message = "\(allocation.title) moved to today's \(info.slot.title) slot."
+            } else if case .autoAssigned(let info) = reconciliation {
+                message = "\(allocation.title) added to today's \(info.slot.title) slot."
             }
             pendingUndo = outcome.kind == .counted ? .undoCompletion(protocolId: allocation.protocolId) : nil
             toast = PlanToast(message: message, undoLabel: outcome.kind == .counted ? "Undo" : nil)

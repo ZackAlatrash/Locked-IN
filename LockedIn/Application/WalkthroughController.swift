@@ -23,6 +23,7 @@ enum WalkthroughStep: CaseIterable {
     case logsHistory
     case checkInIntro
     case completeProtocol
+    case walkthroughComplete
     case finished
 }
 
@@ -49,6 +50,7 @@ private extension WalkthroughStep {
         .logsHistory,
         .checkInIntro,
         .completeProtocol,
+        .walkthroughComplete,
         .finished,
     ]
 }
@@ -62,6 +64,7 @@ final class WalkthroughController: ObservableObject {
     @Published var isActive: Bool = false
     @Published var step: WalkthroughStep = .intro
     @Published var walkthroughProtocolId: UUID? = nil
+    @Published private(set) var isRestartMode: Bool = false
 
     private let userDefaults: UserDefaults
 
@@ -86,6 +89,18 @@ final class WalkthroughController: ObservableObject {
         isActive = true
         step = .intro
         walkthroughProtocolId = nil
+    }
+
+    func beginRestart() {
+        userDefaults.set(false, forKey: StorageKeys.hasCompletedWalkthrough)
+        isRestartMode = true
+        isActive = true
+        step = .intro
+        walkthroughProtocolId = nil
+    }
+
+    func clearRestartMode() {
+        isRestartMode = false
     }
 
     func skip() {
@@ -144,7 +159,7 @@ final class WalkthroughController: ObservableObject {
     func handleProtocolCompleted(id: UUID) -> Bool {
         guard isActive, step == .completeProtocol else { return false }
         guard walkthroughProtocolId == nil || walkthroughProtocolId == id else { return false }
-        finish()
+        step = .walkthroughComplete
         return true
     }
 }

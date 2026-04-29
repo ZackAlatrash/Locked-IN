@@ -224,7 +224,7 @@ private extension CockpitView {
     var activeCockpitWalkthroughStep: WalkthroughStep? {
         guard walkthroughController.isActive else { return nil }
         switch walkthroughController.step {
-        case .cockpitIntro, .cockpitReliability, .cockpitStreak, .cockpitProtocols, .createName, .checkInIntro:
+        case .cockpitIntro, .cockpitReliability, .cockpitStreak, .cockpitProtocols, .createName, .checkInIntro, .walkthroughComplete:
             return walkthroughController.step
         default:
             return nil
@@ -448,6 +448,8 @@ private extension CockpitView {
                             slot: released.slot
                         )
                     )
+                } else if case .autoAssigned(let assigned) = reconciliation {
+                    showCompletionToast("\(protocolModel.definition.title) added to today's \(assigned.slot.title) slot.")
                 }
                 if walkthroughController.isActive,
                    nnId == walkthroughController.walkthroughProtocolId {
@@ -628,6 +630,8 @@ private extension CockpitView {
             _ = walkthroughController.advance(to: .cockpitProtocols)
         case .cockpitProtocols:
             _ = walkthroughController.advance(to: .createName)
+        case .walkthroughComplete:
+            walkthroughController.finish()
         default:
             break
         }

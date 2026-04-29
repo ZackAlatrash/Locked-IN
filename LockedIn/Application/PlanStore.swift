@@ -46,6 +46,7 @@ enum PlanCompletionReconciliationOutcome: Equatable {
     case none
     case released(ReleasedAllocationInfo)
     case movedToToday(ReleasedAllocationInfo)
+    case autoAssigned(ReleasedAllocationInfo)
 }
 
 @MainActor
@@ -379,35 +380,48 @@ final class PlanStore: ObservableObject {
         completionDate: Date,
         completionKind: CompletionKind
     ) -> PlanCompletionReconciliationOutcome {
-        guard mode == .session, completionKind == .counted else {
-            return .none
-        }
+        guard completionKind == .counted else { return .none }
 
         let completionWeekId = DateRules.weekID(for: completionDate, calendar: calendar)
         let completionDayStart = DateRules.startOfDay(completionDate, calendar: calendar)
 
+        // Already has an active allocation on this day — plan board is accurate, nothing to do.
         let hasAllocationOnCompletionDay = allAllocations.contains { allocation in
             allocation.protocolId == protocolId &&
             allocation.weekId == completionWeekId &&
             allocation.status == .active &&
             DateRules.startOfDay(allocation.day, calendar: calendar) == completionDayStart
         }
-        if hasAllocationOnCompletionDay {
-            return .none
-        }
-
-        guard let candidate = nearestFutureAllocationCandidate(
-            protocolId: protocolId,
-            completionDate: completionDate,
-            completionWeekId: completionWeekId
-        ) else {
-            return .none
-        }
-
-        allAllocations.removeAll { $0.id == candidate.allocation.id }
+        if hasAllocationOnCompletionDay { return .none }
 
         let todaySlot = slotForCurrentTime(completionDate)
         let descriptor = protocolsById[protocolId]
+
+        // Weekly target for this protocol (descriptor.completionsThisWeek is pre-completion,
+        // so +1 gives the count including this completion).
+        let weeklyTarget: Int
+        switch mode {
+        case .daily: weeklyTarget = 7
+        case .session: weeklyTarget = descriptor?.frequencyPerWeek ?? 1
+        }
+        let completionsIncludingThis = (descriptor?.completionsThisWeek ?? 0) + 1
+
+        // Option B: only release a future slot if the weekly target is now satisfied.
+        // If they still have sessions left this week, keep future planned slots intact.
+        var removedFutureSlot = false
+        if completionsIncludingThis >= weeklyTarget,
+           let candidate = nearestFutureAllocationCandidate(
+               protocolId: protocolId,
+               completionDate: completionDate,
+               completionWeekId: completionWeekId
+           ) {
+            allAllocations.removeAll { $0.id == candidate.allocation.id }
+            removedFutureSlot = true
+        }
+
+        // Always create a today allocation, bypassing calendar capacity validation.
+        // The user completed the work — the plan should reflect reality regardless of
+        // whether the calendar showed the day as full.
         let todayAllocation = PlanAllocation(
             id: UUID(),
             protocolId: protocolId,
@@ -430,13 +444,13 @@ final class PlanStore: ObservableObject {
         }
 
         refreshWithLastContext()
-        return .movedToToday(
-            ReleasedAllocationInfo(
-                protocolId: protocolId,
-                day: completionDayStart,
-                slot: todaySlot
-            )
+
+        let info = ReleasedAllocationInfo(
+            protocolId: protocolId,
+            day: completionDayStart,
+            slot: todaySlot
         )
+        return removedFutureSlot ? .movedToToday(info) : .autoAssigned(info)
     }
 
     private func slotForCurrentTime(_ date: Date) -> PlanSlot {
@@ -452,6 +466,38 @@ final class PlanStore: ObservableObject {
             try repository.save([])
         } catch {
             setWarning("Could not clear saved plan data.")
+        }
+        refreshWithLastContext()
+    }
+
+    // MARK: - Walkthrough stash
+
+    private static let walkthroughStashKey = "walkthroughPlanStash"
+
+    var hasWalkthroughStash: Bool {
+        UserDefaults.standard.data(forKey: Self.walkthroughStashKey) != nil
+    }
+
+    func stashAndClearForWalkthrough() {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        if let data = try? encoder.encode(allAllocations) {
+            UserDefaults.standard.set(data, forKey: Self.walkthroughStashKey)
+        }
+        clearAllAllocations()
+    }
+
+    func restoreFromWalkthroughStash() {
+        defer { UserDefaults.standard.removeObject(forKey: Self.walkthroughStashKey) }
+        guard let data = UserDefaults.standard.data(forKey: Self.walkthroughStashKey) else { return }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        guard let stashed = try? decoder.decode([PlanAllocation].self, from: data) else { return }
+        allAllocations = stashed
+        do {
+            try repository.save(stashed)
+        } catch {
+            setWarning("Could not restore plan data.")
         }
         refreshWithLastContext()
     }

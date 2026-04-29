@@ -98,7 +98,18 @@ struct LockedInAppRoot: View {
                 UserDefaults.standard.set(true, forKey: protocolResetKey)
             }
             commitmentSystemStore.runDailyIntegrityTick(referenceDate: appClock.now)
+            // Crash recovery: restore stash if a walkthrough restart was interrupted
+            if commitmentSystemStore.hasWalkthroughStash && !walkthroughController.isActive {
+                commitmentSystemStore.restoreFromWalkthroughStash()
+                planStore.restoreFromWalkthroughStash()
+            }
             maybeStartWalkthrough()
+        }
+        .onChange(of: walkthroughController.isActive) { _, isNowActive in
+            guard !isNowActive, walkthroughController.isRestartMode else { return }
+            commitmentSystemStore.restoreFromWalkthroughStash()
+            planStore.restoreFromWalkthroughStash()
+            walkthroughController.clearRestartMode()
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {

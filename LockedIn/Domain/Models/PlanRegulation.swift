@@ -72,21 +72,24 @@ struct ProtocolPlanItem: Equatable {
 struct PlanRegulationRules: Equatable {
     let maxProtocolsPerDay: Int
     let maxProtocolsPerSlot: Int
-    let avoidClumpingWeight: Double
+    /// How strongly to honour a protocol's preferred time window. Higher = preference is more decisive.
     let preferenceWeight: Double
+    /// How strongly to spread sessions across lightly-loaded days. Higher = avoids stacking.
+    let avoidClumpingWeight: Double
+    /// How much to favour earlier days in the week. Kept low — urgency is a weak signal.
     let urgencyWeight: Double
 
     init(
-        maxProtocolsPerDay: Int = 2,
+        maxProtocolsPerDay: Int = 3,
         maxProtocolsPerSlot: Int = 1,
+        preferenceWeight: Double = 1.5,
         avoidClumpingWeight: Double = 1.0,
-        preferenceWeight: Double = 1.0,
-        urgencyWeight: Double = 1.0
+        urgencyWeight: Double = 0.3
     ) {
         self.maxProtocolsPerDay = maxProtocolsPerDay
         self.maxProtocolsPerSlot = maxProtocolsPerSlot
-        self.avoidClumpingWeight = avoidClumpingWeight
         self.preferenceWeight = preferenceWeight
+        self.avoidClumpingWeight = avoidClumpingWeight
         self.urgencyWeight = urgencyWeight
     }
 }

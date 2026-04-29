@@ -19,13 +19,22 @@ struct CockpitWalkthroughOverlay: View {
                     spotlightOutline(highlightFrame: frame)
                         .allowsHitTesting(false)
                 } else {
-                    Color.black.opacity(style == .dark ? 0.50 : 0.36)
-                        .allowsHitTesting(false)
+                    Color.black.opacity(step == .walkthroughComplete
+                        ? (style == .dark ? 0.82 : 0.65)
+                        : (style == .dark ? 0.50 : 0.36)
+                    )
+                    .allowsHitTesting(false)
                 }
 
-                calloutCard
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 22)
+                if step == .walkthroughComplete {
+                    completionCard
+                        .padding(.horizontal, 28)
+                        .frame(maxHeight: .infinity, alignment: .center)
+                } else {
+                    calloutCard
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 22)
+                }
             }
             .animation(reduceMotion ? .none : Theme.Animation.context, value: step)
             .accessibilityAddTraits(.isModal)
@@ -155,6 +164,48 @@ private extension CockpitWalkthroughOverlay {
         default:
             return OverlayContent(title: "", message: "", continueTitle: "Continue")
         }
+    }
+
+    var completionCard: some View {
+        VStack(spacing: 0) {
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 52, weight: .bold))
+                .foregroundColor(highlightColor)
+                .padding(.bottom, 20)
+
+            Text("You're locked in.")
+                .font(.system(size: 24, weight: .black))
+                .foregroundColor(textPrimary)
+                .multilineTextAlignment(.center)
+                .padding(.bottom, 10)
+
+            Text("You know how the system works. Your protocols are live. Miss nothing.")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(textSecondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 28)
+
+            Button(action: onContinue) {
+                Text("Begin")
+                    .font(.system(size: 16, weight: .black))
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 52)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(highlightColor)
+            .accessibilityLabel("Begin using LockedIn")
+        }
+        .padding(28)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(cardFill)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(cardStroke, lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.45), radius: 40, x: 0, y: 20)
     }
 
     var calloutCard: some View {

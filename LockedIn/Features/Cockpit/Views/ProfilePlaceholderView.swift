@@ -6,9 +6,12 @@ struct ProfilePlaceholderView: View {
     @AppStorage(DailyCheckInPolicy.Keys.minute) private var dailyCheckInMinute = 0
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-#if DEBUG
-    @EnvironmentObject private var store: CommitmentSystemStore
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var commitmentSystemStore: CommitmentSystemStore
     @EnvironmentObject private var planStore: PlanStore
+    @EnvironmentObject private var walkthroughController: WalkthroughController
+    @State private var showRestartConfirmation = false
+#if DEBUG
     @EnvironmentObject private var appClock: AppClock
     @EnvironmentObject private var devRuntime: DevRuntimeState
 #endif
@@ -27,6 +30,7 @@ struct ProfilePlaceholderView: View {
                 profileHeader
                 appearanceCard
                 dailyCheckInCard
+                walkthroughCard
 #if DEBUG
                 devOptionsRow
 #endif
@@ -157,6 +161,42 @@ private extension ProfilePlaceholderView {
         )
     }
 
+    var walkthroughCard: some View {
+        Button {
+            showRestartConfirmation = true
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Redo Walkthrough")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(textMain)
+                    Text("Replay the guided tour from the beginning")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(textSecondary)
+                }
+                Spacer()
+                Image(systemName: "arrow.counterclockwise")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(textMuted)
+            }
+            .padding(14)
+            .background(panelBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .alert("Redo Walkthrough?", isPresented: $showRestartConfirmation) {
+            Button("Start Tour") {
+                commitmentSystemStore.stashAndClearForWalkthrough()
+                planStore.stashAndClearForWalkthrough()
+                walkthroughController.beginRestart()
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Your protocols will be hidden during the tour and restored automatically when it's done.")
+        }
+    }
+
     func settingRow(title: String, subtitle: String) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
@@ -182,7 +222,7 @@ private extension ProfilePlaceholderView {
         NavigationLink {
             DevOptionsView(
                 controller: DevOptionsController(
-                    commitmentStore: store,
+                    commitmentStore: commitmentSystemStore,
                     planStore: planStore,
                     appClock: appClock,
                     devRuntime: devRuntime
