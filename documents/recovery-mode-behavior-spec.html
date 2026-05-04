@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recovery Mode Behavior Specification — Locked IN</title>
+  <style>
+    :root {
+      --bg: #f5f1ea;
+      --panel: #fffdfa;
+      --ink: #1f2937;
+      --muted: #5b6472;
+      --line: #d7d2ca;
+      --accent: #9f1d1d;
+      --accent-soft: #fde8e8;
+      --warn: #8a5a00;
+      --warn-soft: #fff4db;
+      --good: #165c3a;
+      --good-soft: #e8f6ee;
+      --info: #1a4a7a;
+      --info-soft: #e8f0fb;
+      --p0: #9f1d1d;
+      --p0-soft: #fde8e8;
+      --p1: #8a5a00;
+      --p1-soft: #fff4db;
+      --p2: #165c3a;
+      --p2-soft: #e8f6ee;
+      --proposed: #5b3a8a;
+      --proposed-soft: #f0e8fb;
+      --mono: "SFMono-Regular", "Menlo", "Consolas", monospace;
+      --sans: "Inter", "Helvetica Neue", "Arial", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: linear-gradient(180deg, #f7f3ed 0%, #f1ebe2 100%);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 36px 24px 80px;
+    }
+
+    /* ── Typography ─────────────────────────────────────── */
+    h1, h2, h3, h4 { line-height: 1.15; margin: 0 0 12px; }
+    h1 { font-size: 36px; letter-spacing: -0.03em; }
+    h2 {
+      margin-top: 36px;
+      font-size: 22px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--line);
+      color: var(--ink);
+    }
+    h3 { margin-top: 22px; font-size: 17px; }
+    h4 { margin-top: 16px; font-size: 14px; font-weight: 700; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+    p  { margin: 0 0 14px; }
+    ul, ol { margin: 0 0 16px 22px; }
+    li { margin: 0 0 7px; }
+    code { font-family: var(--mono); font-size: 0.88em; background: rgba(0,0,0,0.04); padding: 1px 4px; border-radius: 4px; }
+
+    /* ── Layout primitives ──────────────────────────────── */
+    .hero {
+      background:
+        radial-gradient(circle at top right, rgba(159,29,29,0.09), transparent 30%),
+        radial-gradient(circle at left center, rgba(193,111,59,0.08), transparent 26%),
+        var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 12px 36px rgba(24,29,39,0.06);
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(24,29,39,0.04);
+    }
+
+    .section-card {
+      padding: 20px 22px 10px;
+      margin-top: 18px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .mini {
+      padding: 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+
+    /* ── Callouts ───────────────────────────────────────── */
+    .callout {
+      margin: 16px 0;
+      padding: 14px 18px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #fbf8f3;
+      font-size: 14px;
+    }
+    .callout.warn    { border-color: #efcf8d; background: var(--warn-soft); }
+    .callout.good    { border-color: #b7dfc8; background: var(--good-soft); }
+    .callout.info    { border-color: #a8c4e8; background: var(--info-soft); }
+    .callout.proposed { border-color: #c8a8e8; background: var(--proposed-soft); }
+
+    /* ── Tables ─────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; margin: 16px 0 20px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      font-size: 13.5px;
+    }
+
+    th, td {
+      vertical-align: top;
+      text-align: left;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      background: #f3ede4;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Tags ───────────────────────────────────────────── */
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 16px 0 0;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #faf7f2;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 3px 8px;
+      margin: 0 4px 4px 0;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .tag.p0       { background: var(--p0-soft);       color: var(--p0); }
+    .tag.p1       { background: var(--p1-soft);       color: var(--p1); }
+    .tag.p2       { background: var(--p2-soft);       color: var(--p2); }
+    .tag.proposed { background: var(--proposed-soft); color: var(--proposed); }
+    .tag.engine   { background: #e8f0fb; color: var(--info); }
+    .tag.store    { background: #fde8e8; color: var(--accent); }
+    .tag.ui       { background: #f0ffe8; color: #2a6a1a; }
+    .tag.domain   { background: #f8f0e8; color: #7a4a1a; }
+    .tag.codex    { background: #e8f0fb; color: var(--info); }
+    .tag.gemini   { background: #e8f6ee; color: var(--good); }
+    .tag.claude   { background: var(--accent-soft); color: var(--accent); }
+
+    /* ── State block ────────────────────────────────────── */
+    .state-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin: 16px 0;
+    }
+
+    .state-item {
+      padding: 14px 16px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+
+    .state-item code { display: block; font-size: 0.85em; margin-bottom: 6px; }
+    .state-item .type { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .state-item p { margin: 0; font-size: 13px; color: var(--muted); }
+
+    /* ── Invariant list ─────────────────────────────────── */
+    .invariant-list {
+      list-style: none;
+      margin: 16px 0;
+      padding: 0;
+    }
+
+    .invariant-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      margin: 0 0 8px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font-size: 14px;
+    }
+
+    .inv-num {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Flow steps ─────────────────────────────────────── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin: 16px 0;
+      position: relative;
+    }
+
+    .flow::before {
+      content: "";
+      position: absolute;
+      left: 20px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--line);
+    }
+
+    .flow-step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 14px 16px 14px 0;
+      position: relative;
+    }
+
+    .flow-num {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      background: var(--panel);
+      border: 2px solid var(--line);
+      color: var(--ink);
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .flow-step.enter .flow-num { border-color: #efcf8d; color: var(--warn); background: var(--warn-soft); }
+    .flow-step.during .flow-num { border-color: #a8c4e8; color: var(--info); background: var(--info-soft); }
+    .flow-step.exit .flow-num { border-color: #b7dfc8; color: var(--good); background: var(--good-soft); }
+    .flow-step.cleanup .flow-num { border-color: var(--line); color: var(--muted); background: var(--panel); }
+
+    .flow-body { flex: 1; }
+    .flow-body h4 { margin: 0 0 6px; font-size: 14px; text-transform: none; letter-spacing: 0; color: var(--ink); }
+    .flow-body p  { margin: 0; font-size: 13.5px; color: var(--muted); }
+    .flow-body ul { margin: 6px 0 0 18px; font-size: 13px; color: var(--muted); }
+
+    /* ── Priority badge in gap table ────────────────────── */
+    .p-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+
+    .p-badge.P0 { background: var(--p0-soft); color: var(--p0); }
+    .p-badge.P1 { background: var(--p1-soft); color: var(--p1); }
+    .p-badge.P2 { background: var(--p2-soft); color: var(--p2); }
+
+    /* ── TOC ────────────────────────────────────────────── */
+    .toc {
+      padding: 20px 24px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      margin-top: 20px;
+      columns: 2;
+      column-gap: 24px;
+    }
+
+    .toc ol { margin: 0; padding-left: 18px; }
+    .toc li { margin: 0 0 6px; font-size: 14px; break-inside: avoid; }
+    .toc a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .toc a:hover { text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      .toc { columns: 1; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ═══════════════════════════════════════════════════════
+       HERO
+  ════════════════════════════════════════════════════════════ -->
+  <section class="hero">
+    <h1>Recovery Mode Behavior Specification</h1>
+    <p>Precise specification of how Recovery Mode must enter, behave, and exit — derived from the Phase 1 audit (<code>recovery-mode-map.html</code>). Covers state model, invariants, edge cases, implementation gaps, and test plan.</p>
+    <div class="meta">
+      <span class="pill">Project: <code>Locked IN</code></span>
+      <span class="pill">Branch: <code>Accessibility</code></span>
+      <span class="pill">Based on audit: <code>2026-05-04</code></span>
+      <span class="pill">Status: <code>Draft v1</code></span>
+    </div>
+    <div class="callout info" style="margin-top:20px;">
+      <strong>Source of truth:</strong> this document is derived solely from the Phase 1 source audit. Behavior described as <span class="tag proposed">Proposed</span> is not yet verified in code and is explicitly marked. Everything else reflects observed implementation.
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════
+       TABLE OF CONTENTS
+  ════════════════════════════════════════════════════════════ -->
+  <nav>
+    <h2 style="margin-top:28px;">Contents</h2>
+    <div class="toc">
+      <ol>
+        <li><a href="#purpose">Purpose</a></li>
+        <li><a href="#impl-summary">Current Implementation Summary</a></li>
+        <li><a href="#intended-flow">Intended Recovery Mode Flow</a></li>
+        <li><a href="#state-model">State Model</a></li>
+        <li><a href="#invariants">Required Invariants</a></li>
+        <li><a href="#edge-cases">Edge Cases</a></li>
+        <li><a href="#gap-list">Gap List</a></li>
+        <li><a href="#impl-order">Recommended Implementation Order</a></li>
+        <li><a href="#test-plan">Test Plan</a></li>
+        <li><a href="#ai-assignment">AI Tool Assignment</a></li>
+      </ol>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════════
+       §1 PURPOSE
+  ════════════════════════════════════════════════════════════ -->
+  <h2 id="purpose">1. Purpose</h2>
+
+  <div class="panel section-card">
+    <p>Recovery Mode is a structured, time-limited protective state that the system enters when a user has accumulated enough missed commitments (violations) on one or more protocols to indicate that their current load is unsustainable. Its goals are:</p>
+
+    <ul>
+      <li><strong>Protect against compounding failure.</strong> Without intervention, one struggling protocol generates cascading violations, damages reliability scores, and demoralises the user. Recovery Mode interrupts that spiral.</li>
+      <li><strong>Force an explicit load decision.</strong> The user must consciously acknowledge the problem and, where capacity allows, choose one protocol to temporarily suspend. This prevents passive avoidance.</li>
+      <li><strong>Provide a measurable exit condition.</strong> Seven consecutive clean days — each with at least one tracked completion (or an explicit exemption) and no new violations — restore the system to normal operation. The exit is earned, not automatic.</li>
+      <li><strong>Keep the plan layer coherent.</strong> Future plan allocations for paused protocols are put on hold during recovery and are either restored or marked as terminally skipped on exit, so the plan remains accurate.</li>
+      <li><strong>Enforce policy guardrails during recovery.</strong> Creating new protocols and acting on suspended protocols are blocked until recovery resolves.</li>
+    </ul>
+
+    <div class="callout warn">
+      <strong>What Recovery Mode is not:</strong> it is not a punishment or a reset. Protocols stay in the system. Completions still count. Reliability scores still update. Recovery is a temporary triage mode that acknowledges reduced capacity, not a wipe of prior progress.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       §2 IMPLEMENTATION SUMMARY
+  ════════════════════════════════════════════════════════════ -->
+  <h2 id="impl-summary">2. Current Implementation Summary</h2>
+
+  <div class="callout info">
+    This section summarises what the Phase 1 audit found. File references match actual paths in the workspace.
+  </div>
+
+  <div class="grid-2">
+    <div class="mini">
+      <h3>Domain Layer</h3>
+      <ul>
+        <li><code>CommitmentSystem.swift</code> — root aggregate, holds all persisted recovery fields.</li>
+        <li><code>NonNegotiableState.swift</code> — enum with <code>.recovery</code>, <code>.suspended</code>, <code>.retired</code>, <code>.active</code>.</li>
+        <li><code>NonNegotiableEngine.swift</code> — violation counting, recovery-state transitions per protocol.</li>
+        <li><code>CommitmentSystemEngine.swift</code> — system-wide recovery evaluation, clean-day counting, normalization.</li>
+        <li><code>CommitmentPolicyEngine.swift</code> — policy gates; blocks creation during recovery, blocks actions on suspended protocols.</li>
+        <li><code>PlanRegulatorEngine.swift</code> — plan scheduling; prioritises recovery protocols and isolates them.</li>
+      </ul>
+    </div>
+    <div class="mini">
+      <h3>Application Layer</h3>
+      <ul>
+        <li><code>CommitmentSystemStore.swift</code> — bridges domain state into app flow; handles recovery entry detection, pause action, and resolution completion.</li>
+        <li><code>PlanStore.swift</code> — pauses allocations on recovery entry and finalises them on exit.</li>
+      </ul>
+      <h3>Feature Layer</h3>
+      <ul>
+        <li><code>AppRouter.swift</code> — popup presentation flag.</li>
+        <li><code>MainAppView.swift</code> — presentation trigger and exit cleanup coordinator.</li>
+        <li><code>RecoveryModeViewModel.swift</code> — builds ranked pause options, drives popup step machine.</li>
+        <li><code>RecoveryModePopup.swift</code> — three-step modal: Entry → Select Protocol → Confirmed.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="panel section-card">
+    <h3>Key Thresholds (Observed)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Threshold</th><th>Value</th><th>File / Function</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Daily compliance violations to enter recovery</td>
+            <td><code>3</code></td>
+            <td><code>NonNegotiableEngine.recoveryViolationThreshold</code> (line 586)</td>
+            <td>Per 14-day window.</td>
+          </tr>
+          <tr>
+            <td>Session / weekly violations to enter recovery</td>
+            <td><code>2</code></td>
+            <td><code>NonNegotiableEngine.updateRecoveryState</code></td>
+            <td>Per 14-day window.</td>
+          </tr>
+          <tr>
+            <td>Clean days required to exit recovery</td>
+            <td><code>7</code></td>
+            <td><code>CommitmentSystemEngine.evaluateRecoveryDay</code></td>
+            <td>Consecutive; reset on any violation day.</td>
+          </tr>
+          <tr>
+            <td>Minimum recovering protocols for normalization exit</td>
+            <td><code>&lt; 2</code></td>
+            <td><code>CommitmentSystemEngine.normalizeRecoveryDomain</code></td>
+            <td>If fewer than 2 eligible protocols remain, recovery exits early.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       §3 INTENDED FLOW
+  ════════════════════════════════════════════════════════════ -->
+  <h2 id="intended-flow">3. Intended Recovery Mode Flow</h2>
+
+  <div class="flow">
+
+    <!-- ENTRY GROUP -->
+    <div class="flow-step enter">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <h4>Entering Recovery — Violation Threshold Crossed</h4>
+        <p>During the daily integrity tick (<code>runDailyIntegrityTick</code>), <code>NonNegotiableEngine.evaluateDailyComplianceIfNeeded</code> and <code>evaluateWeekIfNeeded</code> append violations for missed days or missed weekly frequencies. After each append, <code>updateRecoveryState</code> checks the current 14-day window. When a protocol's window violation count reaches or exceeds threshold, its state transitions to <code>.recovery</code>.</p>
+      </div>
+    </div>
+
+    <div class="flow-step enter">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <h4>Entering Recovery — System Transition Detected</h4>
+        <p><code>CommitmentSystemStore.applySystemUpdate</code> calls <code>handleRecoveryTransition</code>, which detects the first moment a protocol enters <code>.recovery</code> when the system was not already in recovery. It sets:</p>
+        <ul>
+          <li><code>recoveryEntryPendingResolution = true</code></li>
+          <li><code>recoveryEntryRequiresPauseSelection</code> = <code>true</code> if there is at least one other <code>.active</code> or <code>.recovery</code> protocol available to pause.</li>
+          <li><code>recoveryEntryTriggerProtocolId</code> = ID of the triggering protocol.</li>
+          <li>Clears any stale <code>recoveryPausedProtocolId</code>.</li>
+          <li>Resets <code>recoveryCleanDayStreak</code> to 0.</li>
+          <li>Backdates <code>lastRecoveryEvaluationDay</code> to the day before entry.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="flow-step enter">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <h4>Presenting the Recovery Entry Popup</h4>
+        <p><code>MainAppView.evaluateRecoveryEntryPresentation</code> observes store state and calls <code>recoveryEntryContext()</code>. If a non-nil context is returned (pending resolution exists), it sets <code>AppRouter.presentRecoveryEntry = true</code>, which renders the <code>RecoveryModePopup</code> as a full-screen modal overlay above the app shell.</p>
+      </div>
+    </div>
+
+    <div class="flow-step enter">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <h4>Selecting or Pausing a Protocol</h4>
+        <p><code>RecoveryModeViewModel.refresh</code> builds ranked <code>RecoveryProtocolOption</code> items using current-window violations, planned weekly load, and active planned load this week. The popup moves through three steps:</p>
+        <ul>
+          <li><strong>Entry step</strong> — describes what recovery means and which protocol triggered it.</li>
+          <li><strong>Select Protocol step</strong> — shown only if <code>recoveryEntryRequiresPauseSelection</code> is true. The user picks one protocol to suspend.</li>
+          <li><strong>Confirmed step</strong> — summary screen before the user dismisses.</li>
+        </ul>
+        <p>If selection is required, <code>confirmPauseSelection</code> calls <code>CommitmentSystemStore.pauseProtocolForRecovery</code> (which sets the protocol state to <code>.suspended</code> and records <code>recoveryPausedProtocolId</code>) and immediately calls <code>PlanStore.pauseAllocations</code> (which sets all future active allocations for that protocol to <code>.paused</code>).</p>
+      </div>
+    </div>
+
+    <!-- DURING GROUP -->
+    <div class="flow-step during">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <h4>Behavior During Recovery Mode</h4>
+        <p>While any protocol is in <code>.recovery</code> state:</p>
+        <ul>
+          <li><code>CommitmentPolicyEngine.canCreate</code> → <code>.deny(.recoveryActive)</code>. No new protocols may be created.</li>
+          <li><code>CommitmentPolicyEngine.canRecordCompletion</code> and <code>canPlaceAllocation</code> → <code>.deny(.protocolSuspended)</code> for the paused protocol.</li>
+          <li><code>PlanStore.shouldApplyRecoveryStrictness</code> returns <code>true</code>, reducing placement freedom for manual scheduling.</li>
+          <li><code>PlanRegulatorEngine</code> sorts recovery protocols to the top of the scheduling queue and applies a same-day isolation penalty to avoid co-scheduling recovery and heavy active protocols.</li>
+          <li>The Cockpit shows a recovery progress bar (<code>recoveryProgressText</code>, <code>recoveryProgressFill</code>) and suspended badge on the paused protocol card.</li>
+          <li>Daily Check-In tracks recovery and active protocols but blocks completion recording for suspended ones (<code>systemModeLabel</code>, <code>effectiveWeeklyTarget</code>).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="flow-step during">
+      <div class="flow-num">6</div>
+      <div class="flow-body">
+        <h4>Clean-Day Counting</h4>
+        <p>Each day, <code>CommitmentSystemEngine.evaluateRecoveryDay</code> evaluates the most recently closed day. A day qualifies as <em>clean</em> when:</p>
+        <ul>
+          <li>No new violation was recorded that day, <em>and</em></li>
+          <li>Either: at least one counted completion exists across all <code>.active</code> or <code>.recovery</code> protocols, or the day is exempt because no counted completion was required (grace window, weekly-feasibility logic via <code>requiresCountedCompletionForRecovery</code>).</li>
+        </ul>
+        <p>On a clean day, <code>recoveryCleanDayStreak</code> increments. On a violation day, it resets to 0.</p>
+      </div>
+    </div>
+
+    <!-- EXIT GROUP -->
+    <div class="flow-step exit">
+      <div class="flow-num">7</div>
+      <div class="flow-body">
+        <h4>Exiting Recovery — Normal Path (7 Clean Days)</h4>
+        <p>When <code>recoveryCleanDayStreak</code> reaches 7, <code>evaluateRecoveryDay</code> exits recovery: all <code>.recovery</code> protocols transition to <code>.active</code>, <code>resumeSuspendedIfCapacityAllows</code> restores the paused (<code>.suspended</code>) protocol to <code>.active</code> if the new active count is within capacity, and <code>recoveryCleanDayStreak</code> resets.</p>
+      </div>
+    </div>
+
+    <div class="flow-step exit">
+      <div class="flow-num">8</div>
+      <div class="flow-body">
+        <h4>Exiting Recovery — Normalization Path (Early Exit)</h4>
+        <p><code>CommitmentSystemEngine.normalizeRecoveryDomain</code> exits recovery early if fewer than 2 recovery-eligible protocols remain — for example, because a protocol was retired during recovery. This path clears stale paused IDs and pending-entry flags as part of the normalization pass (<code>RecoveryNormalizationDecision</code>).</p>
+      </div>
+    </div>
+
+    <!-- FINALIZATION GROUP -->
+    <div class="flow-step cleanup">
+      <div class="flow-num">9</div>
+      <div class="flow-body">
+        <h4>Finalizing Allocations on Recovery Exit</h4>
+        <p>When <code>MainAppView</code> detects that the system has exited recovery (no protocol is in <code>.recovery</code> state), it calls <code>PlanStore.finalizeRecoveryAllocationStatuses</code> with the set of protocol IDs that should be restored (<code>activeProtocolIdsForRecoveryRestoration</code>). The logic:</p>
+        <ul>
+          <li>Future <code>.paused</code> allocations for restorable protocols → <code>.active</code></li>
+          <li>Past or non-restorable <code>.paused</code> allocations → <code>.skippedDueToRecovery</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="flow-step cleanup">
+      <div class="flow-num">10</div>
+      <div class="flow-body">
+        <h4>Cleaning Up Stale State</h4>
+        <p><code>recomputeRecoveryEntryPendingDecision</code> is called after certain mutations (e.g., protocol retirement) to repair or clear pending-entry state that may have become invalid. It checks whether the trigger protocol still exists, whether candidates remain, and whether the pending flag should be closed automatically.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       §4 STATE MODEL
+  ════════════════════════════════════════════════════════════ -->
+  <h2 id="state-model">4. State Model</h2>
+
+  <div class="callout info">All fields below are persisted via JSON (date strategy <code>.iso8601</code>) unless noted as in-memory only.</div>
+
+  <h3>Primary Recovery Fields — <code>CommitmentSystem</code></h3>
+  <div class="state-grid">
+    <div class="state-item">
+      <div class="type">Bool — persisted</div>
+      <code>recoveryEntryPendingResolution</code>
+      <p>True when the user has not yet completed the recovery-entry popup flow. Blocks plan creation and signals popup presentation.</p>
+    </div>
+    <div class="state-item">
+      <div class="type">Bool — persisted</div>
+      <code>recoveryEntryRequiresPauseSelection</code>
+      <p>True when there is at least one other protocol available to pause. Drives whether the Select Protocol step appears in the popup.</p>
+    </div>
+    <div class="state-item">
+      <div class="type">UUID? — persisted</div>
+      <code>recoveryEntryTriggerProtocolId</code>
+      <p>ID of the protocol that triggered this recovery event. Used to display context in the popup and for stale-state repair.</p>
+    </div>
+    <div class="state-item">
+      <div class="type">UUID? — persisted</div>
+      <code>recoveryPausedProtocolId</code>
+      <p>ID of the protocol the user chose to suspend. Cleared when recovery exits or normalized away. Must never point to a retired/deleted protocol.</p>
+    </div>
+    <div class="state-item">
+      <div class="type">Int — persisted</div>
+      <code>recoveryCleanDayStreak</code>
+      <p>Count of consecutive clean days in the current recovery episode. Resets on any violation day. 7 = exit.</p>
+    </div>
+    <div class="state-item">
+      <div class="type">Date? — persisted</div>
+      <code>lastRecoveryEvaluationDay</code>
+      <p>The last calendar day that was evaluated for clean-day status. Prevents double-counting and drives catch-up evaluation on app restart.</p>
+    </div>
+    <div class="state-item">
+      <div class="type">[UUID] — persisted</div>
+      <code>recoveringNonNegotiables</code>
+      <p>Redundant index of protocol IDs currently in <code>.recovery</code> state; used for O(1) checks on system mode without scanning the full protocol list.</p>
+    </div>
+    <div class="state-item">
+      <div class="type">Int — persisted</div>
+      <code>allowedCapacity</code>
+      <p>System-wide cap on concurrently active protocols. Reduced during recovery; restored on exit.</p>
+    </div>
+  </div>
+
+  <h3>Per-Protocol State — <code>NonNegotiable</code></h3>
+  <div class="state-grid">
+    <div class="state-item">
+      <div class="type">NonNegotiableState enum — persisted</div>
+      <code>state</code>
+      <p>One of: <code>.active</code>, <code>.recovery</code>, <code>.suspended</code>, <code>.retired</code>. Recovery semantics flow entirely through this field.</p>
+    </div>
+    <div class="state-item">
+      <div class="type">[Window] — persisted</div>
+      <code>windows</code>
+      <p>14-day sliding windows. Each tracks <code>weeklyViolationCount</code> and <code>weeksEvaluated</code>. Recovery entry is triggered by window violation counts crossing threshold.</p>
+    </div>
+    <div class="state-item">
+      <div class="type">[CompletionRecord] — persisted</div>
+      <code>completions</code>
+      <p>Used by <code>requiresCountedCompletionForRecovery</code> to determine whether a clean-day exemption applies.</p>
+    </div>
+    <div class="state-item">
+      <div class="type">[Violation] — persisted</div>
+      <code>violations</code>
+      <p>Append-only log of all violations. Drives both recovery entry and clean-day evaluation.</p>
+    </div>
+    <div class="state-item">
+      <div class="type">Date? — persisted</div>
+      <code>lastDailyComplianceCheckedDay</code>
+      <p>Guards against double-evaluation of the same calendar day for daily compliance.</p>
+    </div>
+  </div>
+
+  <h3>Plan-Layer State — <code>PlanAllocation</code></h3>
+  <div class="state-grid">
+    <div class="state-item">
+      <div class="type">PlanAllocationStatus enum — persisted</div>
+      <code>status</code>
+      <p>Values relevant to recovery: <code>.active</code> (normal), <code>.paused</code> (suspended during recovery), <code>.skippedDueToRecovery</code> (terminal — past slot that was not restored on exit).</p>
+    </div>
+  </div>
+
+  <h3>Presentation State — In-Memory</h3>
+  <div class="state-grid">
+    <div class="state-item">
+      <div class="type">Bool — in-memory</div>
+      <code>AppRouter.presentRecoveryEntry</code>
+      <p>Drives the popup sheet. Set by <code>MainAppView.evaluateRecoveryEntryPresentation</code>; cleared by <code>dismissRecoveryEntry</code>.</p>
+    </div>
+    <div class="state-item">
+      <div class="type">RecoveryFlowState enum — in-memory</div>
+      <code>RecoveryModeViewModel.step</code>
+      <p>One of: <code>.entry</code>, <code>.selectProtocol</code>, <code>.confirmed</code>. Controls which step of the popup is rendered.</p>
+    </div>
+    <div class="state-item">
+      <div class="type">Bool — in-memory</div>
+      <code>RecoveryModeViewModel.isPendingResolution</code>
+      <p>Mirrors <code>recoveryEntryPendingResolution</code> for the ViewModel's decision logic.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       §5 INVARIANTS
+  ════════════════════════════════════════════════════════════ -->
+  <h2 id="invariants">5. Required Invariants</h2>
+
+  <ul class="invariant-list">
+    <li>
+      <div class="inv-num">I1</div>
+      <div><code>recoveryPausedProtocolId</code> must never reference a protocol that is retired, deleted, or not present in <code>CommitmentSystem.nonNegotiables</code>. If the referenced protocol disappears, this field must be cleared immediately.</div>
+    </li>
+    <li>
+      <div class="inv-num">I2</div>
+      <div><code>recoveryEntryPendingResolution</code> must be cleared before recovery can exit via any path. A system where recovery has exited but <code>recoveryEntryPendingResolution</code> is still <code>true</code> is corrupt state.</div>
+    </li>
+    <li>
+      <div class="inv-num">I3</div>
+      <div>When recovery exits (normal or normalization path), all protocols that were in <code>.recovery</code> state must transition to <code>.active</code> in the same atomic update. No protocol may linger in <code>.recovery</code> after the exit pass.</div>
+    </li>
+    <li>
+      <div class="inv-num">I4</div>
+      <div>When recovery exits, <code>PlanStore.finalizeRecoveryAllocationStatuses</code> must be called exactly once. Calling it zero times leaves plan allocations permanently paused; calling it more than once risks flipping already-resolved statuses.</div>
+    </li>
+    <li>
+      <div class="inv-num">I5</div>
+      <div><code>recoveryCleanDayStreak</code> must never exceed 7. Upon reaching 7 it triggers exit; it does not continue counting.</div>
+    </li>
+    <li>
+      <div class="inv-num">I6</div>
+      <div>A protocol in <code>.suspended</code> state must always have a corresponding <code>recoveryPausedProtocolId</code> entry. If <code>recoveryPausedProtocolId</code> is <code>nil</code> while any protocol is in <code>.suspended</code> state, the reference is orphaned and must be repaired.</div>
+    </li>
+    <li>
+      <div class="inv-num">I7</div>
+      <div>Weekly quota violations must not be counted against a protocol that is currently in <code>.suspended</code> state. Suspended protocols are excluded from active commitment tracking for violation purposes.</div>
+    </li>
+    <li>
+      <div class="inv-num">I8</div>
+      <div><code>CommitmentPolicyEngine.isSystemStable</code> must return <code>false</code> whenever <code>recoveryEntryPendingResolution</code> is <code>true</code>. Unstable system state must block plan creation, not just new protocol creation.</div>
+    </li>
+    <li>
+      <div class="inv-num">I9</div>
+      <div>The pause action must be atomic across both stores: <code>CommitmentSystemStore.pauseProtocolForRecovery</code> and <code>PlanStore.pauseAllocations</code> must both succeed or neither must apply. Partial execution (one store updated, the other not) is invalid state.</div>
+    </li>
+    <li>
+      <div class="inv-num">I10</div>
+      <div>Only one protocol may be in <code>.suspended</code> state at any time. If normalization or a code path produces multiple suspended protocols, only the one referenced by <code>recoveryPausedProtocolId</code> is valid; the rest must be restored to their prior state.</div>
+    </li>
+    <li>
+      <div class="inv-num">I11</div>
+      <div>On app restart, if <code>recoveryEntryPendingResolution</code> is <code>true</code> and the trigger protocol ID references a valid, non-retired protocol, the recovery popup must be re-presented on the next scene activation.</div>
+    </li>
+    <li>
+      <div class="inv-num">I12</div>
+      <div>The <code>lastRecoveryEvaluationDay</code> must never advance past today's date (as reported by <code>AppClock</code>). Evaluation of future days is not permitted.</div>
+    </li>
+  </ul>
+
+  <!-- ═══════════════════════════════════════════════════════
+       §6 EDGE CASES
+  ════════════════════════════════════════════════════════════ -->
+  <h2 id="edge-cases">6. Edge Cases</h2>
+
+  <div class="panel section-card">
+    <h3>EC-1 — Paused Protocol Retires During Recovery</h3>
+    <p>If the user retires the protocol stored in <code>recoveryPausedProtocolId</code> while the system is in recovery mode:</p>
+    <ul>
+      <li><code>normalizeRecoveryDomain</code> detects that the suspended protocol has become <code>.retired</code>.</li>
+      <li>It must clear <code>recoveryPausedProtocolId</code> and call <code>resumeSuspendedIfCapacityAllows</code> (no-op since the protocol is retired).</li>
+      <li>All plan allocations for that protocol that are currently <code>.paused</code> must be marked <code>.skippedDueToRecovery</code> immediately, not deferred until exit.</li>
+      <li>Recovery itself may continue if the required minimum recovering protocols still remain.</li>
+    </ul>
+    <div class="callout warn">Gap: current code's normalization path clears the ID but the allocation finalization may not fire immediately on retirement — only on full recovery exit. This is Gap G-5.</div>
+
+    <h3>EC-2 — No Active Protocols Remain After Pause</h3>
+    <p>If, after the user selects a protocol to pause, all remaining non-paused protocols are in <code>.recovery</code> state and none are <code>.active</code>:</p>
+    <ul>
+      <li>The system is valid but extremely constrained. Policy blocks creation; the regulator has only recovery protocols to schedule.</li>
+      <li>Clean-day evaluation still works: any counted completion on any <code>.recovery</code> protocol counts.</li>
+      <li><span class="tag proposed">Proposed</span> The Cockpit should render a specific empty-state message indicating no active protocols during recovery.</li>
+    </ul>
+
+    <h3>EC-3 — App Restart During Recovery</h3>
+    <p>All recovery state is persisted (<code>CommitmentSystem</code> is JSON-serialized). On restart:</p>
+    <ul>
+      <li>All recovery fields are restored from disk.</li>
+      <li>If <code>recoveryEntryPendingResolution</code> is <code>true</code>, the popup must re-evaluate and re-present on the first scene activation.</li>
+      <li><code>lastRecoveryEvaluationDay</code> is used to catch up missed days of clean-day evaluation without re-evaluating already-processed days.</li>
+      <li>Invariant I11 must hold.</li>
+    </ul>
+
+    <h3>EC-4 — Trigger Protocol Deleted During Recovery</h3>
+    <p>If <code>recoveryEntryTriggerProtocolId</code> references a protocol that is retired between entry and resolution:</p>
+    <ul>
+      <li><code>recomputeRecoveryEntryPendingDecision</code> must detect the invalid reference.</li>
+      <li>If the system is still in recovery (other protocols in <code>.recovery</code>), it must find a new trigger reference or proceed without one.</li>
+      <li>If no <code>.recovery</code> protocols remain, the pending entry must be auto-closed.</li>
+    </ul>
+
+    <h3>EC-5 — User Exits Recovery Popup With Incomplete Plan</h3>
+    <p>The popup can only be dismissed via the Confirmed step's "Done" button (which calls <code>completeFlow</code>). There is no back-out path that leaves <code>recoveryEntryPendingResolution = true</code> without a pause decision recorded. However:</p>
+    <ul>
+      <li><span class="tag proposed">Proposed</span> If the user force-quits the app mid-popup, the persisted state still has <code>recoveryEntryPendingResolution = true</code> but no <code>recoveryPausedProtocolId</code>. On next launch the popup re-presents at the entry step, which is correct behavior.</li>
+      <li>The app must not allow navigation away from the popup before the flow is complete (modal, not sheet-dismissable by swipe).</li>
+    </ul>
+
+    <h3>EC-6 — Stale Recovery State From Previous App Versions</h3>
+    <p>Legacy <code>Codable init(from:)</code> uses <code>decodeIfPresent</code> + fallback for all recovery fields. The fallback values must be safe defaults:</p>
+    <ul>
+      <li><code>recoveryEntryPendingResolution</code> defaults to <code>false</code> — correct.</li>
+      <li><code>recoveryPausedProtocolId</code> defaults to <code>nil</code> — correct.</li>
+      <li><code>recoveryCleanDayStreak</code> defaults to <code>0</code> — correct.</li>
+      <li><span class="tag proposed">Proposed</span> A post-decode normalization pass should validate that any decoded <code>recoveryPausedProtocolId</code> still references a valid, non-retired protocol; if not, clear it.</li>
+    </ul>
+
+    <h3>EC-7 — Quota-Based Weekly Protocols During Recovery</h3>
+    <p>A protocol with a weekly frequency target (not daily) can still accumulate <code>.missedWeeklyFrequency</code> violations during recovery. If the suspended protocol was weekly-frequency-based:</p>
+    <ul>
+      <li>Violations must not be recorded against a <code>.suspended</code> protocol (Invariant I7).</li>
+      <li><code>effectiveWeeklyTarget</code> in the Daily Check-In ViewModel must exclude suspended protocols from total-quota calculations.</li>
+      <li>When the protocol is restored on recovery exit, the remaining days in the current week may be too few to achieve the weekly target. The grace / feasibility logic in <code>requiresCountedCompletionForRecovery</code> and <code>feasibleCompletionDays</code> must account for this so the first partial week after restoration does not immediately re-trigger recovery.</li>
+    </ul>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       §7 GAP LIST
+  ════════════════════════════════════════════════════════════ -->
+  <h2 id="gap-list">7. Gap List</h2>
+
+  <div class="callout warn">Gaps are derived from the Phase 1 audit and the invariants above. Items marked <span class="tag proposed">Proposed</span> are recommendations not yet confirmed in code.</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Gap</th>
+          <th>Risk</th>
+          <th>Affected Files / Functions</th>
+          <th>Recommended Fix</th>
+          <th>Priority</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>G-1</strong></td>
+          <td>Pause candidates include <code>.recovery</code> protocols, which the popup copy says should not be selectable ("Select exactly one <em>active</em> protocol").</td>
+          <td>A user could pause the only recovering protocol, leaving the system with zero recovery protocols and a dangling paused reference, with no immediate normalization pass triggered.</td>
+          <td><code>CommitmentSystemStore.swift:403–418</code> (<code>recoveryEntryContext</code>), <code>RecoveryModePopup.swift:176–177</code></td>
+          <td>Filter candidates in <code>recoveryEntryContext</code> to only include protocols in <code>.active</code> state. Update popup copy to match. Run normalization if the resulting eligible set is empty.</td>
+          <td><span class="p-badge P0">P0</span></td>
+        </tr>
+        <tr>
+          <td><strong>G-2</strong></td>
+          <td>Pause action is split across two stores with no transactional guarantee.</td>
+          <td>If <code>CommitmentSystemStore.pauseProtocolForRecovery</code> succeeds but <code>PlanStore.pauseAllocations</code> fails (crash, rejection, etc.), the domain shows the protocol as suspended but allocations remain active — plan and domain are inconsistent.</td>
+          <td><code>RecoveryModeViewModel.swift:137–143</code>, <code>CommitmentSystemStore.swift:421–439</code>, <code>PlanStore.swift:329–346</code></td>
+          <td>Introduce a single <code>pauseProtocolForRecovery(protocolId:)</code> coordinator on <code>CommitmentSystemStore</code> that calls both stores in one function and verifies both succeed before persisting.</td>
+          <td><span class="p-badge P0">P0</span></td>
+        </tr>
+        <tr>
+          <td><strong>G-3</strong></td>
+          <td>Unused <code>referenceDate</code> parameters on <code>recoveryEntryContext(referenceDate:)</code> and <code>pauseProtocolForRecovery(protocolId:referenceDate:)</code>.</td>
+          <td>API surface misleads callers into believing date injection is active, making it harder to write reliable simulated-date tests. Future callers may pass a date expecting it to affect behavior — it does not.</td>
+          <td><code>CommitmentSystemStore.swift:398–423</code></td>
+          <td>Either remove the parameter and use <code>AppClock.now</code> internally, or implement the date injection so tests can pass a reference date. Do not leave the parameter as dead code.</td>
+          <td><span class="p-badge P1">P1</span></td>
+        </tr>
+        <tr>
+          <td><strong>G-4</strong></td>
+          <td>No automated coverage for the recovery popup presentation path (<code>MainAppView.evaluateRecoveryEntryPresentation</code>, <code>AppRouter</code>, scene activation).</td>
+          <td>The critical path that determines whether the user sees the recovery popup at all has zero formal test coverage. Regressions are invisible until manual QA.</td>
+          <td><code>MainAppView.swift:248</code>, <code>AppRouter.swift:39–43</code>, <code>RecoveryModePopup.swift</code></td>
+          <td>Add simulation coverage for: popup triggered on entry, popup not re-triggered after resolution, popup re-presented on app restart with pending resolution. Convert to XCTest when test target is added.</td>
+          <td><span class="p-badge P1">P1</span></td>
+        </tr>
+        <tr>
+          <td><strong>G-5</strong></td>
+          <td>Plan allocations for a retired paused protocol are not immediately finalized on retirement — only on full recovery exit.</td>
+          <td>Between retirement and recovery exit, those allocations remain in <code>.paused</code> state. If the user views the plan during that window, retired-protocol allocations appear interactive or visually paused with no explanation.</td>
+          <td><code>CommitmentSystemStore.swift</code> (retirement path), <code>PlanStore.swift:finalizeRecoveryAllocationStatuses</code></td>
+          <td>When <code>normalizeRecoveryDomain</code> clears a retired paused protocol's ID, immediately call <code>PlanStore.finalizeRecoveryAllocationStatuses</code> for that protocol ID alone, marking its allocations as <code>.skippedDueToRecovery</code>.</td>
+          <td><span class="p-badge P1">P1</span></td>
+        </tr>
+        <tr>
+          <td><strong>G-6</strong></td>
+          <td>No automated coverage for <code>RecoveryModeViewModel</code> option ranking.</td>
+          <td>The recommended protocol shown to the user is derived from a multi-factor score. A score regression could silently change which protocol is highlighted as the suggested pause target.</td>
+          <td><code>RecoveryModeViewModel.swift:51–97</code></td>
+          <td>Add simulation assertions (or XCTests) verifying that the highest-violation protocol ranks first, that planned-load tiebreakers work, and that an empty candidate list returns an empty array without crashing.</td>
+          <td><span class="p-badge P2">P2</span></td>
+        </tr>
+        <tr>
+          <td><strong>G-7</strong></td>
+          <td>No coverage for manual plan placement strictness during recovery (<code>PlanStore.shouldApplyRecoveryStrictness</code>).</td>
+          <td>A regression in the strictness gate could allow over-scheduling during recovery, defeating the capacity-protection intent.</td>
+          <td><code>PlanStore.swift:1259</code></td>
+          <td>Add a simulation case that attempts to place an allocation while a protocol is in <code>.recovery</code>, and asserts that <code>shouldApplyRecoveryStrictness</code> returns <code>true</code>.</td>
+          <td><span class="p-badge P2">P2</span></td>
+        </tr>
+        <tr>
+          <td><strong>G-8</strong></td>
+          <td>Post-decode normalization does not validate that <code>recoveryPausedProtocolId</code> references a currently valid, non-retired protocol.</td>
+          <td>An old JSON document with a now-retired protocol ID in <code>recoveryPausedProtocolId</code> could silently keep a stale ID, violating Invariant I1 and causing the suspended badge to appear on a non-existent or retired card.</td>
+          <td><code>CommitmentSystem.swift</code> (<code>init(from:)</code>)</td>
+          <td>Add a post-decode validation step in <code>CommitmentSystem.init(from:)</code> that checks <code>recoveryPausedProtocolId</code> against the decoded protocol list and clears it if no match is found.</td>
+          <td><span class="p-badge P1">P1</span></td>
+        </tr>
+        <tr>
+          <td><strong>G-9</strong></td>
+          <td>Weekly-frequency protocols may accumulate violations immediately after restoration if the remaining days in the current week cannot satisfy the target.</td>
+          <td>A user exits recovery on Thursday; their weekly-frequency protocol is restored; by Sunday the week-end evaluation fires and records a <code>.missedWeeklyFrequency</code> violation because 3 days were not enough. This could immediately re-trigger recovery.</td>
+          <td><code>NonNegotiableEngine.evaluateWeekIfNeeded</code>, <code>CommitmentSystemEngine.requiresCountedCompletionForRecovery</code>, <code>CommitmentSystemEngine.feasibleCompletionDays</code></td>
+          <td>Extend feasibility logic to detect that a restored protocol has a partial week remaining and either exempt the first post-restoration week or pro-rate the target.</td>
+          <td><span class="p-badge P1">P1</span></td>
+        </tr>
+        <tr>
+          <td><strong>G-10</strong></td>
+          <td>Invariant I10 (only one suspended protocol at a time) is not explicitly enforced by a guard in <code>pauseProtocolForRecovery</code>.</td>
+          <td>If the function is called twice (bug, double-tap) a second protocol could enter <code>.suspended</code> state while another is already suspended, corrupting the one-to-one invariant.</td>
+          <td><code>CommitmentSystemStore.swift:421–439</code></td>
+          <td>Add a precondition guard at the top of <code>pauseProtocolForRecovery</code> that asserts no protocol is already in <code>.suspended</code> state before proceeding.</td>
+          <td><span class="p-badge P1">P1</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       §8 IMPLEMENTATION ORDER
+  ════════════════════════════════════════════════════════════ -->
+  <h2 id="impl-order">8. Recommended Implementation Order</h2>
+
+  <div class="callout info">Steps are sized for individual Codex / Gemini / Claude tasks. Each step should be a single commit or PR.</div>
+
+  <div class="panel section-card">
+    <h3>Phase A — Correctness Fixes (P0)</h3>
+    <ol>
+      <li>
+        <strong>A1 — Fix candidate filter in <code>recoveryEntryContext</code> (Gap G-1).</strong><br>
+        Change the candidate list to only include protocols in <code>.active</code> state. Update any popup copy that says "active protocol" to match the enforced behavior. Add a simulation assertion that no <code>.recovery</code> protocol appears in the candidate list.
+      </li>
+      <li>
+        <strong>A2 — Introduce a single-call coordinator for the pause action (Gap G-2).</strong><br>
+        Move the two-store pause sequence from <code>RecoveryModeViewModel.confirmPauseSelection</code> into a new function on <code>CommitmentSystemStore</code>. The ViewModel calls one function; both stores are updated inside it. Add Invariant I9 guard.
+      </li>
+      <li>
+        <strong>A3 — Add Invariant I10 guard in <code>pauseProtocolForRecovery</code> (Gap G-10).</strong><br>
+        One-liner precondition. Can be done alongside A2.
+      </li>
+    </ol>
+
+    <h3>Phase B — Correctness Fixes (P1)</h3>
+    <ol start="4">
+      <li>
+        <strong>B1 — Resolve or remove unused <code>referenceDate</code> parameters (Gap G-3).</strong><br>
+        Decide: remove the parameter and use <code>AppClock.now</code>, or implement it. Whichever is chosen, the API must match what callers can rely on.
+      </li>
+      <li>
+        <strong>B2 — Add post-decode validation for <code>recoveryPausedProtocolId</code> (Gap G-8).</strong><br>
+        Inside <code>CommitmentSystem.init(from:)</code>, after decoding, check the ID against the decoded protocol list. Clear if not found. Write a migration test using a hand-crafted JSON fixture with a stale ID.
+      </li>
+      <li>
+        <strong>B3 — Finalize allocations immediately on retired-paused-protocol retirement (Gap G-5).</strong><br>
+        In the normalization path that clears a retired paused ID, call <code>PlanStore.finalizeRecoveryAllocationStatuses</code> for that specific ID with an empty restorable set (all become <code>.skippedDueToRecovery</code>).
+      </li>
+      <li>
+        <strong>B4 — Fix weekly-frequency post-restoration feasibility (Gap G-9).</strong><br>
+        Extend <code>requiresCountedCompletionForRecovery</code> / <code>feasibleCompletionDays</code> to detect a partial week at restoration and pro-rate or exempt accordingly. Write a simulation that restores a weekly protocol on Thursday and confirms no immediate violation at week-end.
+      </li>
+    </ol>
+
+    <h3>Phase C — Coverage &amp; Observability (P1 / P2)</h3>
+    <ol start="8">
+      <li>
+        <strong>C1 — Add simulation coverage for the popup presentation path (Gap G-4).</strong><br>
+        Write assertions in a new <code>runRecoveryPopupPresentationSimulation</code> function: context returns non-nil when pending, returns nil after resolution, re-presents after a simulated restart.
+      </li>
+      <li>
+        <strong>C2 — Add simulation coverage for <code>RecoveryModeViewModel</code> ranking (Gap G-6).</strong><br>
+        Write assertions that the highest-violation protocol ranks first, load tiebreakers work, and an empty candidate list is safe.
+      </li>
+      <li>
+        <strong>C3 — Add simulation coverage for recovery placement strictness (Gap G-7).</strong><br>
+        Assert <code>shouldApplyRecoveryStrictness</code> returns <code>true</code> when a protocol is in <code>.recovery</code>, and <code>false</code> when all are active.
+      </li>
+    </ol>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       §9 TEST PLAN
+  ════════════════════════════════════════════════════════════ -->
+  <h2 id="test-plan">9. Test Plan</h2>
+
+  <div class="callout info">All tests below are written as simulation-style assertions (the current project pattern) until an XCTest target is added. Each row maps to one simulation function or assertion block.</div>
+
+  <h3>Normal Recovery Flow</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Test Description</th><th>Expected Outcome</th><th>Key Function Under Test</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>T-01</td>
+          <td>Protocol crosses daily violation threshold inside current 14-day window.</td>
+          <td>Protocol state changes to <code>.recovery</code>.</td>
+          <td><code>NonNegotiableEngine.updateRecoveryState</code></td>
+        </tr>
+        <tr>
+          <td>T-02</td>
+          <td>Protocol crosses weekly violation threshold inside current 14-day window.</td>
+          <td>Protocol state changes to <code>.recovery</code>.</td>
+          <td><code>NonNegotiableEngine.updateRecoveryState</code></td>
+        </tr>
+        <tr>
+          <td>T-03</td>
+          <td>Violations in a closed/archived window do not trigger recovery.</td>
+          <td>Protocol state remains <code>.active</code>.</td>
+          <td><code>NonNegotiableEngine.updateRecoveryState</code></td>
+        </tr>
+        <tr>
+          <td>T-04</td>
+          <td>System detects first-time recovery entry; sets all pending-entry flags.</td>
+          <td><code>recoveryEntryPendingResolution = true</code>, trigger ID set, streak reset.</td>
+          <td><code>CommitmentSystemStore.handleRecoveryTransition</code></td>
+        </tr>
+        <tr>
+          <td>T-05</td>
+          <td>Recovery entry context returns non-nil when pending resolution exists.</td>
+          <td><code>recoveryEntryContext()</code> ≠ nil.</td>
+          <td><code>CommitmentSystemStore.recoveryEntryContext</code></td>
+        </tr>
+        <tr>
+          <td>T-06</td>
+          <td>Candidate list in recovery context contains only <code>.active</code> protocols (post-G1 fix).</td>
+          <td>No <code>.recovery</code> protocol appears in candidates.</td>
+          <td><code>CommitmentSystemStore.recoveryEntryContext</code></td>
+        </tr>
+        <tr>
+          <td>T-07</td>
+          <td>User selects a protocol to pause; both domain and plan stores update atomically.</td>
+          <td>Protocol in <code>.suspended</code>, <code>recoveryPausedProtocolId</code> set, all future allocations in <code>.paused</code>.</td>
+          <td><code>CommitmentSystemStore.pauseProtocolForRecovery</code>, <code>PlanStore.pauseAllocations</code></td>
+        </tr>
+        <tr>
+          <td>T-08</td>
+          <td>User completes popup flow; pending-entry flags are cleared.</td>
+          <td><code>recoveryEntryPendingResolution = false</code>, trigger ID nil.</td>
+          <td><code>CommitmentSystemStore.completeRecoveryEntryResolution</code></td>
+        </tr>
+        <tr>
+          <td>T-09</td>
+          <td>7 consecutive clean days accumulate and trigger recovery exit.</td>
+          <td>All <code>.recovery</code> protocols → <code>.active</code>, streak resets, paused protocol restored.</td>
+          <td><code>CommitmentSystemEngine.evaluateRecoveryDay</code></td>
+        </tr>
+        <tr>
+          <td>T-10</td>
+          <td>A violation day resets the clean-day streak.</td>
+          <td><code>recoveryCleanDayStreak</code> returns to 0.</td>
+          <td><code>CommitmentSystemEngine.evaluateRecoveryDay</code></td>
+        </tr>
+        <tr>
+          <td>T-11</td>
+          <td>Plan allocations are restored for active protocols on recovery exit.</td>
+          <td>Future <code>.paused</code> allocations for restorable IDs → <code>.active</code>.</td>
+          <td><code>PlanStore.finalizeRecoveryAllocationStatuses</code></td>
+        </tr>
+        <tr>
+          <td>T-12</td>
+          <td>Policy blocks protocol creation while any protocol is in <code>.recovery</code>.</td>
+          <td><code>canCreate</code> → <code>.deny(.recoveryActive)</code>.</td>
+          <td><code>CommitmentPolicyEngine.canCreate</code></td>
+        </tr>
+        <tr>
+          <td>T-13</td>
+          <td>Policy blocks completion recording on <code>.suspended</code> protocol.</td>
+          <td><code>canRecordCompletion</code> → <code>.deny(.protocolSuspended)</code>.</td>
+          <td><code>CommitmentPolicyEngine.canRecordCompletion</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Retirement Edge Cases</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Test Description</th><th>Expected Outcome</th><th>Key Function</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>T-14</td>
+          <td>Retiring a <code>.suspended</code> protocol during recovery clears <code>recoveryPausedProtocolId</code>.</td>
+          <td>ID cleared; no orphaned suspended reference.</td>
+          <td><code>CommitmentSystemEngine.normalizeRecoveryDomain</code></td>
+        </tr>
+        <tr>
+          <td>T-15</td>
+          <td>Retiring a <code>.suspended</code> protocol immediately marks its allocations as <code>.skippedDueToRecovery</code>.</td>
+          <td>No allocations left in <code>.paused</code> for the retired protocol.</td>
+          <td><code>PlanStore.finalizeRecoveryAllocationStatuses</code> (called from normalization)</td>
+        </tr>
+        <tr>
+          <td>T-16</td>
+          <td>Retiring a <code>.recovery</code> protocol reduces eligible count below 2; normalization exits recovery early.</td>
+          <td>System exits recovery mode without reaching 7 clean days.</td>
+          <td><code>CommitmentSystemEngine.normalizeRecoveryDomain</code></td>
+        </tr>
+        <tr>
+          <td>T-17</td>
+          <td>Retiring a non-recovery protocol outside recovery has no side effects on recovery state.</td>
+          <td>All recovery fields unchanged.</td>
+          <td><code>CommitmentSystemEngine.normalizeRecoveryDomain</code></td>
+        </tr>
+        <tr>
+          <td>T-18</td>
+          <td>Trigger protocol is retired; recompute detects stale ID and repairs state.</td>
+          <td>Trigger ID cleared or replaced; pending entry auto-closed if no recovery protocols remain.</td>
+          <td><code>CommitmentSystemEngine.recomputeRecoveryEntryPendingDecision</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Stale State Cleanup</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Test Description</th><th>Expected Outcome</th><th>Key Function</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>T-19</td>
+          <td>JSON with stale <code>recoveryPausedProtocolId</code> pointing to a retired protocol is decoded.</td>
+          <td>ID cleared during post-decode validation; no suspended protocol reference.</td>
+          <td><code>CommitmentSystem.init(from:)</code></td>
+        </tr>
+        <tr>
+          <td>T-20</td>
+          <td>JSON with <code>recoveryEntryPendingResolution = true</code> decoded; popup re-presents on scene activation.</td>
+          <td><code>recoveryEntryContext()</code> ≠ nil; popup shown.</td>
+          <td><code>CommitmentSystemStore.recoveryEntryContext</code></td>
+        </tr>
+        <tr>
+          <td>T-21</td>
+          <td>Pending-entry flag is true but no protocols are in <code>.recovery</code>; recompute auto-closes entry.</td>
+          <td><code>recoveryEntryPendingResolution = false</code> after recompute.</td>
+          <td><code>CommitmentSystemEngine.recomputeRecoveryEntryPendingDecision</code></td>
+        </tr>
+        <tr>
+          <td>T-22</td>
+          <td>Double-call to <code>pauseProtocolForRecovery</code> is blocked by Invariant I10 guard.</td>
+          <td>Second call is a no-op or assertion failure; only one protocol is suspended.</td>
+          <td><code>CommitmentSystemStore.pauseProtocolForRecovery</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Quota / Non-Negotiable Behavior</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Test Description</th><th>Expected Outcome</th><th>Key Function</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>T-23</td>
+          <td>Suspended protocol does not accumulate weekly-frequency violations.</td>
+          <td>No <code>.missedWeeklyFrequency</code> violation recorded while state is <code>.suspended</code>.</td>
+          <td><code>NonNegotiableEngine.evaluateWeekIfNeeded</code></td>
+        </tr>
+        <tr>
+          <td>T-24</td>
+          <td>Weekly-frequency protocol restored on Thursday; week-end evaluation does not immediately violate.</td>
+          <td>First partial week is exempted or pro-rated; no violation fired.</td>
+          <td><code>CommitmentSystemEngine.requiresCountedCompletionForRecovery</code></td>
+        </tr>
+        <tr>
+          <td>T-25</td>
+          <td>Grace-window week does not require a completion for a clean day.</td>
+          <td>Day counts as clean even with zero completions when grace applies.</td>
+          <td><code>CommitmentSystemEngine.evaluateRecoveryDay</code></td>
+        </tr>
+        <tr>
+          <td>T-26</td>
+          <td><code>shouldApplyRecoveryStrictness</code> returns true while any protocol is in <code>.recovery</code>.</td>
+          <td>Strictness gate active; returns false once all are <code>.active</code>.</td>
+          <td><code>PlanStore.shouldApplyRecoveryStrictness</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Plan Finalization</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Test Description</th><th>Expected Outcome</th><th>Key Function</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>T-27</td>
+          <td>Future <code>.paused</code> allocations for a restorable protocol are set to <code>.active</code> on exit.</td>
+          <td>All future paused allocations become active.</td>
+          <td><code>PlanStore.finalizeRecoveryAllocationStatuses</code></td>
+        </tr>
+        <tr>
+          <td>T-28</td>
+          <td>Past <code>.paused</code> allocations (date in the past) become <code>.skippedDueToRecovery</code> on exit.</td>
+          <td>Past paused allocations are terminally marked.</td>
+          <td><code>PlanStore.finalizeRecoveryAllocationStatuses</code></td>
+        </tr>
+        <tr>
+          <td>T-29</td>
+          <td>Allocations for a retired protocol become <code>.skippedDueToRecovery</code> on exit regardless of date.</td>
+          <td>No retired-protocol allocation left in <code>.paused</code>.</td>
+          <td><code>PlanStore.finalizeRecoveryAllocationStatuses</code></td>
+        </tr>
+        <tr>
+          <td>T-30</td>
+          <td>Recovery exits with exhausted-domain (all protocols retired); finalization handles empty restorable set.</td>
+          <td>All allocations become <code>.skippedDueToRecovery</code>; no crash.</td>
+          <td><code>PlanStore.finalizeRecoveryAllocationStatuses</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Persistence / App Restart</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Test Description</th><th>Expected Outcome</th><th>Key Function</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>T-31</td>
+          <td>All recovery fields serialize and deserialize correctly (round-trip).</td>
+          <td>Decoded object is structurally identical to the encoded one.</td>
+          <td><code>CommitmentSystem</code> Codable conformance</td>
+        </tr>
+        <tr>
+          <td>T-32</td>
+          <td>Clean-day catch-up runs missed days after restart without re-evaluating already-processed days.</td>
+          <td>Streak advances correctly; no duplicate violation detection.</td>
+          <td><code>CommitmentSystemEngine.evaluateRecoveryDay</code> + <code>lastRecoveryEvaluationDay</code></td>
+        </tr>
+        <tr>
+          <td>T-33</td>
+          <td>App restarts mid-popup (force-quit during Select Protocol step); popup re-presents on next launch.</td>
+          <td>Popup shown again; user can complete the flow.</td>
+          <td><code>CommitmentSystemStore.recoveryEntryContext</code></td>
+        </tr>
+        <tr>
+          <td>T-34</td>
+          <td>Recovery exits between launches; popup is not re-presented.</td>
+          <td><code>recoveryEntryContext()</code> returns nil.</td>
+          <td><code>CommitmentSystemStore.recoveryEntryContext</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       §10 AI TOOL ASSIGNMENT
+  ════════════════════════════════════════════════════════════ -->
+  <h2 id="ai-assignment">10. AI Tool Assignment</h2>
+
+  <div class="callout info">Assignments reflect each tool's strengths: Codex for isolated mechanical Swift changes, Gemini Antigravity for research and cross-file coordination, Claude Code for architecture-sensitive edits and multi-step reasoning.</div>
+
+  <div class="panel section-card">
+    <h3>Codex</h3>
+    <p><span class="tag codex">Codex</span> Best for isolated, well-defined Swift changes with clear before/after expectations. No need for broad codebase awareness.</p>
+    <ul>
+      <li><strong>A3</strong> — Add Invariant I10 guard (one-liner precondition in <code>pauseProtocolForRecovery</code>).</li>
+      <li><strong>B1</strong> — Remove or implement unused <code>referenceDate</code> parameters.</li>
+      <li><strong>B2</strong> — Add post-decode validation for <code>recoveryPausedProtocolId</code> in <code>CommitmentSystem.init(from:)</code>.</li>
+      <li><strong>C2</strong> — Write simulation assertions for <code>RecoveryModeViewModel</code> ranking (isolated pure-logic function).</li>
+      <li><strong>C3</strong> — Write simulation assertion for <code>PlanStore.shouldApplyRecoveryStrictness</code>.</li>
+      <li><strong>T-31</strong> — Codable round-trip test for <code>CommitmentSystem</code>.</li>
+      <li><strong>T-22</strong> — Double-call guard test for <code>pauseProtocolForRecovery</code>.</li>
+    </ul>
+
+    <h3>Gemini Antigravity</h3>
+    <p><span class="tag gemini">Gemini</span> Best for cross-file research, cross-cutting consistency checks, and producing structured analysis across a large file set.</p>
+    <ul>
+      <li>Verify that all callers of the current two-store pause sequence (before A2) are identified and none are missed.</li>
+      <li>Audit all <code>NonNegotiableState</code> transition sites across the codebase to confirm no code path can produce multiple <code>.suspended</code> protocols simultaneously (supporting I10).</li>
+      <li>Review all <code>evaluateWeekIfNeeded</code> call sites to confirm suspended protocols are excluded (supporting T-23).</li>
+      <li>Cross-reference <code>finalizeRecoveryAllocationStatuses</code> call sites and confirm it cannot be called more than once per recovery exit (supporting Invariant I4).</li>
+      <li>Identify all UI surfaces that read <code>recoveryPausedProtocolId</code> directly and verify they handle a nil value safely.</li>
+    </ul>
+
+    <h3>Claude Code</h3>
+    <p><span class="tag claude">Claude Code</span> Best for architecture-sensitive work requiring multi-step reasoning, invariant analysis, and changes that touch multiple layers simultaneously.</p>
+    <ul>
+      <li><strong>A1</strong> — Fix candidate filter in <code>recoveryEntryContext</code> and update popup copy (domain + UI coordination).</li>
+      <li><strong>A2</strong> — Introduce the single-call coordinator for the pause action (architecture change touching ViewModel, Store, and PlanStore).</li>
+      <li><strong>B3</strong> — Immediate allocation finalization on retired-paused-protocol retirement (normalization path + PlanStore integration).</li>
+      <li><strong>B4</strong> — Weekly-frequency post-restoration feasibility fix (multi-engine reasoning across <code>NonNegotiableEngine</code>, <code>CommitmentSystemEngine</code>, and <code>DailyCheckInViewModel</code>).</li>
+      <li><strong>C1</strong> — Simulation coverage for the popup presentation path (multi-layer: Store, Router, AppView interaction).</li>
+      <li>Author this specification and keep it updated as gaps are resolved.</li>
+    </ul>
+  </div>
+
+  <div class="callout good" style="margin-top:24px;">
+    <strong>Definition of done:</strong> all P0 gaps are resolved, all P1 gaps are resolved or have explicit deferral decisions recorded, simulation coverage exists for all normal-flow and retirement-edge test cases (T-01 through T-34), and no invariant violation can be produced by any currently-reachable code path.
+  </div>
+
+</div><!-- /wrap -->
+</body>
+</html>

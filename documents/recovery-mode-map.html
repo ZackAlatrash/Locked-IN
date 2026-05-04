@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Locked IN Recovery Mode Map</title>
+  <style>
+    :root {
+      --bg: #f5f1ea;
+      --panel: #fffdfa;
+      --ink: #1f2937;
+      --muted: #5b6472;
+      --line: #d7d2ca;
+      --accent: #9f1d1d;
+      --accent-soft: #fde8e8;
+      --warn: #8a5a00;
+      --warn-soft: #fff4db;
+      --good: #165c3a;
+      --good-soft: #e8f6ee;
+      --mono: "SFMono-Regular", "Menlo", "Consolas", monospace;
+      --sans: "Inter", "Helvetica Neue", "Arial", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: linear-gradient(180deg, #f7f3ed 0%, #f1ebe2 100%);
+      color: var(--ink);
+      line-height: 1.45;
+    }
+
+    .wrap {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 32px 20px 72px;
+    }
+
+    h1, h2, h3 { line-height: 1.15; margin: 0 0 12px; }
+    h1 { font-size: 34px; letter-spacing: -0.03em; }
+    h2 {
+      margin-top: 28px;
+      font-size: 22px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    h3 { margin-top: 20px; font-size: 16px; }
+    p { margin: 0 0 12px; }
+    ul, ol { margin: 0 0 14px 20px; }
+    li { margin: 0 0 6px; }
+
+    .hero, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(24, 29, 39, 0.05);
+    }
+
+    .hero {
+      padding: 28px;
+      background:
+        radial-gradient(circle at top right, rgba(159, 29, 29, 0.08), transparent 28%),
+        radial-gradient(circle at left center, rgba(193, 111, 59, 0.08), transparent 24%),
+        var(--panel);
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 14px 0 0;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #faf7f2;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .callout {
+      margin: 16px 0 0;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #fbf8f3;
+    }
+
+    .callout.warn {
+      border-color: #efcf8d;
+      background: var(--warn-soft);
+    }
+
+    .callout.good {
+      border-color: #b7dfc8;
+      background: var(--good-soft);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    th, td {
+      vertical-align: top;
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      background: #f7f3ed;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    tr:last-child td { border-bottom: none; }
+    code { font-family: var(--mono); font-size: 0.93em; }
+    .small { font-size: 13px; color: var(--muted); }
+    .tag {
+      display: inline-block;
+      padding: 3px 7px;
+      margin: 0 6px 6px 0;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .section-card {
+      padding: 18px 18px 8px;
+      margin-top: 16px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .mini {
+      padding: 16px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Locked IN Recovery Mode Map</h1>
+      <p>This report maps the current recovery-mode implementation across domain logic, stores, plan behavior, UI surfaces, and existing test/simulation coverage.</p>
+      <div class="meta">
+        <span class="pill">Workspace: <code>Locked IN</code></span>
+        <span class="pill">Generated: <code>2026-05-04 16:54:12 CEST</code></span>
+        <span class="pill">Scope: source analysis only</span>
+      </div>
+      <div class="callout warn">
+        <strong>Coverage note:</strong> the Xcode project currently defines only one native target in <code>LockedIn.xcodeproj/project.pbxproj</code>; there is no separate XCTest target or <code>Tests/</code> tree. Existing recovery coverage is mostly simulation-style verification functions, not formal unit/UI tests.
+      </div>
+      <div class="callout">
+        <strong>Excluded false positives:</strong> <code>LockedIn/App/Locked_INApp.swift</code> contains a crash-recovery comment unrelated to Recovery Mode, and several accessibility templates mention “recovery theme variants” but do not implement recovery logic.
+      </div>
+    </section>
+
+    <h2>1. File Inventory</h2>
+
+    <div class="panel section-card">
+      <h3>Core Models And State</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Types / State</th>
+            <th>Recovery-Relevant Members</th>
+            <th>Why It Matters</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>LockedIn/Domain/Models/CommitmentSystem.swift</code></td>
+            <td><code>CommitmentSystem</code></td>
+            <td><code>recoveryCleanDayStreak</code> (6), <code>lastRecoveryEvaluationDay</code> (7), <code>recoveryEntryPendingResolution</code> (8), <code>recoveryEntryRequiresPauseSelection</code> (9), <code>recoveryEntryTriggerProtocolId</code> (10), <code>recoveryPausedProtocolId</code> (11), <code>recoveringNonNegotiables</code> (64), <code>allowedCapacity</code> (68)</td>
+            <td>Primary persisted recovery state.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Domain/Models/NonNegotiableState.swift</code></td>
+            <td><code>NonNegotiableState</code></td>
+            <td><code>.recovery</code> (6), <code>.suspended</code> (7), <code>.retired</code> (9)</td>
+            <td>Recovery-mode semantics are mostly expressed via protocol state.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Domain/Models/NonNegotiable.swift</code></td>
+            <td><code>NonNegotiable</code></td>
+            <td><code>state</code> (7), <code>windows</code> (10), <code>completions</code> (11), <code>violations</code> (12), <code>lastDailyComplianceCheckedDay</code> (13)</td>
+            <td>Stores the per-protocol evidence that leads into or out of recovery.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Domain/Models/Window.swift</code></td>
+            <td><code>Window</code></td>
+            <td><code>weeklyViolationCount</code> (7), <code>weeksEvaluated</code> (8)</td>
+            <td>Recovery entry depends on rolling window violation counts.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Domain/Models/Violation.swift</code></td>
+            <td><code>Violation</code>, <code>ViolationKind</code></td>
+            <td><code>.missedWeeklyFrequency</code> (4), <code>.missedDailyCompliance</code> (5), <code>windowIndex</code> (11), <code>weekId</code> (12)</td>
+            <td>Violations are the trigger inputs for recovery.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Features/Recovery/Models/RecoveryFlowState.swift</code></td>
+            <td><code>RecoveryFlowState</code>, <code>RecoveryProtocolOption</code></td>
+            <td><code>.entry</code> (4), <code>.selectProtocol</code> (5), <code>.confirmed</code> (6), recovery ranking fields (9-18)</td>
+            <td>UI model for the user-facing recovery-entry flow.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Features/Plan/Models/PlanModels.swift</code></td>
+            <td><code>PlanAllocation</code>, <code>PlanAllocationStatus</code></td>
+            <td><code>status</code> (101), <code>.active</code> (181), <code>.paused</code> (182), <code>.skippedDueToRecovery</code> (183)</td>
+            <td>Recovery pauses and later resolves plan allocations.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel section-card">
+      <h3>Stores, Engines, And Policy</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Types</th>
+            <th>Functions</th>
+            <th>Recovery Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>LockedIn/Domain/Engines/NonNegotiableEngine.swift</code></td>
+            <td><code>NonNegotiableEngine</code></td>
+            <td><code>evaluateDailyComplianceIfNeeded</code> (101), <code>evaluateWeekIfNeeded</code> (187), <code>advanceWindowIfNeeded</code> (277), <code>updateRecoveryState</code> (531), <code>recoveryViolationThreshold</code> (586)</td>
+            <td>Decides when a protocol enters recovery based on windowed violations.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Domain/Engines/CommitmentSystemEngine.swift</code></td>
+            <td><code>CommitmentSystemEngine</code>, <code>RecoveryNormalizationDecision</code>, <code>RecoveryEntryPendingDecision</code></td>
+            <td><code>evaluateRecoveryDay</code> (122), <code>normalizeRecoveryDomain</code> (164), <code>enforceCapacityIfNeeded</code> (281), <code>recomputeRecoveryEntryPendingDecision</code> (331), <code>requiresCountedCompletionForRecovery</code> (428), <code>resumeSuspendedIfCapacityAllows</code> (577)</td>
+            <td>Runs clean-day counting, recovery exit, and recovery normalization.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Application/CommitmentSystemStore.swift</code></td>
+            <td><code>CommitmentSystemStore</code>, <code>RecoveryEntryContext</code></td>
+            <td><code>runDailyIntegrityTick</code> (359), <code>recoveryEntryContext</code> (398), <code>pauseProtocolForRecovery</code> (421), <code>completeRecoveryEntryResolution</code> (442), <code>lawReasons</code> (662), <code>applyPostMutationRecoveryNormalization</code> (766), <code>handleRecoveryTransition</code> (775)</td>
+            <td>Bridges domain recovery state into app flow and persisted user decisions.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Application/PlanStore.swift</code></td>
+            <td><code>PlanStore</code>, <code>PlanProtocolDescriptor</code></td>
+            <td><code>pauseAllocations</code> (329), <code>finalizeRecoveryAllocationStatuses</code> (348), <code>shouldApplyRecoveryStrictness</code> (1259)</td>
+            <td>Keeps plan allocations aligned with recovery pauses and exit cleanup.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Domain/Policy/CommitmentPolicyEngine.swift</code></td>
+            <td><code>CommitmentPolicyEngine</code></td>
+            <td><code>canCreate</code> (15), <code>canRecordCompletion</code> (111), <code>canPlaceAllocation</code> (126), <code>isSystemStable</code> (179)</td>
+            <td>Blocks creation during recovery and blocks actions on suspended protocols.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Domain/Policy/PolicyReason.swift</code></td>
+            <td><code>PolicyReason</code>, <code>PolicyCopy</code></td>
+            <td><code>.recoveryActive</code> (33), <code>.protocolSuspended</code> (36), copy text for both (61-87)</td>
+            <td>User-facing policy copy for recovery and paused states.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Domain/Engines/PlanRegulatorEngine.swift</code></td>
+            <td><code>PlanRegulatorEngine</code></td>
+            <td><code>regulate</code> (10), <code>candidateScore</code> (209), <code>buildReason</code> (301)</td>
+            <td>Prioritizes recovery protocols and isolates them onto lighter days.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel section-card">
+      <h3>Recovery-Specific UI</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Types</th>
+            <th>Functions / Members</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>LockedIn/Features/AppShell/Models/AppRouter.swift</code></td>
+            <td><code>AppRouter</code></td>
+            <td><code>presentRecoveryEntry</code> (10), <code>requestRecoveryEntryPresentation</code> (39), <code>dismissRecoveryEntry</code> (43)</td>
+            <td>Controls popup presentation state.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Features/AppShell/Views/MainAppView.swift</code></td>
+            <td><code>MainAppView</code></td>
+            <td><code>recoveryPopupOverlay</code> (213), <code>evaluateRecoveryEntryPresentation</code> (248), <code>activeProtocolIdsForRecoveryRestoration</code> (266)</td>
+            <td>Presents entry UI and triggers plan finalization on recovery exit.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift</code></td>
+            <td><code>RecoveryModeViewModel</code></td>
+            <td><code>refresh</code> (37), <code>continueFromEntry</code> (109), <code>selectProtocol</code> (117), <code>confirmPauseSelection</code> (126), <code>completeFlow</code> (154), <code>currentWindowViolations</code> (164), <code>activePlannedLoadsThisWeek</code> (173)</td>
+            <td>Builds recovery-entry options and handles the pause decision.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Features/Recovery/Views/RecoveryModePopup.swift</code></td>
+            <td><code>RecoveryModePopup</code></td>
+            <td><code>entryStep</code> (126), <code>selectProtocolStep</code> (170), <code>confirmedStep</code> (216)</td>
+            <td>Three-step modal flow for recovery entry.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Features/Recovery/Components/RecoveryProtocolSelectionCard.swift</code></td>
+            <td><code>RecoveryProtocolSelectionCard</code></td>
+            <td><code>chip</code> (77)</td>
+            <td>Selectable card used in pause selection.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel section-card">
+      <h3>Supporting Surfaces That Reflect Recovery State</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Recovery Hooks</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>LockedIn/Features/Cockpit/ViewModels/CockpitViewModel.swift</code></td>
+            <td><code>refresh</code> (8), <code>systemMode</code> (51), <code>mapCards</code> (70), <code>reliabilityScore</code> (164), <code>todayTasks</code> (220), <code>upcomingTasks</code> (367)</td>
+            <td>Shows recovery progress, suspended labels, and recovery weighting in reliability.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Features/Cockpit/Models/CockpitUIModel.swift</code></td>
+            <td><code>recoveryProgressText</code> (11), <code>recoveryProgressFill</code> (12), badge <code>.suspended</code>/<code>.recovery</code> (68-79), <code>TodayTask.recoveryHint</code> (129)</td>
+            <td>UI state schema for recovery rendering.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Features/Cockpit/Components/CockpitNonNegotiableCard.swift</code></td>
+            <td>Recovery-specific badge styling (165-201)</td>
+            <td>Visual treatment only.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift</code></td>
+            <td><code>refresh</code> (48), <code>systemModeLabel</code> (472), <code>reliabilityScore</code> (479), <code>effectiveWeeklyTarget</code> (517)</td>
+            <td>Treats recovery and suspended protocols as tracked items; blocks completion for suspended ones.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Features/Plan/ViewModels/PlanViewModel.swift</code></td>
+            <td><code>buildProtocolPlanItems</code> (398), <code>buildRegulatorSummary</code> (497)</td>
+            <td>Includes active and recovery protocols in planning/regulator summaries.</td>
+          </tr>
+          <tr>
+            <td><code>LockedIn/Features/Cockpit/Views/CockpitLogsScreen.swift</code></td>
+            <td><code>matchesEventFilter</code> (1375), <code>isRecoveryRelated</code> (1463), <code>LogFilterEventType.recoveryRelated</code> (1546)</td>
+            <td>Groups recovery and suspended entries into a dedicated filter.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>2. Current Recovery Mode Flow</h2>
+
+    <div class="grid">
+      <div class="mini">
+        <h3>Entry Trigger</h3>
+        <ol>
+          <li><code>NonNegotiableEngine.evaluateDailyComplianceIfNeeded</code> appends daily violations and calls <code>updateRecoveryState</code>.</li>
+          <li><code>NonNegotiableEngine.evaluateWeekIfNeeded</code> appends missed-weekly violations and calls <code>updateRecoveryState</code>.</li>
+          <li><code>updateRecoveryState</code> flips protocol state to <code>.recovery</code> when the current window hits threshold: daily = 3, session = 2.</li>
+        </ol>
+      </div>
+      <div class="mini">
+        <h3>System Transition</h3>
+        <ol>
+          <li>Store mutations eventually flow through <code>CommitmentSystemStore.applySystemUpdate</code>.</li>
+          <li><code>handleRecoveryTransition</code> detects first entry into recovery, then sets:
+            <div class="small"><code>recoveryEntryPendingResolution = true</code>, <code>recoveryEntryRequiresPauseSelection</code>, <code>recoveryEntryTriggerProtocolId</code>, clears <code>recoveryPausedProtocolId</code>, resets <code>recoveryCleanDayStreak</code>, backdates <code>lastRecoveryEvaluationDay</code>.</div>
+          </li>
+        </ol>
+      </div>
+      <div class="mini">
+        <h3>Presentation</h3>
+        <ol>
+          <li><code>MainAppView.evaluateRecoveryEntryPresentation</code> checks <code>store.recoveryEntryContext()</code>.</li>
+          <li>If context exists, it sets <code>AppRouter.presentRecoveryEntry</code>.</li>
+          <li><code>RecoveryModePopup</code> is rendered above the app shell.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="panel section-card">
+      <h3>Detailed Enter - Resolve - Exit Sequence</h3>
+      <ol>
+        <li><strong>Detection:</strong> recovery is entered at the protocol level inside <code>NonNegotiableEngine.updateRecoveryState</code> after violations have been counted into the current 14-day window.</li>
+        <li><strong>Pending entry state:</strong> on the next store update, <code>CommitmentSystemStore.handleRecoveryTransition</code> marks entry as unresolved and determines whether the user must pause another protocol.</li>
+        <li><strong>Popup preparation:</strong> <code>CommitmentSystemStore.recoveryEntryContext</code> returns the trigger protocol, paused protocol, whether pause selection is required, and candidate protocol IDs drawn from <code>.active</code> and <code>.recovery</code> states.</li>
+        <li><strong>User flow:</strong> <code>RecoveryModeViewModel.refresh</code> ranks options using current-window violations, weekly load, and active planned load. The popup advances through <code>.entry</code> - <code>.selectProtocol</code> - <code>.confirmed</code>.</li>
+        <li><strong>Pause action:</strong> if selection is required, <code>confirmPauseSelection</code> calls <code>CommitmentSystemStore.pauseProtocolForRecovery</code> and then <code>PlanStore.pauseAllocations</code> so future active allocations for that protocol become <code>.paused</code>.</li>
+        <li><strong>Recovery confirmation:</strong> <code>completeFlow</code> calls <code>completeRecoveryEntryResolution</code>, which clears the pending-entry flags and trigger reference.</li>
+        <li><strong>During recovery:</strong>
+          <div class="small">
+            <span class="tag">policy</span>
+            <span class="tag">planning</span>
+            <span class="tag">cockpit</span>
+            <span class="tag">daily check-in</span>
+          </div>
+          <ul>
+            <li><code>CommitmentPolicyEngine.canCreate</code> denies new protocol creation while any protocol is in <code>.recovery</code>.</li>
+            <li><code>CommitmentPolicyEngine.canRecordCompletion</code> and <code>canPlaceAllocation</code> deny actions on suspended protocols.</li>
+            <li><code>PlanStore.shouldApplyRecoveryStrictness</code> reduces placement freedom when any protocol is recovering.</li>
+            <li><code>PlanRegulatorEngine</code> sorts recovery protocols first and applies a strong same-day isolation penalty.</li>
+          </ul>
+        </li>
+        <li><strong>Clean-day evaluation:</strong> <code>CommitmentSystemEngine.evaluateRecoveryDay</code> evaluates the most recently closed day. A clean day requires no violation and either:
+          <ul>
+            <li>at least one counted completion somewhere among active/recovery protocols, or</li>
+            <li>no counted completion was actually required under grace/weekly-feasibility logic.</li>
+          </ul>
+        </li>
+        <li><strong>Normal exit path:</strong> after 7 clean days, <code>evaluateRecoveryDay</code> turns all <code>.recovery</code> protocols back to <code>.active</code>, resumes suspended protocols if capacity allows, and resets the streak.</li>
+        <li><strong>Normalization exit path:</strong> <code>normalizeRecoveryDomain</code> also exits recovery early if fewer than 2 recovery-eligible protocols remain after retirement or state repair.</li>
+        <li><strong>Plan cleanup on exit:</strong> <code>MainAppView</code> calls <code>PlanStore.finalizeRecoveryAllocationStatuses</code> with the active protocol IDs that should be restored. Future paused allocations become <code>.active</code>; past or non-restorable ones become <code>.skippedDueToRecovery</code>.</li>
+      </ol>
+    </div>
+
+    <h2>3. State Variable Map</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Concern</th>
+          <th>State Variables</th>
+          <th>Files</th>
+          <th>Usage</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Paused protocols</td>
+          <td><code>NonNegotiable.state == .suspended</code>, <code>CommitmentSystem.recoveryPausedProtocolId</code>, <code>PlanAllocation.status == .paused</code> / <code>.skippedDueToRecovery</code></td>
+          <td><code>NonNegotiableState.swift</code>, <code>CommitmentSystem.swift</code>, <code>PlanModels.swift</code>, <code>PlanStore.swift</code></td>
+          <td>Tracks the domain-level paused protocol plus plan allocations paused on recovery entry.</td>
+        </tr>
+        <tr>
+          <td>Pending recovery resolution</td>
+          <td><code>recoveryEntryPendingResolution</code>, <code>recoveryEntryRequiresPauseSelection</code>, <code>recoveryEntryTriggerProtocolId</code>, <code>AppRouter.presentRecoveryEntry</code>, <code>RecoveryModeViewModel.isPendingResolution</code>, <code>RecoveryModeViewModel.step</code></td>
+          <td><code>CommitmentSystem.swift</code>, <code>CommitmentSystemStore.swift</code>, <code>AppRouter.swift</code>, <code>RecoveryModeViewModel.swift</code></td>
+          <td>Controls whether the user still owes a recovery-entry decision.</td>
+        </tr>
+        <tr>
+          <td>Allocation statuses</td>
+          <td><code>PlanAllocation.status</code>, <code>PlanProtocolDescriptor.state</code>, <code>restorableProtocolIds</code> parameter in <code>finalizeRecoveryAllocationStatuses</code></td>
+          <td><code>PlanModels.swift</code>, <code>PlanStore.swift</code></td>
+          <td>Determines which plan items are interactive, paused, restored, or terminally skipped.</td>
+        </tr>
+        <tr>
+          <td>Retirement interaction</td>
+          <td><code>NonNegotiable.state == .retired</code>, <code>retireNonNegotiable</code>, <code>normalizeRecoveryDomain</code>, <code>RecoveryNormalizationDecision</code></td>
+          <td><code>NonNegotiableState.swift</code>, <code>CommitmentSystemStore.swift</code>, <code>CommitmentSystemEngine.swift</code></td>
+          <td>Retirement can close pending entry, clear stale paused IDs, or exit recovery if the eligible set shrinks below 2.</td>
+        </tr>
+        <tr>
+          <td>Weekly quota evaluation</td>
+          <td><code>Window.weeklyViolationCount</code>, <code>Window.weeksEvaluated</code>, <code>effectiveWeeklyTarget</code>, <code>requiresCountedCompletionForRecovery</code>, <code>feasibleCompletionDays</code></td>
+          <td><code>Window.swift</code>, <code>NonNegotiableEngine.swift</code>, <code>CommitmentSystemEngine.swift</code>, <code>CommitmentSystemStore.swift</code>, <code>DailyCheckInViewModel.swift</code></td>
+          <td>Used both for triggering recovery and for deciding whether a day can count as “clean” without a completion.</td>
+        </tr>
+        <tr>
+          <td>Plan finalization</td>
+          <td><code>finalizeRecoveryAllocationStatuses</code>, <code>activeProtocolIdsForRecoveryRestoration</code>, <code>shouldApplyRecoveryStrictness</code></td>
+          <td><code>MainAppView.swift</code>, <code>PlanStore.swift</code></td>
+          <td>Coordinates how plan allocations are paused during recovery and resolved on recovery exit.</td>
+        </tr>
+        <tr>
+          <td>Recovery progress</td>
+          <td><code>recoveryCleanDayStreak</code>, <code>lastRecoveryEvaluationDay</code>, cockpit <code>recoveryProgressText</code>/<code>recoveryProgressFill</code></td>
+          <td><code>CommitmentSystem.swift</code>, <code>CommitmentSystemEngine.swift</code>, <code>CockpitUIModel.swift</code>, <code>CockpitViewModel.swift</code></td>
+          <td>Measures progress toward the 7 clean-day exit condition.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>4. Existing Tests And Simulations</h2>
+
+    <div class="callout">
+      <strong>Current state:</strong> these are simulation-style coverage hooks, not formal XCTest cases.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Function</th>
+          <th>Recovery Coverage</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>LockedIn/Domain/Engines/NonNegotiableEngineSimulation.swift</code></td>
+          <td><code>runNonNegotiableEngineSimulation</code></td>
+          <td>Verifies daily recovery threshold, session recovery threshold, below-threshold behavior, old-window isolation, idempotent recovery transitions, and recovery persistence at lock end (244-364).</td>
+        </tr>
+        <tr>
+          <td><code>LockedIn/Domain/Engines/CommitmentSystemSimulation.swift</code></td>
+          <td><code>runCommitmentSystemSimulation</code></td>
+          <td>Checks reduced capacity in recovery, suspension behavior, and recovery exit after 7 clean days (101-176).</td>
+        </tr>
+        <tr>
+          <td><code>LockedIn/Domain/Engines/CommitmentSystemSimulation.swift</code></td>
+          <td><code>runRecoveryRetirementNormalizationSimulation</code></td>
+          <td>Covers retirement during recovery, stale paused-ID cleanup, recovery exit below threshold, and no-side-effect retirement outside recovery (182-336).</td>
+        </tr>
+        <tr>
+          <td><code>LockedIn/Domain/Engines/CommitmentSystemSimulation.swift</code></td>
+          <td><code>runRecoveryPendingResolutionRecomputeSimulation</code></td>
+          <td>Covers candidate refresh, pending-flow closure, trigger repair, and stale pending flag cleanup (338-507).</td>
+        </tr>
+        <tr>
+          <td><code>LockedIn/Domain/Engines/CommitmentSystemSimulation.swift</code></td>
+          <td><code>runInitialGraceWindowPressureAlignmentSimulation</code></td>
+          <td>Covers grace-week interaction with recovery clean-day evaluation and logs pressure surfaces (509-580).</td>
+        </tr>
+        <tr>
+          <td><code>LockedIn/Domain/Engines/CommitmentSystemSimulation.swift</code></td>
+          <td><code>runDailyCreationDayGracePressureSimulation</code></td>
+          <td>Covers daily creation-day grace interaction with recovery clean-day evaluation and log pressure surfaces (582-656).</td>
+        </tr>
+        <tr>
+          <td><code>LockedIn/Application/PlanCompletionReconciliationSimulation.swift</code></td>
+          <td><code>runRecoveryExitAllocationCleanupSimulation</code></td>
+          <td>Covers recovery-exit allocation restoration vs terminal skip behavior across active, retired, mixed, past, and exhausted-domain cases (98-249).</td>
+        </tr>
+        <tr>
+          <td><code>LockedIn/Domain/Policy/CommitmentPolicyEngineSimulation.swift</code></td>
+          <td><code>runCommitmentPolicyEngineSimulation</code></td>
+          <td>Verifies create-denied during recovery and related policy behavior (68-72).</td>
+        </tr>
+        <tr>
+          <td><code>LockedIn/Domain/Engines/PlanRegulatorSimulation.swift</code></td>
+          <td><code>runPlanRegulatorSimulation</code></td>
+          <td>Includes a recovery-state protocol in regulator input, but only as incidental simulation coverage, not an explicit recovery assertion (20-30).</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>5. Missing Or Suspicious Areas</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Area</th>
+          <th>Why It Looks Risky</th>
+          <th>Files</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>User can potentially pause a recovery protocol, not just an active one</td>
+          <td><code>recoveryEntryContext</code> returns candidates from both <code>.active</code> and <code>.recovery</code>, and <code>pauseProtocolForRecovery</code> explicitly allows pausing either state. That conflicts with popup copy that says “Select exactly one active protocol,” and it may allow the only recovering protocol to be suspended without a normalization pass.</td>
+          <td><code>CommitmentSystemStore.swift</code> (403-418, 421-439), <code>RecoveryModePopup.swift</code> (176-177)</td>
+        </tr>
+        <tr>
+          <td>Pause action is split across two stores</td>
+          <td>The real recovery-entry pause is only complete if both <code>CommitmentSystemStore.pauseProtocolForRecovery</code> and <code>PlanStore.pauseAllocations</code> are called. That coupling lives in <code>RecoveryModeViewModel.confirmPauseSelection</code>, not in a single transactional API, so a future caller could update one side but forget the other.</td>
+          <td><code>RecoveryModeViewModel.swift</code> (137-143), <code>CommitmentSystemStore.swift</code> (421-439), <code>PlanStore.swift</code> (329-346)</td>
+        </tr>
+        <tr>
+          <td>No formal XCTest or UI-test coverage</td>
+          <td>All current coverage is simulation-style printing and verification helpers. There is no test target in the project file and no dedicated UI coverage for popup presentation, selection flow, or exit cleanup wiring.</td>
+          <td><code>LockedIn.xcodeproj/project.pbxproj</code>, simulation files listed above</td>
+        </tr>
+        <tr>
+          <td>No direct automated coverage for the recovery popup / router flow</td>
+          <td>The critical presentation path lives in <code>MainAppView.evaluateRecoveryEntryPresentation</code> and <code>AppRouter</code>, but there is no obvious automated coverage for scene activation, daily-check-in gating, or popup dismissal/resolution behavior.</td>
+          <td><code>MainAppView.swift</code>, <code>AppRouter.swift</code>, <code>RecoveryModePopup.swift</code></td>
+        </tr>
+        <tr>
+          <td>No direct automated coverage for <code>RecoveryModeViewModel</code> option ranking</td>
+          <td>The recommended protocol is derived from a custom score using current-window violations, weekly load, and planned load. That ranking determines the default guidance shown to the user but is not covered by a focused test.</td>
+          <td><code>RecoveryModeViewModel.swift</code> (51-97)</td>
+        </tr>
+        <tr>
+          <td>No direct automated coverage for manual plan placement strictness during recovery</td>
+          <td><code>PlanStore.shouldApplyRecoveryStrictness</code> blocks placements when any protocol is recovering, but current coverage is much stronger around exit cleanup than around interactive placement denial paths.</td>
+          <td><code>PlanStore.swift</code> (1250-1264)</td>
+        </tr>
+        <tr>
+          <td>API smell: unused <code>referenceDate</code> parameters</td>
+          <td><code>recoveryEntryContext(referenceDate:)</code> and <code>pauseProtocolForRecovery(protocolId:referenceDate:)</code> ignore their <code>referenceDate</code> arguments. This is not a bug by itself, but it suggests either unfinished behavior or a misleading API surface.</td>
+          <td><code>CommitmentSystemStore.swift</code> (398-423)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>6. Bottom Line</h2>
+    <div class="callout good">
+      <p><strong>What is clearly implemented today:</strong> recovery entry via rolling violations, pending recovery-entry resolution, optional protocol pausing, 7 clean-day recovery exit, retirement-driven recovery normalization, paused allocation cleanup, recovery-aware policy blocking, recovery-aware regulator behavior, and recovery-aware cockpit/daily-check-in/log surfaces.</p>
+      <p><strong>What is weakest today:</strong> formal automated testing, popup/router flow coverage, and consistency around which protocol states are valid pause candidates during recovery entry.</p>
+    </div>
+  </div>
+</body>
+</html>
