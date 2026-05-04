@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recovery Plan — 0/10 Done</title>
+  <style>
+    :root {
+      --bg: #f5f1ea;
+      --panel: #fffdfa;
+      --ink: #1f2937;
+      --muted: #5b6472;
+      --line: #d7d2ca;
+      --accent: #9f1d1d;
+      --accent-soft: #fde8e8;
+      --warn: #8a5a00;
+      --warn-soft: #fff4db;
+      --good: #165c3a;
+      --good-soft: #e8f6ee;
+      --info: #1a4a7a;
+      --info-soft: #e8f0fb;
+      --mono: "SFMono-Regular","Menlo","Consolas",monospace;
+      --sans: "Inter","Helvetica Neue","Arial",sans-serif;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      background: linear-gradient(160deg, #f7f3ed 0%, #ede7dc 100%);
+      color: var(--ink);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+
+    /* ── Layout ── */
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
+
+    /* ── Hero ── */
+    .hero {
+      background:
+        radial-gradient(circle at top right, rgba(159,29,29,0.09) 0%, transparent 36%),
+        radial-gradient(circle at 10% 80%, rgba(193,111,59,0.07) 0%, transparent 28%),
+        var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 28px 28px 24px;
+      box-shadow: 0 12px 40px rgba(24,29,39,0.07);
+      margin-bottom: 8px;
+    }
+    .hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .hero h1 { font-size: 28px; letter-spacing: -0.025em; margin-bottom: 4px; }
+    .hero p  { color: var(--muted); font-size: 14px; max-width: 560px; }
+
+    .hero-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+    .btn-reset {
+      padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line);
+      background: var(--panel); color: var(--muted); font-size: 12px; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.03em; transition: all 0.15s;
+    }
+    .btn-reset:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: flex; gap: 16px; margin-top: 20px; flex-wrap: wrap; align-items: center;
+    }
+    .stat {
+      display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600;
+    }
+    .stat-dot { width: 8px; height: 8px; border-radius: 999px; }
+    .stat-dot.done    { background: #2d9d63; }
+    .stat-dot.prog    { background: #c87d00; }
+    .stat-dot.none    { background: #b0b8c4; }
+    .stat-num { font-size: 18px; font-weight: 800; }
+    .stat-label { color: var(--muted); font-weight: 500; }
+
+    .stat-sep { width: 1px; height: 24px; background: var(--line); }
+
+    /* ── Global progress bar ── */
+    .progress-wrap { margin-top: 16px; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .progress-track {
+      height: 8px; background: #e8e2d8; border-radius: 999px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, #9f1d1d, #c87d00);
+      border-radius: 999px; transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+    .last-updated { font-size: 11px; color: var(--muted); margin-top: 8px; text-align: right; }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(247,243,237,0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 20px;
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+      margin: 0 -20px;
+    }
+    .filter-group { display: flex; gap: 4px; align-items: center; }
+    .filter-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-right: 2px; }
+    .filter-sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+
+    .f-btn {
+      padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line);
+      background: transparent; color: var(--muted); font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all 0.12s; letter-spacing: 0.02em;
+    }
+    .f-btn:hover { border-color: var(--ink); color: var(--ink); }
+    .f-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .f-btn.active.claude  { background: var(--accent); border-color: var(--accent); }
+    .f-btn.active.codex   { background: #1a4a7a; border-color: #1a4a7a; }
+    .f-btn.active.gemini  { background: #165c3a; border-color: #165c3a; }
+    .f-btn.active.p0      { background: var(--accent); border-color: var(--accent); }
+    .f-btn.active.p1      { background: var(--warn); border-color: var(--warn); }
+    .f-btn.active.p2      { background: var(--good); border-color: var(--good); }
+    .f-btn.active.done-f  { background: #2d9d63; border-color: #2d9d63; }
+    .f-btn.active.prog-f  { background: #c87d00; border-color: #c87d00; }
+    .f-btn.active.none-f  { background: var(--muted); border-color: var(--muted); }
+
+    /* ── Main content ── */
+    .content { margin-top: 20px; }
+
+    /* ── Phase block ── */
+    .phase-block { margin-bottom: 32px; }
+    .phase-header {
+      display: flex; align-items: center; gap: 14px; margin-bottom: 14px;
+      padding: 14px 18px;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    }
+    .phase-id {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 999px; flex-shrink: 0;
+    }
+    .phase-id.a { background: var(--accent-soft); color: var(--accent); }
+    .phase-id.b { background: var(--warn-soft); color: var(--warn); }
+    .phase-id.c { background: var(--good-soft); color: var(--good); }
+
+    .phase-info { flex: 1; }
+    .phase-info h2 { font-size: 15px; font-weight: 700; margin-bottom: 0; }
+    .phase-info p  { font-size: 12px; color: var(--muted); margin: 0; }
+
+    .phase-progress { min-width: 160px; }
+    .phase-progress-label { font-size: 11px; color: var(--muted); font-weight: 700; margin-bottom: 4px; text-align: right; }
+    .phase-track { height: 6px; background: #e8e2d8; border-radius: 999px; overflow: hidden; }
+    .phase-fill  { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+    .phase-fill.a { background: linear-gradient(90deg, #9f1d1d, #c04a4a); }
+    .phase-fill.b { background: linear-gradient(90deg, #8a5a00, #c87d00); }
+    .phase-fill.c { background: linear-gradient(90deg, #165c3a, #2d9d63); }
+
+    /* ── Task cards ── */
+    .task-card {
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: var(--radius); margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(24,29,39,0.04);
+      transition: opacity 0.25s, box-shadow 0.15s;
+      overflow: hidden;
+    }
+    .task-card.dimmed { opacity: 0.32; pointer-events: none; }
+    .task-card:hover:not(.dimmed) { box-shadow: 0 4px 16px rgba(24,29,39,0.08); }
+    .task-card.is-done .task-title { text-decoration: line-through; color: var(--muted); }
+
+    /* Card header row */
+    .task-header {
+      display: flex; align-items: center; gap: 10px; padding: 14px 16px;
+      cursor: pointer; user-select: none; flex-wrap: wrap;
+    }
+    .task-header:hover { background: rgba(0,0,0,0.015); }
+
+    .tid {
+      font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px;
+      letter-spacing: 0.04em; flex-shrink: 0;
+      background: #f0ebe2; color: var(--muted);
+    }
+
+    .task-title { font-size: 14px; font-weight: 700; flex: 1; min-width: 140px; }
+
+    /* badges */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.02em; flex-shrink: 0; white-space: nowrap;
+    }
+    .badge.claude  { background: var(--accent-soft); color: var(--accent); }
+    .badge.codex   { background: var(--info-soft); color: var(--info); }
+    .badge.gemini  { background: var(--good-soft); color: var(--good); }
+    .badge.p0 { background: var(--accent-soft); color: var(--accent); }
+    .badge.p1 { background: var(--warn-soft); color: var(--warn); }
+    .badge.p2 { background: var(--good-soft); color: var(--good); }
+    .badge.effort { background: #f0ebe2; color: var(--muted); }
+
+    /* Status pill — clickable */
+    .status-pill {
+      padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      cursor: pointer; flex-shrink: 0; border: 1px solid transparent;
+      transition: all 0.12s; letter-spacing: 0.02em; user-select: none;
+    }
+    .status-pill.none { background: #edeae4; color: var(--muted); border-color: #ddd8d0; }
+    .status-pill.prog { background: var(--warn-soft); color: var(--warn); border-color: #efcf8d; }
+    .status-pill.done { background: var(--good-soft); color: var(--good); border-color: #b7dfc8; }
+
+    .chevron {
+      flex-shrink: 0; color: var(--muted); transition: transform 0.2s;
+      font-size: 14px; line-height: 1;
+    }
+    .chevron.open { transform: rotate(180deg); }
+
+    /* Card body */
+    .task-body {
+      border-top: 1px solid var(--line);
+      padding: 16px 18px 18px;
+      display: none;
+    }
+    .task-body.open { display: block; }
+
+    .body-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;
+    }
+    @media (max-width: 640px) { .body-grid { grid-template-columns: 1fr; } }
+
+    .body-section h4 {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px;
+    }
+    .body-section p, .body-section li { font-size: 13px; color: var(--ink); line-height: 1.55; }
+    .body-section ul { padding-left: 16px; }
+    .body-section li { margin-bottom: 4px; }
+    code { font-family: var(--mono); font-size: 0.85em; background: rgba(0,0,0,0.05); padding: 1px 4px; border-radius: 4px; }
+
+    .file-list { display: flex; flex-direction: column; gap: 4px; }
+    .file-item {
+      font-family: var(--mono); font-size: 11.5px; padding: 5px 8px;
+      background: #f4f0e8; border-radius: 8px; color: var(--ink);
+      word-break: break-all;
+    }
+
+    .tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .mini-tag {
+      padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;
+      background: #f0ebe2; color: var(--muted);
+    }
+
+    /* Acceptance criteria */
+    .ac-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .ac-section h4 {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted); margin-bottom: 10px;
+    }
+    .ac-list { display: flex; flex-direction: column; gap: 6px; }
+    .ac-item {
+      display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px;
+      border-radius: 10px; background: #f7f4ef; cursor: pointer;
+      transition: background 0.12s;
+    }
+    .ac-item:hover { background: #f0ebe2; }
+    .ac-item.checked { background: var(--good-soft); }
+    .ac-check {
+      flex-shrink: 0; width: 18px; height: 18px; border-radius: 5px;
+      border: 2px solid var(--line); background: #fff; margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.12s;
+    }
+    .ac-item.checked .ac-check { background: var(--good); border-color: var(--good); }
+    .ac-checkmark { display: none; color: #fff; font-size: 11px; font-weight: 900; }
+    .ac-item.checked .ac-checkmark { display: block; }
+    .ac-text { font-size: 13px; color: var(--ink); line-height: 1.45; flex: 1; }
+    .ac-item.checked .ac-text { color: var(--good); }
+
+    /* Notes */
+    .notes-section { margin-top: 14px; }
+    .notes-section h4 {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px;
+    }
+    .notes-area {
+      width: 100%; min-height: 72px; padding: 10px 12px;
+      border: 1px solid var(--line); border-radius: 10px;
+      background: #f7f4ef; font-family: var(--sans); font-size: 13px;
+      color: var(--ink); resize: vertical; outline: none;
+      transition: border-color 0.12s;
+    }
+    .notes-area:focus { border-color: var(--accent); background: var(--panel); }
+    .notes-area::placeholder { color: #b0b8c4; }
+
+    /* ── Print ── */
+    @media print {
+      .filter-bar, .btn-reset, .status-pill, .chevron, .hero-actions { display: none !important; }
+      .task-body { display: block !important; }
+      .task-card { box-shadow: none; border: 1px solid #ccc; }
+      body { background: #fff; }
+      .hero { background: #fff; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ═══ HERO ═══ -->
+  <section class="hero">
+    <div class="hero-top">
+      <div>
+        <h1>Recovery Mode — Implementation Plan</h1>
+        <p>10 tasks across 3 phases. Based on the Recovery Mode Behavior Specification. Track progress, check off acceptance criteria, and assign work to the right AI tool.</p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn-reset" onclick="resetAll()">↺ Reset Progress</button>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat">
+        <span class="stat-num" id="cnt-done">0</span>
+        <span class="stat-dot done"></span>
+        <span class="stat-label">Done</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <span class="stat-num" id="cnt-prog">0</span>
+        <span class="stat-dot prog"></span>
+        <span class="stat-label">In Progress</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <span class="stat-num" id="cnt-none">10</span>
+        <span class="stat-dot none"></span>
+        <span class="stat-label">Not Started</span>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat">
+        <span class="stat-label">of 10 tasks</span>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Overall Progress</span>
+        <span id="pct-label">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="global-fill" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="last-updated" id="last-updated"></div>
+  </section>
+
+  <!-- ═══ FILTER BAR ═══ -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">Tool</span>
+      <button class="f-btn active" data-filter="tool" data-val="all" onclick="setFilter('tool','all',this)">All</button>
+      <button class="f-btn claude" data-filter="tool" data-val="claude" onclick="setFilter('tool','claude',this)">Claude Code</button>
+      <button class="f-btn codex"  data-filter="tool" data-val="codex"  onclick="setFilter('tool','codex',this)">Codex</button>
+      <button class="f-btn gemini" data-filter="tool" data-val="gemini" onclick="setFilter('tool','gemini',this)">Gemini</button>
+    </div>
+    <div class="filter-sep"></div>
+    <div class="filter-group">
+      <span class="filter-label">Priority</span>
+      <button class="f-btn active" data-filter="pri" data-val="all" onclick="setFilter('pri','all',this)">All</button>
+      <button class="f-btn p0" data-filter="pri" data-val="p0" onclick="setFilter('pri','p0',this)">P0</button>
+      <button class="f-btn p1" data-filter="pri" data-val="p1" onclick="setFilter('pri','p1',this)">P1</button>
+      <button class="f-btn p2" data-filter="pri" data-val="p2" onclick="setFilter('pri','p2',this)">P2</button>
+    </div>
+    <div class="filter-sep"></div>
+    <div class="filter-group">
+      <span class="filter-label">Status</span>
+      <button class="f-btn active" data-filter="status" data-val="all" onclick="setFilter('status','all',this)">All</button>
+      <button class="f-btn done-f"  data-filter="status" data-val="done" onclick="setFilter('status','done',this)">Done</button>
+      <button class="f-btn prog-f"  data-filter="status" data-val="prog" onclick="setFilter('status','prog',this)">In Progress</button>
+      <button class="f-btn none-f"  data-filter="status" data-val="none" onclick="setFilter('status','none',this)">Not Started</button>
+    </div>
+  </div>
+
+  <!-- ═══ CONTENT ═══ -->
+  <div class="content">
+
+    <!-- ════════════════════════════════════
+         PHASE A
+    ════════════════════════════════════════ -->
+    <div class="phase-block" data-phase="a">
+      <div class="phase-header">
+        <span class="phase-id a">Phase A</span>
+        <div class="phase-info">
+          <h2>P0 Correctness Fixes — Must Ship First</h2>
+          <p>Critical bugs that can produce corrupt state. No Phase B work begins until all three tasks are done.</p>
+        </div>
+        <div class="phase-progress">
+          <div class="phase-progress-label" id="phase-a-label">0 / 3</div>
+          <div class="phase-track"><div class="phase-fill a" id="phase-a-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- A1 -->
+      <div class="task-card" id="card-a1" data-tool="claude" data-pri="p0" data-status="none">
+        <div class="task-header" onclick="toggleCard('a1')">
+          <span class="tid">A1</span>
+          <span class="task-title" id="title-a1">Fix candidate filter in recoveryEntryContext</span>
+          <span class="badge claude">Claude Code</span>
+          <span class="badge p0">P0</span>
+          <span class="badge effort">🔹 Small · 1–2 h</span>
+          <span class="status-pill none" id="pill-a1" onclick="cycleStatus(event,'a1')">Not Started</span>
+          <span class="chevron" id="chev-a1">▾</span>
+        </div>
+        <div class="task-body" id="body-a1">
+          <div class="body-grid">
+            <div class="body-section">
+              <h4>What To Do</h4>
+              <p>Change the candidate list in <code>recoveryEntryContext</code> to only include protocols in <code>.active</code> state. Currently it also includes <code>.recovery</code> protocols, conflicting with popup copy and potentially allowing the user to suspend the only recovering protocol. Update all popup copy referencing "active protocol" for consistency.</p>
+            </div>
+            <div class="body-section">
+              <h4>Files</h4>
+              <div class="file-list">
+                <div class="file-item">LockedIn/Application/CommitmentSystemStore.swift <span style="color:#9f1d1d">L403–418</span></div>
+                <div class="file-item">LockedIn/Features/Recovery/Views/RecoveryModePopup.swift <span style="color:#9f1d1d">L176–177</span></div>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>References</h4>
+              <div class="tag-row">
+                <span class="mini-tag">Gap G-1</span>
+                <span class="mini-tag">Invariant I10</span>
+                <span class="mini-tag">Test T-06</span>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>Risk If Skipped</h4>
+              <p>User can pause the only recovering protocol → zero recovery protocols remain → dangling suspended reference with no normalization triggered.</p>
+            </div>
+          </div>
+          <div class="ac-section">
+            <h4>Acceptance Criteria</h4>
+            <div class="ac-list" id="ac-a1">
+              <div class="ac-item" onclick="toggleAC('a1',0)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text"><code>recoveryEntryContext</code> returns candidates where <code>state == .active</code> only — no <code>.recovery</code> protocols in the list</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('a1',1)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">If zero <code>.active</code> protocols exist, <code>recoveryEntryRequiresPauseSelection</code> is <code>false</code></span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('a1',2)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Popup Select Protocol step copy reads "active protocol" with no contradictions</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('a1',3)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Simulation assertion added: candidate list contains no <code>.recovery</code> protocol after entry</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('a1',4)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Build succeeds with no warnings on the modified files</span>
+              </div>
+            </div>
+          </div>
+          <div class="notes-section">
+            <h4>Notes</h4>
+            <textarea class="notes-area" id="notes-a1" placeholder="Add implementation notes, blockers, or decisions here…" oninput="saveNotes('a1')"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- A2 -->
+      <div class="task-card" id="card-a2" data-tool="claude" data-pri="p0" data-status="none">
+        <div class="task-header" onclick="toggleCard('a2')">
+          <span class="tid">A2</span>
+          <span class="task-title" id="title-a2">Introduce single-call coordinator for pause action</span>
+          <span class="badge claude">Claude Code</span>
+          <span class="badge p0">P0</span>
+          <span class="badge effort">🔸 Medium · 2–3 h</span>
+          <span class="status-pill none" id="pill-a2" onclick="cycleStatus(event,'a2')">Not Started</span>
+          <span class="chevron" id="chev-a2">▾</span>
+        </div>
+        <div class="task-body" id="body-a2">
+          <div class="body-grid">
+            <div class="body-section">
+              <h4>What To Do</h4>
+              <p>Create <code>pauseProtocolForRecoveryWithPlanSync(protocolId:)</code> on <code>CommitmentSystemStore</code> that calls both <code>pauseProtocolForRecovery</code> and <code>PlanStore.pauseAllocations</code> internally. Update <code>RecoveryModeViewModel.confirmPauseSelection</code> to call only this one function. The two-store sequence must never be split across call sites.</p>
+            </div>
+            <div class="body-section">
+              <h4>Files</h4>
+              <div class="file-list">
+                <div class="file-item">LockedIn/Application/CommitmentSystemStore.swift <span style="color:#9f1d1d">L421–439</span></div>
+                <div class="file-item">LockedIn/Application/PlanStore.swift <span style="color:#9f1d1d">L329–346</span></div>
+                <div class="file-item">LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift <span style="color:#9f1d1d">L137–143</span></div>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>References</h4>
+              <div class="tag-row">
+                <span class="mini-tag">Gap G-2</span>
+                <span class="mini-tag">Invariant I9</span>
+                <span class="mini-tag">Test T-07</span>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>Risk If Skipped</h4>
+              <p>A crash or partial failure between the two store calls leaves domain showing protocol as <code>.suspended</code> while plan allocations remain <code>.active</code> — silent inconsistency.</p>
+            </div>
+          </div>
+          <div class="ac-section">
+            <h4>Acceptance Criteria</h4>
+            <div class="ac-list" id="ac-a2">
+              <div class="ac-item" onclick="toggleAC('a2',0)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text"><code>RecoveryModeViewModel.confirmPauseSelection</code> calls exactly one function — no direct <code>PlanStore</code> access</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('a2',1)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">The coordinator function updates both stores before returning</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('a2',2)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">No other call site calls <code>pauseProtocolForRecovery</code> without also triggering plan sync</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('a2',3)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Simulation: after coordinator call, domain state is <code>.suspended</code> AND allocations are <code>.paused</code></span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('a2',4)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Build succeeds</span>
+              </div>
+            </div>
+          </div>
+          <div class="notes-section">
+            <h4>Notes</h4>
+            <textarea class="notes-area" id="notes-a2" placeholder="Add implementation notes, blockers, or decisions here…" oninput="saveNotes('a2')"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- A3 -->
+      <div class="task-card" id="card-a3" data-tool="codex" data-pri="p0" data-status="none">
+        <div class="task-header" onclick="toggleCard('a3')">
+          <span class="tid">A3</span>
+          <span class="task-title" id="title-a3">Add Invariant I10 guard in pauseProtocolForRecovery</span>
+          <span class="badge codex">Codex</span>
+          <span class="badge p0">P0</span>
+          <span class="badge effort">⚡ XSmall · 30 min</span>
+          <span class="status-pill none" id="pill-a3" onclick="cycleStatus(event,'a3')">Not Started</span>
+          <span class="chevron" id="chev-a3">▾</span>
+        </div>
+        <div class="task-body" id="body-a3">
+          <div class="body-grid">
+            <div class="body-section">
+              <h4>What To Do</h4>
+              <p>At the top of <code>pauseProtocolForRecovery</code>, add a precondition or guarded early-return that checks no protocol is already in <code>.suspended</code> state. If one is, log a fault and return without mutating state.</p>
+            </div>
+            <div class="body-section">
+              <h4>Files</h4>
+              <div class="file-list">
+                <div class="file-item">LockedIn/Application/CommitmentSystemStore.swift <span style="color:#9f1d1d">L421–439</span></div>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>References</h4>
+              <div class="tag-row">
+                <span class="mini-tag">Gap G-10</span>
+                <span class="mini-tag">Invariant I10</span>
+                <span class="mini-tag">Test T-22</span>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>Note</h4>
+              <p>Best done in the same commit as A2 — the guard goes at the top of the function A2 extracts into.</p>
+            </div>
+          </div>
+          <div class="ac-section">
+            <h4>Acceptance Criteria</h4>
+            <div class="ac-list" id="ac-a3">
+              <div class="ac-item" onclick="toggleAC('a3',0)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Guard is the first executable line inside the function</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('a3',1)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">A second call while one protocol is already <code>.suspended</code> is a no-op</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('a3',2)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Simulation: calling the function twice does not produce two suspended protocols</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('a3',3)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Build succeeds</span>
+              </div>
+            </div>
+          </div>
+          <div class="notes-section">
+            <h4>Notes</h4>
+            <textarea class="notes-area" id="notes-a3" placeholder="Add implementation notes, blockers, or decisions here…" oninput="saveNotes('a3')"></textarea>
+          </div>
+        </div>
+      </div>
+    </div><!-- /phase-a -->
+
+    <!-- ════════════════════════════════════
+         PHASE B
+    ════════════════════════════════════════ -->
+    <div class="phase-block" data-phase="b">
+      <div class="phase-header">
+        <span class="phase-id b">Phase B</span>
+        <div class="phase-info">
+          <h2>P1 Correctness Fixes</h2>
+          <p>Important correctness gaps. No regressions in the wild, but each represents a latent failure mode that will trigger under real use.</p>
+        </div>
+        <div class="phase-progress">
+          <div class="phase-progress-label" id="phase-b-label">0 / 4</div>
+          <div class="phase-track"><div class="phase-fill b" id="phase-b-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- B1 -->
+      <div class="task-card" id="card-b1" data-tool="codex" data-pri="p1" data-status="none">
+        <div class="task-header" onclick="toggleCard('b1')">
+          <span class="tid">B1</span>
+          <span class="task-title" id="title-b1">Resolve unused referenceDate parameters</span>
+          <span class="badge codex">Codex</span>
+          <span class="badge p1">P1</span>
+          <span class="badge effort">🔹 Small · 1 h</span>
+          <span class="status-pill none" id="pill-b1" onclick="cycleStatus(event,'b1')">Not Started</span>
+          <span class="chevron" id="chev-b1">▾</span>
+        </div>
+        <div class="task-body" id="body-b1">
+          <div class="body-grid">
+            <div class="body-section">
+              <h4>What To Do</h4>
+              <p>Remove the <code>referenceDate</code> parameter from <code>recoveryEntryContext(referenceDate:)</code> and <code>pauseProtocolForRecovery(protocolId:referenceDate:)</code>. Replace any internal date usage with <code>AppClock.now</code>. Update all call sites to remove the argument.</p>
+            </div>
+            <div class="body-section">
+              <h4>Files</h4>
+              <div class="file-list">
+                <div class="file-item">LockedIn/Application/CommitmentSystemStore.swift <span style="color:#9f1d1d">L398–423</span></div>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>References</h4>
+              <div class="tag-row">
+                <span class="mini-tag">Gap G-3</span>
+                <span class="mini-tag">Supports T-32 T-33 T-34</span>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>Decision Point</h4>
+              <p>If date injection is needed for future testability, implement it properly (pass through to internal logic). Do not leave a parameter that is accepted but silently ignored.</p>
+            </div>
+          </div>
+          <div class="ac-section">
+            <h4>Acceptance Criteria</h4>
+            <div class="ac-list" id="ac-b1">
+              <div class="ac-item" onclick="toggleAC('b1',0)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Neither function signature contains <code>referenceDate</code> as an ignored parameter</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('b1',1)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">All call sites updated — no compiler errors</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('b1',2)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Internal date references use <code>AppClock.now</code> not <code>Date()</code></span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('b1',3)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Build succeeds</span>
+              </div>
+            </div>
+          </div>
+          <div class="notes-section">
+            <h4>Notes</h4>
+            <textarea class="notes-area" id="notes-b1" placeholder="Add implementation notes, blockers, or decisions here…" oninput="saveNotes('b1')"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- B2 -->
+      <div class="task-card" id="card-b2" data-tool="codex" data-pri="p1" data-status="none">
+        <div class="task-header" onclick="toggleCard('b2')">
+          <span class="tid">B2</span>
+          <span class="task-title" id="title-b2">Post-decode validation for recoveryPausedProtocolId</span>
+          <span class="badge codex">Codex</span>
+          <span class="badge p1">P1</span>
+          <span class="badge effort">🔹 Small · 1 h</span>
+          <span class="status-pill none" id="pill-b2" onclick="cycleStatus(event,'b2')">Not Started</span>
+          <span class="chevron" id="chev-b2">▾</span>
+        </div>
+        <div class="task-body" id="body-b2">
+          <div class="body-grid">
+            <div class="body-section">
+              <h4>What To Do</h4>
+              <p>After decoding all fields in <code>CommitmentSystem.init(from:)</code>, add a validation block: if <code>recoveryPausedProtocolId</code> is non-nil but does not match any non-retired protocol in <code>nonNegotiables</code>, set it to <code>nil</code>. Also clear <code>recoveryEntryTriggerProtocolId</code> if stale.</p>
+            </div>
+            <div class="body-section">
+              <h4>Files</h4>
+              <div class="file-list">
+                <div class="file-item">LockedIn/Domain/Models/CommitmentSystem.swift <span style="color:#9f1d1d">init(from:)</span></div>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>References</h4>
+              <div class="tag-row">
+                <span class="mini-tag">Gap G-8</span>
+                <span class="mini-tag">Invariant I1</span>
+                <span class="mini-tag">Invariant I6</span>
+                <span class="mini-tag">Test T-19</span>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>How To Test</h4>
+              <p>Hand-craft a JSON fixture with a <code>recoveryPausedProtocolId</code> pointing to a retired protocol UUID. Decode it and assert the field is <code>nil</code> post-decode.</p>
+            </div>
+          </div>
+          <div class="ac-section">
+            <h4>Acceptance Criteria</h4>
+            <div class="ac-list" id="ac-b2">
+              <div class="ac-item" onclick="toggleAC('b2',0)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Stale <code>recoveryPausedProtocolId</code> (retired protocol) is silently cleared after decode</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('b2',1)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Valid <code>recoveryPausedProtocolId</code> (suspended, active protocol) is preserved after decode</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('b2',2)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">JSON fixture test: decode with stale ID → field is <code>nil</code></span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('b2',3)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Build succeeds</span>
+              </div>
+            </div>
+          </div>
+          <div class="notes-section">
+            <h4>Notes</h4>
+            <textarea class="notes-area" id="notes-b2" placeholder="Add implementation notes, blockers, or decisions here…" oninput="saveNotes('b2')"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- B3 -->
+      <div class="task-card" id="card-b3" data-tool="claude" data-pri="p1" data-status="none">
+        <div class="task-header" onclick="toggleCard('b3')">
+          <span class="tid">B3</span>
+          <span class="task-title" id="title-b3">Immediate allocation finalization on retired paused protocol</span>
+          <span class="badge claude">Claude Code</span>
+          <span class="badge p1">P1</span>
+          <span class="badge effort">🔸 Medium · 2 h</span>
+          <span class="status-pill none" id="pill-b3" onclick="cycleStatus(event,'b3')">Not Started</span>
+          <span class="chevron" id="chev-b3">▾</span>
+        </div>
+        <div class="task-body" id="body-b3">
+          <div class="body-grid">
+            <div class="body-section">
+              <h4>What To Do</h4>
+              <p>When <code>normalizeRecoveryDomain</code> clears a retired paused protocol's ID, immediately call <code>PlanStore.finalizeRecoveryAllocationStatuses</code> for that specific ID with an empty restorable set. This marks its paused allocations as <code>.skippedDueToRecovery</code> without waiting for full recovery exit.</p>
+            </div>
+            <div class="body-section">
+              <h4>Files</h4>
+              <div class="file-list">
+                <div class="file-item">LockedIn/Application/CommitmentSystemStore.swift <span style="color:#9f1d1d">retirement path</span></div>
+                <div class="file-item">LockedIn/Application/PlanStore.swift <span style="color:#9f1d1d">finalizeRecoveryAllocationStatuses</span></div>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>References</h4>
+              <div class="tag-row">
+                <span class="mini-tag">Gap G-5</span>
+                <span class="mini-tag">Invariant I4</span>
+                <span class="mini-tag">Test T-14</span>
+                <span class="mini-tag">Test T-15</span>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>Risk If Skipped</h4>
+              <p>Between retirement and recovery exit, the retired protocol's allocations appear as <code>.paused</code> in the plan UI — visually misleading, potentially interactive.</p>
+            </div>
+          </div>
+          <div class="ac-section">
+            <h4>Acceptance Criteria</h4>
+            <div class="ac-list" id="ac-b3">
+              <div class="ac-item" onclick="toggleAC('b3',0)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">After retiring the paused protocol, no allocations for it remain in <code>.paused</code> state</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('b3',1)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">All its paused allocations become <code>.skippedDueToRecovery</code> immediately on retirement</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('b3',2)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Full recovery exit later does not attempt to re-finalize the already-retired protocol</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('b3',3)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Simulation assertion: retire paused protocol → allocations terminal before recovery exits</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('b3',4)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Build succeeds</span>
+              </div>
+            </div>
+          </div>
+          <div class="notes-section">
+            <h4>Notes</h4>
+            <textarea class="notes-area" id="notes-b3" placeholder="Add implementation notes, blockers, or decisions here…" oninput="saveNotes('b3')"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- B4 -->
+      <div class="task-card" id="card-b4" data-tool="claude" data-pri="p1" data-status="none">
+        <div class="task-header" onclick="toggleCard('b4')">
+          <span class="tid">B4</span>
+          <span class="task-title" id="title-b4">Weekly-frequency post-restoration feasibility fix</span>
+          <span class="badge claude">Claude Code</span>
+          <span class="badge p1">P1</span>
+          <span class="badge effort">🔸 Medium · 2–3 h</span>
+          <span class="status-pill none" id="pill-b4" onclick="cycleStatus(event,'b4')">Not Started</span>
+          <span class="chevron" id="chev-b4">▾</span>
+        </div>
+        <div class="task-body" id="body-b4">
+          <div class="body-grid">
+            <div class="body-section">
+              <h4>What To Do</h4>
+              <p>Extend feasibility logic to detect that a restored protocol's first week post-recovery has fewer available days than the weekly target. Exempt that partial week from violation counting, or pro-rate the target so week-end evaluation cannot fire a violation on the first partial week back.</p>
+            </div>
+            <div class="body-section">
+              <h4>Files</h4>
+              <div class="file-list">
+                <div class="file-item">LockedIn/Domain/Engines/NonNegotiableEngine.swift <span style="color:#9f1d1d">evaluateWeekIfNeeded</span></div>
+                <div class="file-item">LockedIn/Domain/Engines/CommitmentSystemEngine.swift <span style="color:#9f1d1d">requiresCountedCompletionForRecovery, feasibleCompletionDays</span></div>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>References</h4>
+              <div class="tag-row">
+                <span class="mini-tag">Gap G-9</span>
+                <span class="mini-tag">Invariant I7</span>
+                <span class="mini-tag">Test T-23</span>
+                <span class="mini-tag">Test T-24</span>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>Scenario To Fix</h4>
+              <p>Protocol restored Thursday, target 5×/week. Only 3 days remain. Week-end fires → 5 completions not possible → immediate re-entry to recovery. This must not happen.</p>
+            </div>
+          </div>
+          <div class="ac-section">
+            <h4>Acceptance Criteria</h4>
+            <div class="ac-list" id="ac-b4">
+              <div class="ac-item" onclick="toggleAC('b4',0)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Protocol restored Thursday, target 5×/week: no <code>.missedWeeklyFrequency</code> violation fires at week-end</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('b4',1)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Protocol restored Monday (full week), target 5×/week: normal evaluation applies unchanged</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('b4',2)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Suspended protocols: zero violations recorded while state is <code>.suspended</code></span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('b4',3)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Simulation: restore weekly protocol mid-week → week-end passes without triggering recovery re-entry</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('b4',4)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Build succeeds</span>
+              </div>
+            </div>
+          </div>
+          <div class="notes-section">
+            <h4>Notes</h4>
+            <textarea class="notes-area" id="notes-b4" placeholder="Add implementation notes, blockers, or decisions here…" oninput="saveNotes('b4')"></textarea>
+          </div>
+        </div>
+      </div>
+    </div><!-- /phase-b -->
+
+    <!-- ════════════════════════════════════
+         PHASE C
+    ════════════════════════════════════════ -->
+    <div class="phase-block" data-phase="c">
+      <div class="phase-header">
+        <span class="phase-id c">Phase C</span>
+        <div class="phase-info">
+          <h2>Coverage &amp; Observability</h2>
+          <p>Simulation assertions that close the gap between "probably works" and "verifiably correct." Prevents silent regressions.</p>
+        </div>
+        <div class="phase-progress">
+          <div class="phase-progress-label" id="phase-c-label">0 / 3</div>
+          <div class="phase-track"><div class="phase-fill c" id="phase-c-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- C1 -->
+      <div class="task-card" id="card-c1" data-tool="claude" data-pri="p1" data-status="none">
+        <div class="task-header" onclick="toggleCard('c1')">
+          <span class="tid">C1</span>
+          <span class="task-title" id="title-c1">Simulation coverage for popup presentation path</span>
+          <span class="badge claude">Claude Code</span>
+          <span class="badge p1">P1</span>
+          <span class="badge effort">🔸 Medium · 2 h</span>
+          <span class="status-pill none" id="pill-c1" onclick="cycleStatus(event,'c1')">Not Started</span>
+          <span class="chevron" id="chev-c1">▾</span>
+        </div>
+        <div class="task-body" id="body-c1">
+          <div class="body-grid">
+            <div class="body-section">
+              <h4>What To Do</h4>
+              <p>Write <code>runRecoveryPopupPresentationSimulation()</code> with three assertions: (1) context non-nil when pending; (2) context nil after <code>completeRecoveryEntryResolution()</code>; (3) context non-nil after simulated restart (re-decode JSON with pending flag true). Register in DevOptions or simulation runner.</p>
+            </div>
+            <div class="body-section">
+              <h4>Files</h4>
+              <div class="file-list">
+                <div class="file-item">LockedIn/Application/CommitmentSystemStore.swift</div>
+                <div class="file-item">LockedIn/Features/AppShell/Models/AppRouter.swift</div>
+                <div class="file-item">LockedIn/Domain/Engines/CommitmentSystemSimulation.swift <span style="color:#9f1d1d">(append)</span></div>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>References</h4>
+              <div class="tag-row">
+                <span class="mini-tag">Gap G-4</span>
+                <span class="mini-tag">Test T-20</span>
+                <span class="mini-tag">Test T-33</span>
+                <span class="mini-tag">Test T-34</span>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>Why Claude Code</h4>
+              <p>The presentation path touches Store + Router + AppView interactions — needs multi-layer reasoning to write correct simulation setup, not just a simple function body.</p>
+            </div>
+          </div>
+          <div class="ac-section">
+            <h4>Acceptance Criteria</h4>
+            <div class="ac-list" id="ac-c1">
+              <div class="ac-item" onclick="toggleAC('c1',0)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Assertion 1 passes: <code>recoveryEntryContext()</code> returns non-nil when <code>recoveryEntryPendingResolution = true</code></span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('c1',1)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Assertion 2 passes: context returns nil after <code>completeRecoveryEntryResolution()</code></span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('c1',2)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Assertion 3 passes: context non-nil after simulated restart with pending flag true</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('c1',3)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">All three cases log success via the existing simulation print pattern</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('c1',4)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Function is callable from DevOptions or simulation runner</span>
+              </div>
+            </div>
+          </div>
+          <div class="notes-section">
+            <h4>Notes</h4>
+            <textarea class="notes-area" id="notes-c1" placeholder="Add implementation notes, blockers, or decisions here…" oninput="saveNotes('c1')"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- C2 -->
+      <div class="task-card" id="card-c2" data-tool="codex" data-pri="p2" data-status="none">
+        <div class="task-header" onclick="toggleCard('c2')">
+          <span class="tid">C2</span>
+          <span class="task-title" id="title-c2">RecoveryModeViewModel ranking simulation</span>
+          <span class="badge codex">Codex</span>
+          <span class="badge p2">P2</span>
+          <span class="badge effort">🔹 Small · 1 h</span>
+          <span class="status-pill none" id="pill-c2" onclick="cycleStatus(event,'c2')">Not Started</span>
+          <span class="chevron" id="chev-c2">▾</span>
+        </div>
+        <div class="task-body" id="body-c2">
+          <div class="body-grid">
+            <div class="body-section">
+              <h4>What To Do</h4>
+              <p>Write simulation assertions verifying the option-ranking logic in <code>RecoveryModeViewModel</code>: highest-violation protocol ranks first; if tied, higher planned-load ranks second; empty candidate list returns empty array without crashing.</p>
+            </div>
+            <div class="body-section">
+              <h4>Files</h4>
+              <div class="file-list">
+                <div class="file-item">LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift <span style="color:#9f1d1d">L51–97</span></div>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>References</h4>
+              <div class="tag-row">
+                <span class="mini-tag">Gap G-6</span>
+                <span class="mini-tag">Test T-06 (ranking)</span>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>Why Codex</h4>
+              <p>Isolated pure-logic function with clear input/output. No cross-layer coordination needed — ideal for Codex with a precise prompt.</p>
+            </div>
+          </div>
+          <div class="ac-section">
+            <h4>Acceptance Criteria</h4>
+            <div class="ac-list" id="ac-c2">
+              <div class="ac-item" onclick="toggleAC('c2',0)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Highest-violation protocol is first in sorted output</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('c2',1)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Load tiebreaker resolves correctly when violations are equal</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('c2',2)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Empty input → empty output, no crash</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('c2',3)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">All cases log success via simulation print pattern</span>
+              </div>
+            </div>
+          </div>
+          <div class="notes-section">
+            <h4>Notes</h4>
+            <textarea class="notes-area" id="notes-c2" placeholder="Add implementation notes, blockers, or decisions here…" oninput="saveNotes('c2')"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- C3 -->
+      <div class="task-card" id="card-c3" data-tool="codex" data-pri="p2" data-status="none">
+        <div class="task-header" onclick="toggleCard('c3')">
+          <span class="tid">C3</span>
+          <span class="task-title" id="title-c3">Recovery placement strictness simulation</span>
+          <span class="badge codex">Codex</span>
+          <span class="badge p2">P2</span>
+          <span class="badge effort">⚡ XSmall · 30 min</span>
+          <span class="status-pill none" id="pill-c3" onclick="cycleStatus(event,'c3')">Not Started</span>
+          <span class="chevron" id="chev-c3">▾</span>
+        </div>
+        <div class="task-body" id="body-c3">
+          <div class="body-grid">
+            <div class="body-section">
+              <h4>What To Do</h4>
+              <p>Write two simulation assertions: (1) with at least one protocol in <code>.recovery</code> state, <code>shouldApplyRecoveryStrictness</code> returns <code>true</code>; (2) with all protocols <code>.active</code>, returns <code>false</code>.</p>
+            </div>
+            <div class="body-section">
+              <h4>Files</h4>
+              <div class="file-list">
+                <div class="file-item">LockedIn/Application/PlanStore.swift <span style="color:#9f1d1d">L1259</span></div>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>References</h4>
+              <div class="tag-row">
+                <span class="mini-tag">Gap G-7</span>
+                <span class="mini-tag">Test T-26</span>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>Why Codex</h4>
+              <p>Single boolean function with two test cases. Minimal context needed — hand Codex the function signature and expected outputs.</p>
+            </div>
+          </div>
+          <div class="ac-section">
+            <h4>Acceptance Criteria</h4>
+            <div class="ac-list" id="ac-c3">
+              <div class="ac-item" onclick="toggleAC('c3',0)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Returns <code>true</code> when any protocol is in <code>.recovery</code> state</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('c3',1)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Returns <code>false</code> when all protocols are <code>.active</code></span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('c3',2)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Both cases log success via simulation print pattern</span>
+              </div>
+            </div>
+          </div>
+          <div class="notes-section">
+            <h4>Notes</h4>
+            <textarea class="notes-area" id="notes-c3" placeholder="Add implementation notes, blockers, or decisions here…" oninput="saveNotes('c3')"></textarea>
+          </div>
+        </div>
+      </div>
+    </div><!-- /phase-c -->
+
+  </div><!-- /content -->
+</div><!-- /wrap -->
+
+<script>
+  const TASKS = ['a1','a2','a3','b1','b2','b3','b4','c1','c2','c3'];
+  const PHASES = {
+    a: ['a1','a2','a3'],
+    b: ['b1','b2','b3','b4'],
+    c: ['c1','c2','c3']
+  };
+  const AC_COUNTS = { a1:5, a2:5, a3:4, b1:4, b2:4, b3:5, b4:5, c1:5, c2:4, c3:3 };
+
+  const STATUS_CYCLE = { none:'prog', prog:'done', done:'none' };
+  const STATUS_LABEL = { none:'Not Started', prog:'In Progress', done:'Done' };
+
+  let state = {};
+
+  // ── Init ──────────────────────────────────────────────
+  function loadState() {
+    try {
+      state = JSON.parse(localStorage.getItem('rm-plan-v1') || '{}');
+    } catch(e) { state = {}; }
+
+    TASKS.forEach(id => {
+      if (!state[id]) state[id] = { status: 'none', ac: [], notes: '' };
+      if (!state[id].ac) state[id].ac = [];
+      if (!state[id].notes) state[id].notes = '';
+    });
+  }
+
+  function saveState() {
+    localStorage.setItem('rm-plan-v1', JSON.stringify(state));
+    state._updated = Date.now();
+    localStorage.setItem('rm-plan-v1', JSON.stringify(state));
+  }
+
+  function init() {
+    loadState();
+    TASKS.forEach(id => {
+      applyStatus(id, state[id].status, false);
+      // ac
+      const n = AC_COUNTS[id];
+      for (let i = 0; i < n; i++) {
+        if (state[id].ac[i]) {
+          const item = document.querySelector(`#ac-${id} .ac-item:nth-child(${i+1})`);
+          if (item) item.classList.add('checked');
+        }
+      }
+      // notes
+      const ta = document.getElementById(`notes-${id}`);
+      if (ta) ta.value = state[id].notes || '';
+    });
+    updateGlobal();
+    updateLastUpdated();
+  }
+
+  // ── Status ────────────────────────────────────────────
+  function cycleStatus(e, id) {
+    e.stopPropagation();
+    const cur = state[id].status;
+    const next = STATUS_CYCLE[cur];
+    state[id].status = next;
+    applyStatus(id, next, true);
+    saveState();
+    updateGlobal();
+    applyFilters();
+    updateLastUpdated();
+  }
+
+  function applyStatus(id, s, animate) {
+    const pill = document.getElementById(`pill-${id}`);
+    const card = document.getElementById(`card-${id}`);
+    const title = document.getElementById(`title-${id}`);
+    if (!pill || !card) return;
+    pill.className = `status-pill ${s}`;
+    pill.textContent = STATUS_LABEL[s];
+    card.dataset.status = s;
+    title.style.textDecoration = s === 'done' ? 'line-through' : '';
+    title.style.color = s === 'done' ? 'var(--muted)' : '';
+    if (animate) {
+      card.style.transition = 'background 0.3s';
+      card.style.background = s === 'done' ? '#f0faf4' : s === 'prog' ? '#fffdf0' : '';
+      setTimeout(() => { card.style.background = ''; }, 600);
+    }
+  }
+
+  // ── Acceptance Criteria ───────────────────────────────
+  function toggleAC(id, idx) {
+    if (!state[id].ac) state[id].ac = [];
+    state[id].ac[idx] = !state[id].ac[idx];
+
+    const item = document.querySelector(`#ac-${id} .ac-item:nth-child(${idx+1})`);
+    if (item) item.classList.toggle('checked', state[id].ac[idx]);
+
+    // auto-status based on checks
+    const n = AC_COUNTS[id];
+    const checked = state[id].ac.filter(Boolean).length;
+    if (checked === n) {
+      state[id].status = 'done';
+      applyStatus(id, 'done', true);
+    } else if (checked > 0 && state[id].status !== 'prog' && state[id].status !== 'done') {
+      state[id].status = 'prog';
+      applyStatus(id, 'prog', true);
+    } else if (checked > 0 && state[id].status === 'done') {
+      state[id].status = 'prog';
+      applyStatus(id, 'prog', true);
+    }
+
+    saveState();
+    updateGlobal();
+    applyFilters();
+    updateLastUpdated();
+  }
+
+  // ── Expand / Collapse ─────────────────────────────────
+  function toggleCard(id) {
+    const body = document.getElementById(`body-${id}`);
+    const chev = document.getElementById(`chev-${id}`);
+    if (!body) return;
+    const open = body.classList.toggle('open');
+    chev.classList.toggle('open', open);
+    chev.textContent = open ? '▴' : '▾';
+  }
+
+  // ── Notes ─────────────────────────────────────────────
+  function saveNotes(id) {
+    state[id].notes = document.getElementById(`notes-${id}`).value;
+    saveState();
+    updateLastUpdated();
+  }
+
+  // ── Filters ───────────────────────────────────────────
+  let filters = { tool: 'all', pri: 'all', status: 'all' };
+
+  function setFilter(type, val, btn) {
+    filters[type] = val;
+    // update button styles
+    document.querySelectorAll(`[data-filter="${type}"]`).forEach(b => {
+      b.classList.remove('active');
+    });
+    btn.classList.add('active');
+    applyFilters();
+  }
+
+  function applyFilters() {
+    TASKS.forEach(id => {
+      const card = document.getElementById(`card-${id}`);
+      const toolMatch  = filters.tool   === 'all' || card.dataset.tool   === filters.tool;
+      const priMatch   = filters.pri    === 'all' || card.dataset.pri    === filters.pri;
+      const statusMatch= filters.status === 'all' || card.dataset.status === filters.status;
+      card.classList.toggle('dimmed', !(toolMatch && priMatch && statusMatch));
+    });
+  }
+
+  // ── Global counters ───────────────────────────────────
+  function updateGlobal() {
+    let done = 0, prog = 0, none = 0;
+    TASKS.forEach(id => {
+      const s = state[id].status;
+      if (s === 'done') done++;
+      else if (s === 'prog') prog++;
+      else none++;
+    });
+    document.getElementById('cnt-done').textContent = done;
+    document.getElementById('cnt-prog').textContent = prog;
+    document.getElementById('cnt-none').textContent = none;
+    const pct = Math.round((done / TASKS.length) * 100);
+    document.getElementById('pct-label').textContent = pct + '%';
+    document.getElementById('global-fill').style.width = pct + '%';
+    document.title = `Recovery Plan — ${done}/${TASKS.length} Done`;
+
+    // phase bars
+    Object.entries(PHASES).forEach(([phase, ids]) => {
+      const d = ids.filter(id => state[id].status === 'done').length;
+      const total = ids.length;
+      const phasePct = Math.round((d / total) * 100);
+      document.getElementById(`phase-${phase}-label`).textContent = `${d} / ${total}`;
+      document.getElementById(`phase-${phase}-fill`).style.width = phasePct + '%';
+    });
+  }
+
+  function updateLastUpdated() {
+    const el = document.getElementById('last-updated');
+    if (!el) return;
+    const now = new Date();
+    el.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+  }
+
+  // ── Reset ─────────────────────────────────────────────
+  function resetAll() {
+    if (!confirm('Reset all progress, checks, and notes? This cannot be undone.')) return;
+    localStorage.removeItem('rm-plan-v1');
+    location.reload();
+  }
+
+  // ── Boot ──────────────────────────────────────────────
+  init();
+</script>
+</body>
+</html>
