@@ -222,10 +222,12 @@ struct NonNegotiableEngine {
         )
         let stateBefore = nn.state
         let weeklyViolationCountBefore = nn.windows[windowIndex].weeklyViolationCount
+        let alreadyHasWeeklyViolation = nn.violations.contains { $0.weekId == weekId && $0.kind == .missedWeeklyFrequency }
         let shouldAppendMissedWeekly = completionCount < expected &&
             shouldSuppressShortfall == false &&
             shouldSuppressDailyCreationWeekShortfall == false &&
-            shouldSuppressPostRestorationShortfall == false
+            shouldSuppressPostRestorationShortfall == false &&
+            alreadyHasWeeklyViolation == false
 
         if shouldAppendMissedWeekly {
             nn.windows[windowIndex].weeklyViolationCount += 1
@@ -279,6 +281,71 @@ struct NonNegotiableEngine {
                 stateAfter: nn.state
             )
         }
+    }
+
+    func evaluateIntraWeekSessionShortfallIfNeeded(_ nn: inout NonNegotiable, at currentDate: Date) {
+        guard nn.state != .retired, nn.state != .completed, nn.state != .suspended else { return }
+        guard nn.definition.mode == .session else { return }
+
+        let today = DateRules.startOfDay(currentDate, calendar: calendar)
+        let weekInterval = DateRules.weekInterval(containing: today, calendar: calendar)
+        let weekId = DateRules.weekID(for: today, calendar: calendar)
+
+        advanceWindowIfNeeded(&nn, currentDate: today)
+        guard let windowIndex = windowIndex(for: nn, date: today) else { return }
+
+        // Fast exit: week already has a weekly violation (intra-week or end-of-week).
+        let alreadyHasWeeklyViolation = nn.violations.contains { $0.weekId == weekId && $0.kind == .missedWeeklyFrequency }
+        if alreadyHasWeeklyViolation { return }
+
+        let expected = expectedCompletionsPerWeek(for: nn.definition)
+        guard expected > 0 else { return }
+
+        let graceEvaluation = evaluateInitialPartialWeeklyGrace(for: nn, weekId: weekId, weekInterval: weekInterval)
+        if graceEvaluation.shouldSuppressShortfall { return }
+
+        if shouldSuppressPostRestorationWeeklyShortfall(
+            for: nn,
+            weekId: weekId,
+            weekInterval: weekInterval,
+            expected: expected
+        ) { return }
+
+        let completionCount = countCompletions(in: nn, for: weekId, within: weekInterval, windowIndex: windowIndex)
+
+        // Remaining days in the week that are within the lock period (today inclusive).
+        let remainingFeasibleDays = feasibleCompletionDays(from: today, withinWeek: weekInterval, lock: nn.lock)
+
+        // Only record a violation when it is mathematically impossible to meet the weekly target.
+        guard completionCount + remainingFeasibleDays < expected else { return }
+
+        let stateBefore = nn.state
+        let weeklyViolationCountBefore = nn.windows[windowIndex].weeklyViolationCount
+        nn.windows[windowIndex].weeklyViolationCount += 1
+        nn.violations.append(
+            Violation(
+                date: today,
+                kind: .missedWeeklyFrequency,
+                windowIndex: windowIndex,
+                weekId: weekId
+            )
+        )
+        updateRecoveryState(
+            &nn,
+            windowIndex: windowIndex,
+            debugContext: RecoveryUpdateDebugContext(
+                source: "evaluateIntraWeekSessionShortfallIfNeeded",
+                tickDate: currentDate,
+                evaluatedWeekId: weekId,
+                evaluatedDay: nil,
+                completionCount: completionCount,
+                expected: expected,
+                missedWeeklyAppended: true,
+                missedDailyAppended: false,
+                weeklyViolationCountBefore: weeklyViolationCountBefore,
+                stateBefore: stateBefore
+            )
+        )
     }
 
     func advanceWindowIfNeeded(_ nn: inout NonNegotiable, currentDate: Date) {
@@ -632,9 +699,9 @@ struct NonNegotiableEngine {
     private func recoveryViolationThreshold(for mode: NonNegotiableMode) -> Int {
         switch mode {
         case .daily:
-            return 3
-        case .session:
             return 2
+        case .session:
+            return 1
         }
     }
 

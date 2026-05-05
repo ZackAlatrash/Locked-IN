@@ -238,6 +238,21 @@ final class CommitmentSystemEngine {
         )
     }
 
+    func evaluateIntraWeekSessionCompliance(currentDate: Date, in system: inout CommitmentSystem) {
+        for index in system.nonNegotiables.indices {
+            let state = system.nonNegotiables[index].state
+            if state != .active && state != .recovery {
+                continue
+            }
+
+            var nn = system.nonNegotiables[index]
+            nonNegotiableEngine.evaluateIntraWeekSessionShortfallIfNeeded(&nn, at: currentDate)
+            system.nonNegotiables[index] = nn
+        }
+
+        enforceCapacityIfNeeded(in: &system)
+    }
+
     func evaluateDailyCompliance(currentDate: Date, in system: inout CommitmentSystem) {
         for index in system.nonNegotiables.indices {
             let state = system.nonNegotiables[index].state

@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Violation System Analysis & Redesign — Locked IN</title>
+  <style>
+    :root {
+      --bg: #f5f1ea;
+      --panel: #fffdfa;
+      --ink: #1f2937;
+      --muted: #5b6472;
+      --line: #d7d2ca;
+      --accent: #9f1d1d;
+      --accent-soft: #fde8e8;
+      --warn: #8a5a00;
+      --warn-soft: #fff4db;
+      --good: #165c3a;
+      --good-soft: #e8f6ee;
+      --info: #1a4a7a;
+      --info-soft: #e8f0fb;
+      --danger: #9f1d1d;
+      --danger-soft: #fde8e8;
+      --proposed: #5b3a8a;
+      --proposed-soft: #f0e8fb;
+      --neutral: #374151;
+      --mono: "SFMono-Regular", "Menlo", "Consolas", monospace;
+      --sans: "Inter", "Helvetica Neue", "Arial", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: linear-gradient(180deg, #f7f3ed 0%, #f1ebe2 100%);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px 100px;
+    }
+
+    /* ── Typography ─────────────────────────────────────── */
+    h1, h2, h3, h4 { line-height: 1.15; margin: 0 0 12px; }
+    h1 { font-size: 36px; letter-spacing: -0.03em; }
+    h2 {
+      margin-top: 48px;
+      font-size: 22px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--line);
+      color: var(--ink);
+    }
+    h3 { margin-top: 24px; font-size: 17px; font-weight: 700; }
+    h4 { margin-top: 16px; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+    p  { margin: 0 0 14px; }
+    ul, ol { margin: 0 0 16px 22px; }
+    li { margin: 0 0 8px; }
+    code { font-family: var(--mono); font-size: 0.87em; background: rgba(0,0,0,0.05); padding: 2px 5px; border-radius: 4px; }
+
+    /* ── Layout primitives ──────────────────────────────── */
+    .hero {
+      background:
+        radial-gradient(circle at top right, rgba(159,29,29,0.08), transparent 35%),
+        radial-gradient(circle at left center, rgba(91,58,138,0.06), transparent 30%),
+        var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 36px 36px 28px;
+      box-shadow: 0 12px 36px rgba(24,29,39,0.06);
+      margin-bottom: 12px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 6px 20px rgba(24,29,39,0.04);
+    }
+
+    .section-card {
+      padding: 22px 24px 14px;
+      margin-top: 16px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .mini {
+      padding: 18px 20px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+
+    /* ── Callouts ───────────────────────────────────────── */
+    .callout {
+      margin: 16px 0;
+      padding: 14px 18px;
+      border-radius: 12px;
+      border-left: 3px solid var(--line);
+      background: #fbf8f3;
+      font-size: 14px;
+    }
+    .callout.warn     { border-color: #d97706; background: var(--warn-soft); }
+    .callout.good     { border-color: #16a34a; background: var(--good-soft); }
+    .callout.info     { border-color: #2563eb; background: var(--info-soft); }
+    .callout.danger   { border-color: #dc2626; background: var(--danger-soft); }
+    .callout.proposed { border-color: #7c3aed; background: var(--proposed-soft); }
+    .callout-icon { font-size: 16px; margin-right: 6px; }
+
+    /* ── Tables ─────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; margin: 16px 0 22px; border-radius: 14px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      font-size: 13.5px;
+    }
+    th, td {
+      vertical-align: top;
+      text-align: left;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    th {
+      background: #f3ede4;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    tr:last-child td { border-bottom: none; }
+    td.center { text-align: center; }
+
+    /* ── Tags / Pills ───────────────────────────────────── */
+    .pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .pill.danger  { background: var(--danger-soft);   color: var(--danger);   border: 1px solid #fca5a5; }
+    .pill.warn    { background: var(--warn-soft);     color: var(--warn);     border: 1px solid #fcd34d; }
+    .pill.good    { background: var(--good-soft);     color: var(--good);     border: 1px solid #86efac; }
+    .pill.info    { background: var(--info-soft);     color: var(--info);     border: 1px solid #93c5fd; }
+    .pill.proposed{ background: var(--proposed-soft); color: var(--proposed); border: 1px solid #c4b5fd; }
+    .pill.neutral { background: #f3f4f6;              color: var(--neutral);  border: 1px solid #d1d5db; }
+
+    /* ── Flow Diagrams ──────────────────────────────────── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin: 16px 0;
+    }
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .flow-connector {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 32px;
+      flex-shrink: 0;
+    }
+    .flow-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .flow-dot.normal  { background: var(--info-soft);     color: var(--info);     border: 2px solid #93c5fd; }
+    .flow-dot.warn    { background: var(--warn-soft);     color: var(--warn);     border: 2px solid #fcd34d; }
+    .flow-dot.danger  { background: var(--danger-soft);   color: var(--danger);   border: 2px solid #fca5a5; }
+    .flow-dot.good    { background: var(--good-soft);     color: var(--good);     border: 2px solid #86efac; }
+    .flow-dot.proposed{ background: var(--proposed-soft); color: var(--proposed); border: 2px solid #c4b5fd; }
+    .flow-line {
+      width: 2px;
+      background: var(--line);
+      flex: 1;
+      min-height: 20px;
+    }
+    .flow-content {
+      flex: 1;
+      padding: 4px 0 20px;
+    }
+    .flow-content h5 { margin: 0 0 4px; font-size: 14px; font-weight: 700; }
+    .flow-content p  { margin: 0; font-size: 13.5px; color: var(--muted); }
+    .flow-content code { font-size: 0.85em; }
+
+    /* ── Bug Cards ──────────────────────────────────────── */
+    .bug-card {
+      background: var(--panel);
+      border: 1px solid #fca5a5;
+      border-left: 4px solid #dc2626;
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-top: 14px;
+    }
+    .bug-card h5 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      color: var(--danger);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bug-card p { margin: 0 0 8px; font-size: 13.5px; }
+    .bug-card p:last-child { margin: 0; }
+    .bug-card .location { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-bottom: 8px; display: block; }
+
+    /* ── Fix Cards ──────────────────────────────────────── */
+    .fix-card {
+      background: var(--panel);
+      border: 1px solid #c4b5fd;
+      border-left: 4px solid #7c3aed;
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-top: 14px;
+    }
+    .fix-card h5 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      color: var(--proposed);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .fix-card p { margin: 0 0 8px; font-size: 13.5px; }
+    .fix-card p:last-child { margin: 0; }
+
+    /* ── Code blocks ────────────────────────────────────── */
+    pre {
+      background: #1e2030;
+      color: #cdd6f4;
+      border-radius: 12px;
+      padding: 18px 20px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.65;
+      margin: 14px 0;
+    }
+    pre .comment { color: #6c7086; }
+    pre .keyword { color: #cba6f7; }
+    pre .string  { color: #a6e3a1; }
+    pre .type    { color: #89dceb; }
+    pre .num     { color: #fab387; }
+    pre .fn      { color: #89b4fa; }
+
+    /* ── Timeline ───────────────────────────────────────── */
+    .timeline {
+      position: relative;
+      margin: 20px 0;
+      padding-left: 28px;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--line);
+    }
+    .tl-item {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .tl-item::before {
+      content: '';
+      position: absolute;
+      left: -22px;
+      top: 6px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--line);
+      border: 2px solid var(--panel);
+    }
+    .tl-item.danger::before  { background: #dc2626; }
+    .tl-item.good::before    { background: #16a34a; }
+    .tl-item.warn::before    { background: #d97706; }
+    .tl-item.info::before    { background: #2563eb; }
+    .tl-item.proposed::before { background: #7c3aed; }
+    .tl-item h5 { margin: 0 0 4px; font-size: 14px; font-weight: 700; }
+    .tl-item p  { margin: 0; font-size: 13px; color: var(--muted); }
+
+    /* ── Summary stat boxes ─────────────────────────────── */
+    .stat-box {
+      text-align: center;
+      padding: 20px 14px;
+    }
+    .stat-box .num {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-box .label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .stat-box.danger .num { color: var(--danger); }
+    .stat-box.warn .num   { color: var(--warn); }
+    .stat-box.proposed .num { color: var(--proposed); }
+    .stat-box.good .num   { color: var(--good); }
+
+    /* ── Section numbering ──────────────────────────────── */
+    .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+
+    /* ── Breadcrumb / nav ───────────────────────────────── */
+    .nav-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 16px 0 0;
+    }
+    .nav-pills a {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 5px 12px;
+      border: 1px solid var(--line);
+      border-radius: 100px;
+      background: var(--panel);
+      transition: all 0.15s;
+    }
+    .nav-pills a:hover { color: var(--ink); border-color: #a0aab4; }
+
+    /* ── Divider ────────────────────────────────────────── */
+    hr { border: none; border-top: 1px solid var(--line); margin: 28px 0; }
+
+    /* ── Footer ─────────────────────────────────────────── */
+    .footer {
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 640px) {
+      .hero { padding: 22px 18px 18px; }
+      h1 { font-size: 26px; }
+      h2 { font-size: 19px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ═══════════════════════════════════════════════════════ HERO -->
+  <div class="hero">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+      <span class="pill danger">Internal Analysis</span>
+      <span class="pill neutral">May 2026</span>
+      <span class="pill warn">Requires Redesign</span>
+    </div>
+    <h1>Violation System — Analysis & Redesign</h1>
+    <p style="color:var(--muted); font-size:16px; margin:0 0 18px;">
+      A complete audit of how the current violation recording system works, what breaks it, and a concrete proposal for rebuilding it from the ground up.
+    </p>
+    <div class="nav-pills">
+      <a href="#how-it-works">How it works</a>
+      <a href="#recovery-trigger">Recovery trigger</a>
+      <a href="#bugs">Known bugs</a>
+      <a href="#daily-trace">Daily trace</a>
+      <a href="#session-trace">Session trace</a>
+      <a href="#redesign">Redesign proposal</a>
+      <a href="#implementation">Implementation plan</a>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ OVERVIEW STATS -->
+  <div class="grid-3" style="margin-top:20px;">
+    <div class="mini stat-box danger">
+      <div class="num">3</div>
+      <div class="label">Critical bugs identified</div>
+    </div>
+    <div class="mini stat-box warn">
+      <div class="num">0</div>
+      <div class="label">Violations recorded on fresh install (session mode)</div>
+    </div>
+    <div class="mini stat-box proposed">
+      <div class="num">1</div>
+      <div class="label">Redesign approach recommended</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ SECTION 1 -->
+  <h2 id="how-it-works"><span class="section-num">1</span> How the Current System Works</h2>
+
+  <div class="panel section-card">
+    <h3>Core Data Structures</h3>
+    <p>The violation system is built on three nested layers of data that live on each <code>NonNegotiable</code>:</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Structure</th>
+            <th>Purpose</th>
+            <th>Key fields</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>LockConfiguration</code></td>
+            <td>Top-level lock settings (28/60/90-day commitment)</td>
+            <td><code>totalDays</code>, <code>windowLengthDays = 14</code>, <code>windows: [Window]</code></td>
+          </tr>
+          <tr>
+            <td><code>Window</code></td>
+            <td>A 14-day sliding sub-period within the lock</td>
+            <td><code>weeklyViolationCount: Int</code>, <code>weeksEvaluated: Set&lt;WeekID&gt;</code></td>
+          </tr>
+          <tr>
+            <td><code>Violation</code></td>
+            <td>A single recorded violation event</td>
+            <td><code>date: Date</code>, <code>kind</code>, <code>windowIndex: Int</code>, <code>weekId: WeekID</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p><code>Violation.kind</code> has two possible values:</p>
+    <ul>
+      <li><code>.missedDailyCompliance</code> — used for <strong>daily</strong> mode protocols. Recorded once per missed day.</li>
+      <li><code>.missedWeeklyFrequency</code> — used for <strong>session</strong> mode protocols. Recorded once per week where the target frequency was not met.</li>
+    </ul>
+  </div>
+
+  <div class="panel section-card" style="margin-top:16px;">
+    <h3>The Two Protocol Modes</h3>
+    <div class="grid-2">
+      <div class="mini">
+        <h4>Daily Mode</h4>
+        <p style="font-size:13.5px; margin-bottom:8px;">User must complete the protocol <strong>every single day</strong>. Missing any one day creates a <code>.missedDailyCompliance</code> violation for that day.</p>
+        <p style="font-size:13px; color:var(--muted); margin:0;"><strong>Target:</strong> 7 completions per week<br><strong>Violation unit:</strong> per day missed</p>
+      </div>
+      <div class="mini">
+        <h4>Session Mode</h4>
+        <p style="font-size:13.5px; margin-bottom:8px;">User must complete the protocol N times per week (1–6). Missing the weekly target creates a <code>.missedWeeklyFrequency</code> violation for that week.</p>
+        <p style="font-size:13px; color:var(--muted); margin:0;"><strong>Target:</strong> 1–6 completions per week<br><strong>Violation unit:</strong> per week missed</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel section-card" style="margin-top:16px;">
+    <h3>The Evaluation Pipeline</h3>
+    <p>The pipeline runs when: (a) app launches, (b) app becomes active from background, (c) the simulated date changes in DevOptions. The entry point is <code>runDailyIntegrityTick()</code>.</p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-connector"><div class="flow-dot normal">1</div><div class="flow-line"></div></div>
+        <div class="flow-content">
+          <h5><code>evaluateDailyCompliance</code></h5>
+          <p>For each <strong>daily</strong> protocol, checks if yesterday was a missed day (no completion recorded). If missed, appends a <code>.missedDailyCompliance</code> violation and calls <code>updateRecoveryState</code>. <strong>Session protocols skip this entirely.</strong></p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-connector"><div class="flow-dot normal">2</div><div class="flow-line"></div></div>
+        <div class="flow-content">
+          <h5><code>evaluateWeekCatchUp</code></h5>
+          <p>Iterates over <strong>fully ended weeks</strong> only (<code>weekEnd ≤ startOfToday</code>). For each ended week not yet in <code>weeksEvaluated</code>, checks if the session frequency target was met. If not, appends a <code>.missedWeeklyFrequency</code> violation. <strong>The current week is always skipped.</strong></p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-connector"><div class="flow-dot warn">3</div><div class="flow-line"></div></div>
+        <div class="flow-content">
+          <h5><code>evaluateIntraWeekSessionShortfallIfNeeded</code> <span class="pill warn" style="font-size:10px;">recently added</span></h5>
+          <p>New method that checks if a session protocol has <em>mathematically no way</em> to reach its weekly target given remaining feasible days. Only fires when <code>completionCount + remainingFeasibleDays &lt; expected</code>. Blocked by the creation-week grace bug (see Section 3).</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-connector"><div class="flow-dot normal">4</div><div class="flow-line"></div></div>
+        <div class="flow-content">
+          <h5><code>advanceWindows</code></h5>
+          <p>Moves each protocol's active window forward if the current 14-day period has elapsed. Creates new window entries.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-connector"><div class="flow-dot normal">5</div><div class="flow-line"></div></div>
+        <div class="flow-content">
+          <h5><code>evaluateRecoveryDay</code></h5>
+          <p>Checks if the required consecutive clean-day count has been met to exit recovery mode. Currently requires 7 consecutive clean days.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ SECTION 2 -->
+  <h2 id="recovery-trigger"><span class="section-num">2</span> When Recovery Mode Triggers</h2>
+
+  <div class="panel section-card">
+    <h3>The Threshold Rule</h3>
+    <p>After every violation is appended, <code>updateRecoveryState</code> is called. It checks:</p>
+    <pre><code><span class="keyword">func</span> <span class="fn">recoveryViolationThreshold</span>(for mode: NonNegotiableMode) -> Int {
+    <span class="keyword">switch</span> mode {
+    <span class="keyword">case</span> .daily:   <span class="keyword">return</span> <span class="num">2</span>  <span class="comment">// 2 missed days → recovery</span>
+    <span class="keyword">case</span> .session: <span class="keyword">return</span> <span class="num">1</span>  <span class="comment">// 1 missed week → recovery</span>
+    }
+}</code></pre>
+    <p>The count checked is <code>window.weeklyViolationCount</code> — accumulated violations <em>within the current 14-day window</em>. Once the count reaches the threshold, the protocol transitions to <code>.recovery</code>.</p>
+
+    <div class="callout info">
+      <span class="callout-icon">ℹ️</span> These thresholds were recently lowered from <strong>daily: 3 → 2</strong> and <strong>session: 2 → 1</strong>. They are now much more aggressive, which is correct — but the violation recording pipeline itself still prevents violations from being written in the first place (see Section 3).
+    </div>
+  </div>
+
+  <div class="panel section-card" style="margin-top:16px;">
+    <h3>What Must Happen to Enter Recovery</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Mode</th>
+            <th>What triggers recovery</th>
+            <th>Time required</th>
+            <th>Current reality</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Daily</strong></td>
+            <td>2 missed days within the same 14-day window</td>
+            <td>2+ days of skipping</td>
+            <td><span class="pill warn">Works in theory, blocked by grace bugs</span></td>
+          </tr>
+          <tr>
+            <td><strong>Session</strong></td>
+            <td>1 missed week within the same 14-day window</td>
+            <td>Until the week fully ends (Sunday midnight)</td>
+            <td><span class="pill danger">Never fires during creation week</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Recovery Exit Conditions</h3>
+    <p>A protocol exits recovery mode when <code>evaluateRecoveryDay</code> confirms 7 consecutive days without a missed daily or missed weekly violation. During recovery, allocation planning for that protocol is suppressed.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ SECTION 3 -->
+  <h2 id="bugs"><span class="section-num">3</span> Known Bugs — Why Violations Don't Record</h2>
+
+  <div class="callout danger">
+    <span class="callout-icon">🚨</span> These three bugs combine to make violations <strong>never appear</strong> for a fresh protocol regardless of how many days the user skips.
+  </div>
+
+  <div class="bug-card">
+    <h5>🐛 Bug #1 — Creation Week Grace Is Unconditional (Session Mode)</h5>
+    <span class="location">NonNegotiableEngine.swift → evaluateInitialPartialWeeklyGrace()</span>
+    <p>The grace logic is:</p>
+    <pre><code><span class="comment">// Current implementation — too broad:</span>
+<span class="keyword">return</span> InitialPartialWeeklyGraceEvaluation(
+    shouldSuppressShortfall: nn.createdAt > weekInterval.start,
+    <span class="comment">// TRUE if created any time after Monday 00:00 — which is ALWAYS true</span>
+    creationWeekId: creationWeekId
+)</code></pre>
+    <p>This means: <strong>any protocol created after Monday midnight gets full-week grace for the entire creation week.</strong> Since users always create protocols during the day (not at midnight), every single session protocol gets an entire free week with zero violations possible.</p>
+    <p><strong>Impact:</strong> <code>evaluateIntraWeekSessionShortfallIfNeeded</code> returns early. <code>evaluateWeekCatchUp</code> also suppresses the creation week. Result: zero violations the entire first week.</p>
+  </div>
+
+  <div class="bug-card">
+    <h5>🐛 Bug #2 — Session Mode Has No Real-Time Check (Only End-of-Week)</h5>
+    <span class="location">NonNegotiableEngine.swift → evaluateWeekCatchUp()</span>
+    <p><code>evaluateWeekCatchUp</code> only processes weeks where <code>weekEndExclusive ≤ startOfToday</code>. The current week is categorically excluded:</p>
+    <pre><code><span class="comment">// Only processes FULLY ENDED weeks:</span>
+<span class="keyword">guard</span> weekEndExclusive <= startOfToday <span class="keyword">else</span> { <span class="keyword">continue</span> }
+</code></pre>
+    <p>This means session violations are only ever recorded <em>after</em> a week completely ends (Monday of the next week). If you create a protocol on Monday and skip every day through Saturday, <strong>zero violations are written until Monday of the following week</strong> — when the system catches up.</p>
+    <p><strong>Impact:</strong> Even if Bug #1 is fixed, violations are delayed by up to 7 days for session mode.</p>
+  </div>
+
+  <div class="bug-card">
+    <h5>🐛 Bug #3 — Daily Mode Missed a Check on the Creation Day</h5>
+    <span class="location">NonNegotiableEngine.swift → evaluateDailyComplianceIfNeeded()</span>
+    <p>Daily mode has a creation-day grace period that prevents recording a violation if "yesterday" is the day the protocol was created. This is intentional and correct. However, when the user uses DevOptions to jump days forward, the tick fires for each simulated day but the grace logic only checks the very first day. If the user jumps forward 5 days without completing, violations should accumulate for days 2–5 but only will if each simulated day triggers the tick correctly.</p>
+    <p>The dev clock triggers <code>runDailyIntegrityTick</code> only once per <code>simulatedNow</code> change — meaning jumping from Day 1 to Day 5 in one DevOptions action fires the tick <strong>once</strong>, not 4 times. Only Day 5's violation is evaluated; Days 2, 3, and 4 are silently skipped.</p>
+    <p><strong>Impact:</strong> When using DevOptions to skip days, fewer violations are recorded than expected. The system may never reach the recovery threshold even if many days were skipped.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ SECTION 4 -->
+  <h2 id="daily-trace"><span class="section-num">4</span> Execution Trace — Daily Mode</h2>
+
+  <div class="panel section-card">
+    <p>Following the exact code path for a user who creates a daily protocol and then uses DevOptions to jump 3 days forward:</p>
+
+    <div class="timeline">
+      <div class="tl-item info">
+        <h5>Day 0 — Protocol Created (Monday 10:00 AM)</h5>
+        <p>Protocol enters <code>.active</code> state. Lock starts. Creation day grace is set.</p>
+      </div>
+      <div class="tl-item warn">
+        <h5>User jumps to Day 3 (Thursday) via DevOptions in one action</h5>
+        <p><code>simulatedNow</code> changes once → <code>runDailyIntegrityTick</code> fires <strong>once</strong> (not once per day).</p>
+      </div>
+      <div class="tl-item info">
+        <h5><code>evaluateDailyComplianceIfNeeded</code> called for Thursday</h5>
+        <p>Checks "yesterday" = Wednesday. No completion on Wednesday → records 1 violation (<code>.missedDailyCompliance</code>). Monday and Tuesday are skipped. <code>weeklyViolationCount</code> = 1.</p>
+      </div>
+      <div class="tl-item warn">
+        <h5>Threshold check: 1 &lt; 2 → No recovery yet</h5>
+        <p>One violation is not enough. The missed Monday and Tuesday violations were never recorded.</p>
+      </div>
+      <div class="tl-item info">
+        <h5>User jumps to Day 4 (Friday) via DevOptions</h5>
+        <p>Another tick fires. Checks Wednesday — already processed? No — checks "yesterday" = Thursday. Records 1 more violation. Count = 2.</p>
+      </div>
+      <div class="tl-item good">
+        <h5>Threshold check: 2 ≥ 2 → <code>.recovery</code> entered ✓</h5>
+        <p>Recovery mode triggers. Daily mode <em>does</em> eventually work if the user advances one day at a time.</p>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <span class="callout-icon">⚠️</span> Daily mode only records violations for <strong>"yesterday"</strong> — never for multiple past days in a single tick. If DevOptions jumps 3 days at once, only 1 violation is added per jump.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ SECTION 5 -->
+  <h2 id="session-trace"><span class="section-num">5</span> Execution Trace — Session Mode (Fresh Install)</h2>
+
+  <div class="panel section-card">
+    <p>Following the exact code path for a user who creates a session protocol (e.g., 3×/week) and then uses DevOptions to skip several days:</p>
+
+    <div class="timeline">
+      <div class="tl-item info">
+        <h5>Day 0 — Protocol Created (Monday 10:00 AM, Week 19)</h5>
+        <p>Protocol active. <code>createdAt = Monday 10:00 AM</code>. Grace evaluation: <code>createdAt > weekInterval.start</code> (Monday 00:00) → <strong>TRUE → full-week grace granted.</strong></p>
+      </div>
+      <div class="tl-item warn">
+        <h5>User jumps to Thursday via DevOptions</h5>
+        <p><code>runDailyIntegrityTick</code> fires.</p>
+      </div>
+      <div class="tl-item danger">
+        <h5><code>evaluateDailyCompliance</code> — skipped (session mode)</h5>
+        <p>Daily compliance check returns early. No violations from this path.</p>
+      </div>
+      <div class="tl-item danger">
+        <h5><code>evaluateWeekCatchUp</code> — skipped (week not ended)</h5>
+        <p>Week 19 ends next Monday. Thursday &lt; Monday → week not eligible. Skipped.</p>
+      </div>
+      <div class="tl-item danger">
+        <h5><code>evaluateIntraWeekSessionShortfallIfNeeded</code> — blocked by grace</h5>
+        <p>Calls <code>evaluateInitialPartialWeeklyGrace</code> → returns <code>shouldSuppressShortfall = true</code> because <code>createdAt > weekInterval.start</code>. <strong>Returns early. Zero violations.</strong></p>
+      </div>
+      <div class="tl-item danger">
+        <h5>User jumps to next Monday (Week 20 begins)</h5>
+        <p>Now Week 19 is fully ended. <code>evaluateWeekCatchUp</code> processes Week 19 — but checks creation week grace again → suppressed. Still zero violations.</p>
+      </div>
+      <div class="tl-item danger">
+        <h5>User skips all of Week 20 too</h5>
+        <p>End of Week 20: <code>evaluateWeekCatchUp</code> processes Week 20. No grace for Week 20. Target = 3, completions = 0 → <strong>1 violation recorded.</strong> Count = 1 ≥ threshold 1 → recovery triggered.</p>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <span class="callout-icon">🚨</span> A fresh session protocol <strong>cannot enter recovery until the second full week ends</strong> — meaning at minimum 14+ days of skipping before recovery is possible. This is completely wrong behavior.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ SECTION 6 -->
+  <h2 id="redesign"><span class="section-num">6</span> Redesign Proposal</h2>
+
+  <div class="callout proposed">
+    <span class="callout-icon">💡</span> <strong>Core philosophy shift:</strong> Instead of accumulating violation counts in window buckets and hoping the grace periods don't suppress them, derive violation status directly from completion records at evaluation time. This makes the system predictable, testable, and impossible to suppress accidentally.
+  </div>
+
+  <div class="panel section-card">
+    <h3>Proposed Architecture: Observation-Based Violation Engine</h3>
+    <p>The redesigned engine works by <strong>directly observing completion records</strong> and computing per-period compliance in a single deterministic pass — no accumulated counters, no window state, no suppression chains.</p>
+
+    <div class="grid-2">
+      <div class="mini">
+        <h4>Current (window-bucket model)</h4>
+        <ul style="font-size:13.5px; margin-bottom:0;">
+          <li>Violations written incrementally as side-effects of ticks</li>
+          <li>Suppressed by grace flags in 5 different places</li>
+          <li>Window <code>weeklyViolationCount</code> is authoritative counter</li>
+          <li>Single-day resolution (only "yesterday" checked per tick)</li>
+          <li>Hard to reason about — bugs compound silently</li>
+        </ul>
+      </div>
+      <div class="mini">
+        <h4>Proposed (observation model)</h4>
+        <ul style="font-size:13.5px; margin-bottom:0;">
+          <li>Compute compliance for ALL past periods on each tick</li>
+          <li>Grace is a single, explicit, named predicate</li>
+          <li>Violation list is the single source of truth (no separate counters)</li>
+          <li>Idempotent: re-evaluating produces the same result</li>
+          <li>Each past period either has a violation entry or doesn't</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel section-card" style="margin-top:16px;">
+    <h3>Redesigned Data Model</h3>
+    <p>Remove <code>weeklyViolationCount: Int</code> from <code>Window</code> entirely. Derive all counts from <code>violations: [Violation]</code> at read time. This eliminates the dual-source-of-truth problem where the list and the counter could disagree.</p>
+
+    <pre><code><span class="comment">// Remove from Window:</span>
+<span class="comment">// var weeklyViolationCount: Int   ← delete this</span>
+<span class="comment">// var weeksEvaluated: Set&lt;WeekID&gt; ← delete this</span>
+
+<span class="comment">// Derive at read time:</span>
+<span class="keyword">extension</span> <span class="type">NonNegotiable</span> {
+    <span class="keyword">func</span> <span class="fn">violationCount</span>(in windowIndex: Int) -> Int {
+        violations.filter { $0.windowIndex == windowIndex }.count
+    }
+
+    <span class="keyword">var</span> isOverThreshold: Bool {
+        <span class="keyword">guard let</span> wi = activeWindowIndex <span class="keyword">else</span> { <span class="keyword">return false</span> }
+        <span class="keyword">return</span> violationCount(in: wi) >= recoveryThreshold
+    }
+}
+</code></pre>
+  </div>
+
+  <div class="panel section-card" style="margin-top:16px;">
+    <h3>Redesigned Evaluation Method</h3>
+    <p>Replace the separate daily/weekly evaluation methods with a single <code>reconcileViolations</code> pass that processes all unresolved past periods in one go:</p>
+
+    <pre><code><span class="comment">// Runs once per tick. Processes all past periods not yet in violations list.</span>
+<span class="keyword">func</span> <span class="fn">reconcileViolations</span>(_ nn: <span class="keyword">inout</span> <span class="type">NonNegotiable</span>, referenceDate: <span class="type">Date</span>) {
+    <span class="keyword">guard</span> nn.state == .active || nn.state == .recovery <span class="keyword">else</span> { <span class="keyword">return</span> }
+
+    <span class="keyword">switch</span> nn.definition.mode {
+    <span class="keyword">case</span> .daily:
+        reconcileDailyViolations(&nn, referenceDate: referenceDate)
+    <span class="keyword">case</span> .session:
+        reconcileSessionViolations(&nn, referenceDate: referenceDate)
+    }
+
+    updateRecoveryStateFromViolations(&nn)
+}
+
+<span class="keyword">func</span> <span class="fn">reconcileDailyViolations</span>(_ nn: <span class="keyword">inout</span> <span class="type">NonNegotiable</span>, referenceDate: <span class="type">Date</span>) {
+    <span class="keyword">let</span> startOfToday = DateRules.startOfDay(referenceDate, calendar: calendar)
+    <span class="keyword">let</span> lockStart    = DateRules.startOfDay(nn.lock.startDate, calendar: calendar)
+    <span class="keyword">let</span> graceCutoff  = calendar.date(byAdding: .day, value: 1, to: lockStart)!
+
+    <span class="comment">// Walk every day from lock start up to (but not including) today</span>
+    <span class="keyword">var</span> day = lockStart
+    <span class="keyword">while</span> day < startOfToday {
+        <span class="keyword">defer</span> { day = calendar.date(byAdding: .day, value: 1, to: day)! }
+
+        <span class="comment">// Grace: skip the creation day</span>
+        <span class="keyword">if</span> day < graceCutoff { <span class="keyword">continue</span> }
+
+        <span class="keyword">let</span> dayId = DayIdentifier(day)
+        <span class="comment">// Idempotent: skip if already recorded</span>
+        <span class="keyword">if</span> nn.violations.contains(where: { $0.dayId == dayId }) { <span class="keyword">continue</span> }
+
+        <span class="keyword">let</span> hadCompletion = nn.completionRecords.contains(where: {
+            DayIdentifier($0.date) == dayId
+        })
+        <span class="keyword">if</span> !hadCompletion {
+            nn.violations.append(Violation(date: day, kind: .missedDailyCompliance))
+        }
+    }
+}
+
+<span class="keyword">func</span> <span class="fn">reconcileSessionViolations</span>(_ nn: <span class="keyword">inout</span> <span class="type">NonNegotiable</span>, referenceDate: <span class="type">Date</span>) {
+    <span class="keyword">let</span> startOfToday   = DateRules.startOfDay(referenceDate, calendar: calendar)
+    <span class="keyword">let</span> lockStart       = DateRules.startOfDay(nn.lock.startDate, calendar: calendar)
+    <span class="keyword">let</span> creationWeekId  = DateRules.weekID(for: lockStart, calendar: calendar)
+    <span class="keyword">let</span> expected        = expectedCompletionsPerWeek(for: nn.definition)
+
+    <span class="comment">// Walk every ISO week from lock start up to current week</span>
+    <span class="keyword">var</span> weekStart = DateRules.weekInterval(containing: lockStart, calendar: calendar).start
+    <span class="keyword">while</span> weekStart < startOfToday {
+        <span class="keyword">let</span> weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart)!
+        <span class="keyword">let</span> weekId  = DateRules.weekID(for: weekStart, calendar: calendar)
+        <span class="keyword">defer</span> { weekStart = weekEnd }
+
+        <span class="comment">// Idempotent: already have a violation for this week</span>
+        <span class="keyword">if</span> nn.violations.contains(where: { $0.weekId == weekId }) { <span class="keyword">continue</span> }
+
+        <span class="comment">// Grace: creation week — only suppress if not enough time remained</span>
+        <span class="keyword">if</span> weekId == creationWeekId {
+            <span class="keyword">let</span> feasibleDays = feasibleDaysInWeek(weekStart, weekEnd: weekEnd, createdAt: nn.lock.startDate)
+            <span class="keyword">if</span> feasibleDays < expected { <span class="keyword">continue</span> } <span class="comment">// genuinely couldn't hit target</span>
+        }
+
+        <span class="keyword">let</span> completions = nn.completionRecords.filter {
+            $0.date >= weekStart && $0.date < weekEnd
+        }.count
+
+        <span class="keyword">let</span> weekFullyEnded  = weekEnd <= startOfToday
+        <span class="keyword">let</span> impossibleToMeet = completions + feasibleDaysRemaining(from: startOfToday, weekEnd: weekEnd) < expected
+
+        <span class="keyword">if</span> weekFullyEnded || impossibleToMeet {
+            <span class="keyword">if</span> completions < expected {
+                nn.violations.append(Violation(date: weekStart, kind: .missedWeeklyFrequency, weekId: weekId))
+            }
+        }
+    }
+}
+</code></pre>
+
+    <div class="callout good">
+      <span class="callout-icon">✅</span> This approach is <strong>idempotent</strong>: running the method multiple times produces the same result. Each past period either has a violation entry or doesn't — no duplicate accumulation, no suppression chains.
+    </div>
+  </div>
+
+  <div class="panel section-card" style="margin-top:16px;">
+    <h3>Redesigned Creation Week Grace</h3>
+    <p>Replace the unconditional grace check with a proportional one. Grace should only be granted if the user <em>genuinely could not</em> have hit the weekly target given when the protocol was created:</p>
+
+    <pre><code><span class="comment">// Proposed — proportional grace:</span>
+<span class="keyword">private func</span> <span class="fn">feasibleDaysInWeek</span>(
+    _ weekStart: <span class="type">Date</span>,
+    weekEnd: <span class="type">Date</span>,
+    createdAt: <span class="type">Date</span>
+) -> Int {
+    <span class="keyword">let</span> effectiveStart = max(weekStart, DateRules.startOfDay(createdAt, calendar: calendar))
+    <span class="keyword">var</span> count = 0
+    <span class="keyword">var</span> d = effectiveStart
+    <span class="keyword">while</span> d < weekEnd {
+        count += 1
+        d = calendar.date(byAdding: .day, value: 1, to: d)!
+    }
+    <span class="keyword">return</span> count
+}
+
+<span class="comment">// Usage in creation week check:</span>
+<span class="keyword">if</span> weekId == creationWeekId {
+    <span class="keyword">let</span> feasible = feasibleDaysInWeek(weekStart, weekEnd: weekEnd, createdAt: nn.lock.startDate)
+    <span class="keyword">if</span> feasible < expected {
+        <span class="keyword">continue</span> <span class="comment">// fair grace — couldn't have hit target anyway</span>
+    }
+    <span class="comment">// Otherwise: user had enough days, evaluate normally</span>
+}
+</code></pre>
+
+    <p><strong>Example:</strong> User creates a 3×/week protocol on Thursday. Only 3 feasible days remain (Thu, Fri, Sat). Target = 3. Grace applies because 3 ≥ 3 is barely achievable, but if target were 4, grace would NOT apply since 3 &lt; 4 — actually this is wrong: it SHOULD grant grace if feasible &lt; expected, meaning Thursday creation with target 4 gets grace (3 &lt; 4).</p>
+  </div>
+
+  <div class="panel section-card" style="margin-top:16px;">
+    <h3>Fixing the Multi-Day Skip Problem</h3>
+    <p>The current system only processes "yesterday" per daily tick. The redesigned <code>reconcileDailyViolations</code> walks every day from the lock start to today, so jumping 5 days forward correctly produces 5 violation checks in a single tick (minus the creation day grace).</p>
+
+    <div class="callout good">
+      <span class="callout-icon">✅</span> With the observation model, DevOptions day-skipping works correctly out of the box. No special handling needed.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ SECTION 7 -->
+  <h2 id="implementation"><span class="section-num">7</span> Implementation Plan</h2>
+
+  <div class="panel section-card">
+    <div class="grid-2">
+      <div>
+        <h4>Phase 1 — Immediate Fixes (Low Risk)</h4>
+        <div class="fix-card">
+          <h5>Fix 1 · Proportional Creation Week Grace</h5>
+          <p><strong>File:</strong> <code>NonNegotiableEngine.swift → evaluateInitialPartialWeeklyGrace</code></p>
+          <p>Change the suppression condition from <code>nn.createdAt > weekInterval.start</code> to <code>feasibleDays &lt; expected</code>. Unblocks the intra-week session check and the week catch-up check for most real-world scenarios immediately.</p>
+        </div>
+        <div class="fix-card">
+          <h5>Fix 2 · Multi-Day Catch-Up for Daily Mode</h5>
+          <p><strong>File:</strong> <code>NonNegotiableEngine.swift → evaluateDailyComplianceIfNeeded</code></p>
+          <p>Change the method to walk from the last evaluated day to yesterday, not just check yesterday. Store a <code>lastEvaluatedDay: Date?</code> on the protocol (or derive from the last daily violation date) to know where to resume. Ensures DevOptions day skips produce all missed-day violations.</p>
+        </div>
+      </div>
+      <div>
+        <h4>Phase 2 — Core Redesign (High Impact)</h4>
+        <div class="fix-card">
+          <h5>Fix 3 · Replace Window Counter with Derived Count</h5>
+          <p><strong>Files:</strong> <code>Window.swift</code>, <code>NonNegotiableEngine.swift</code>, <code>CommitmentSystemStore.swift</code></p>
+          <p>Remove <code>weeklyViolationCount</code> and <code>weeksEvaluated</code> from <code>Window</code>. Derive all counts from <code>violations</code> at read time via computed properties. Update all call sites.</p>
+        </div>
+        <div class="fix-card">
+          <h5>Fix 4 · Replace Incremental Evaluation with Reconciliation Pass</h5>
+          <p><strong>Files:</strong> <code>NonNegotiableEngine.swift</code>, <code>CommitmentSystemEngine.swift</code>, <code>CommitmentSystemStore.swift</code></p>
+          <p>Replace <code>evaluateDailyCompliance</code>, <code>evaluateWeekCatchUp</code>, and <code>evaluateIntraWeekSessionShortfallIfNeeded</code> with a single <code>reconcileViolations</code> method per the design above. Wire it into the tick pipeline.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel section-card" style="margin-top:16px;">
+    <h3>Migration Considerations</h3>
+    <p>Existing users have <code>weeklyViolationCount</code> stored in their JSON files. A migration is needed:</p>
+    <ul>
+      <li>Add a migration sentinel key to UserDefaults (e.g., <code>didRunViolationSystemMigration20260505</code>)</li>
+      <li>On first launch after update: re-run <code>reconcileViolations</code> for all protocols from their lock start date</li>
+      <li>Drop <code>weeklyViolationCount</code> and <code>weeksEvaluated</code> from the <code>Codable</code> init using <code>decodeIfPresent</code> with fallback (they become ignored legacy fields)</li>
+      <li>The violation list itself is preserved — reconciliation is additive and idempotent</li>
+    </ul>
+
+    <div class="callout info">
+      <span class="callout-icon">ℹ️</span> The migration follows the same pattern as existing legacy key migrations: <code>decodeIfPresent</code> + fallback in <code>init(from:)</code>. No separate migration versioning system is needed.
+    </div>
+  </div>
+
+  <div class="panel section-card" style="margin-top:16px;">
+    <h3>Priority Order</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Fix</th>
+            <th>Effort</th>
+            <th>Impact</th>
+            <th>Risk</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="pill danger">P0</span></td>
+            <td>Proportional creation week grace (Fix 1)</td>
+            <td>~30 min</td>
+            <td>Unblocks session mode violations entirely</td>
+            <td>Low</td>
+          </tr>
+          <tr>
+            <td><span class="pill danger">P0</span></td>
+            <td>Multi-day catch-up for daily mode (Fix 2)</td>
+            <td>~1 hr</td>
+            <td>Fixes DevOptions skip behavior + real multi-day miss catching</td>
+            <td>Low</td>
+          </tr>
+          <tr>
+            <td><span class="pill warn">P1</span></td>
+            <td>Replace window counter with derived count (Fix 3)</td>
+            <td>~2 hr</td>
+            <td>Eliminates dual-source-of-truth bugs</td>
+            <td>Medium (touches persistence)</td>
+          </tr>
+          <tr>
+            <td><span class="pill warn">P1</span></td>
+            <td>Reconciliation-based evaluation engine (Fix 4)</td>
+            <td>~4 hr</td>
+            <td>Eliminates all grace suppression chain bugs permanently</td>
+            <td>Medium (core engine rewrite)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel section-card" style="margin-top:16px;">
+    <h3>Expected Behavior After Full Redesign</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Before redesign</th>
+            <th>After redesign</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Fresh install, session mode, skip 3 days</td>
+            <td><span class="pill danger">0 violations (grace)</span></td>
+            <td><span class="pill good">Intra-week violation if target impossible to reach</span></td>
+          </tr>
+          <tr>
+            <td>Fresh install, daily mode, skip 3 days via DevOptions (1 jump)</td>
+            <td><span class="pill warn">1 violation (only yesterday)</span></td>
+            <td><span class="pill good">2 violations (days 2 and 3 of the skip)</span></td>
+          </tr>
+          <tr>
+            <td>Session mode, skip entire first week</td>
+            <td><span class="pill danger">0 violations (creation week grace)</span></td>
+            <td><span class="pill good">1 violation (end of first week, if enough feasible days existed)</span></td>
+          </tr>
+          <tr>
+            <td>Daily mode, miss 2 consecutive days</td>
+            <td><span class="pill good">Recovery triggered (if advanced one day at a time)</span></td>
+            <td><span class="pill good">Recovery triggered (any tick order)</span></td>
+          </tr>
+          <tr>
+            <td>Session mode, miss 1 full week</td>
+            <td><span class="pill danger">Recovery only after week 2 ends (~14+ days)</span></td>
+            <td><span class="pill good">Recovery as soon as the missed week ends (~7 days)</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ FOOTER -->
+  <div class="footer">
+    <p>Locked IN Internal Document · Violation System Analysis & Redesign · May 2026</p>
+    <p>Engine files analyzed: <code>NonNegotiableEngine.swift</code>, <code>CommitmentSystemEngine.swift</code>, <code>CommitmentSystemStore.swift</code></p>
+  </div>
+
+</div>
+</body>
+</html>

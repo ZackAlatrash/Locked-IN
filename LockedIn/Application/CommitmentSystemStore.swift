@@ -367,6 +367,7 @@ final class CommitmentSystemStore: ObservableObject {
 
         systemEngine.evaluateDailyCompliance(currentDate: currentDate, in: &updated)
         systemEngine.evaluateWeekCatchUp(referenceDate: currentDate, in: &updated, calendar: calendar)
+        systemEngine.evaluateIntraWeekSessionCompliance(currentDate: currentDate, in: &updated)
         systemEngine.advanceWindows(currentDate: currentDate, in: &updated)
         applySystemUpdate(updated, referenceDate: currentDate)
     }
@@ -386,6 +387,7 @@ final class CommitmentSystemStore: ObservableObject {
 
         systemEngine.evaluateDailyCompliance(currentDate: referenceDate, in: &updated)
         systemEngine.evaluateWeekCatchUp(referenceDate: referenceDate, in: &updated, calendar: calendar)
+        systemEngine.evaluateIntraWeekSessionCompliance(currentDate: referenceDate, in: &updated)
         systemEngine.advanceWindows(currentDate: referenceDate, in: &updated)
         systemEngine.evaluateRecoveryDay(referenceDate: referenceDate, in: &updated, calendar: calendar)
 
