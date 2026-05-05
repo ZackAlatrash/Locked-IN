@@ -488,9 +488,23 @@ struct NonNegotiableEngine {
             )
         }
 
-        // Increment 3/4 uses current normalized createdAt semantics.
+        let expected = expectedCompletionsPerWeek(for: nn.definition)
+        guard expected > 0 else {
+            return InitialPartialWeeklyGraceEvaluation(
+                shouldSuppressShortfall: false,
+                creationWeekId: creationWeekId
+            )
+        }
+
+        let lockStart = DateRules.startOfDay(nn.lock.startDate, calendar: calendar)
+        let feasibleDays = feasibleCompletionDays(
+            from: lockStart,
+            withinWeek: weekInterval,
+            lock: nn.lock
+        )
+
         return InitialPartialWeeklyGraceEvaluation(
-            shouldSuppressShortfall: nn.createdAt > weekInterval.start,
+            shouldSuppressShortfall: feasibleDays < expected,
             creationWeekId: creationWeekId
         )
     }

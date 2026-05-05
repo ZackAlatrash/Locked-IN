@@ -60,6 +60,11 @@ final class DevOptionsController: ObservableObject {
         statusMessage = "One-time hints and entrance animations reset for this install."
     }
 
+    func handleSimulatedClockChanged(to referenceDate: Date) {
+        commitmentStore.runDailyIntegrityTick(referenceDate: referenceDate)
+        planStore.refresh(system: commitmentStore.system, calendarEvents: [], referenceDate: referenceDate)
+    }
+
     func seed(_ scenario: DevSeedScenario) {
         do {
             commitmentStore.clearAllNonNegotiables()

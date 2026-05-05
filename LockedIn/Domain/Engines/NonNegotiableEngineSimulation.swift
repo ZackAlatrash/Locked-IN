@@ -389,7 +389,7 @@ func runNonNegotiableEngineSimulation() {
             case1.windows[0].weeksEvaluated.contains(case1WeekId)
         )
 
-        // Case 2: Created mid-week with some completions -> completions count and shortfall suppressed.
+        // Case 2: Created mid-week with enough feasible days -> proportional grace does not suppress shortfall.
         var case2 = try engine.create(
             definition: graceDefinition,
             startDate: DateRules.date(year: 2026, month: 1, day: 7, hour: 11, calendar: calendar),
@@ -408,8 +408,8 @@ func runNonNegotiableEngineSimulation() {
             case2CountedInGraceWeek == 1
         )
         verify(
-            "Grace Case 2 - no initial partial-week shortfall",
-            case2.violations.contains(where: { $0.kind == .missedWeeklyFrequency }) == false
+            "Grace Case 2 - proportional grace enforces achievable creation week",
+            case2.violations.filter { $0.kind == .missedWeeklyFrequency }.count == 1
         )
 
         // Case 3: Created at canonical week start -> normal enforcement applies.
@@ -466,7 +466,7 @@ func runNonNegotiableEngineSimulation() {
             case5.violations.filter { $0.kind == .missedWeeklyFrequency }.count == 2
         )
 
-        // Case 6: Catch-up evaluation does not backfill the grace-suppressed week later.
+        // Case 6: Catch-up evaluation enforces an achievable creation week.
         let case6Protocol = try engine.create(
             definition: graceDefinition,
             startDate: DateRules.date(year: 2026, month: 1, day: 7, hour: 13, calendar: calendar),
@@ -500,8 +500,48 @@ func runNonNegotiableEngineSimulation() {
             case6Evaluated.windows[0].weeksEvaluated.contains(firstFullWeekId)
         )
         verify(
-            "Grace Case 6 - catch-up emits only post-grace shortfall",
-            case6MissedWeeklyCount == 1
+            "Grace Case 6 - catch-up emits creation week and post-creation shortfalls",
+            case6MissedWeeklyCount == 2
+        )
+
+        let twoPerWeekDefinition = NonNegotiableDefinition(
+            title: "Two Per Week Grace",
+            frequencyPerWeek: 2,
+            mode: .session,
+            goalId: UUID()
+        )
+        var thursdayTwoPerWeek = try engine.create(
+            definition: twoPerWeekDefinition,
+            startDate: DateRules.date(year: 2026, month: 1, day: 8, hour: 10, calendar: calendar),
+            totalLockDays: 28
+        )
+        engine.evaluateWeekIfNeeded(
+            &thursdayTwoPerWeek,
+            weekEnding: DateRules.date(year: 2026, month: 1, day: 11, hour: 23, minute: 59, calendar: calendar)
+        )
+        verify(
+            "Grace Case 7 - Thursday 2x/week is enforceable",
+            thursdayTwoPerWeek.violations.filter { $0.kind == .missedWeeklyFrequency }.count == 1
+        )
+
+        let fivePerWeekDefinition = NonNegotiableDefinition(
+            title: "Five Per Week Grace",
+            frequencyPerWeek: 5,
+            mode: .session,
+            goalId: UUID()
+        )
+        var fridayFivePerWeek = try engine.create(
+            definition: fivePerWeekDefinition,
+            startDate: DateRules.date(year: 2026, month: 1, day: 9, hour: 10, calendar: calendar),
+            totalLockDays: 28
+        )
+        engine.evaluateWeekIfNeeded(
+            &fridayFivePerWeek,
+            weekEnding: DateRules.date(year: 2026, month: 1, day: 11, hour: 23, minute: 59, calendar: calendar)
+        )
+        verify(
+            "Grace Case 8 - Friday 5x/week remains grace-exempt",
+            fridayFivePerWeek.violations.contains(where: { $0.kind == .missedWeeklyFrequency }) == false
         )
 
         let legacyJSON = """

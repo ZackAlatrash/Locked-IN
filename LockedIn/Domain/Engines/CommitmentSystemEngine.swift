@@ -580,8 +580,20 @@ final class CommitmentSystemEngine {
         let weekId = DateRules.weekID(for: week.start, calendar: calendar)
         guard creationWeekId == weekId else { return false }
 
-        // Increment 4 keeps current normalized createdAt semantics.
-        return nonNegotiable.createdAt > week.start
+        let normalizedTarget = NonNegotiableDefinition.normalizedFrequency(
+            nonNegotiable.definition.frequencyPerWeek,
+            mode: nonNegotiable.definition.mode
+        )
+        guard normalizedTarget > 0 else { return false }
+
+        let lockStart = DateRules.startOfDay(nonNegotiable.lock.startDate, calendar: calendar)
+        let availableDays = feasibleCompletionDays(
+            from: lockStart,
+            withinWeek: week,
+            lock: nonNegotiable.lock,
+            calendar: calendar
+        )
+        return availableDays < normalizedTarget
     }
 
     private func isDailyCreationGraceDay(

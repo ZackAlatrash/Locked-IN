@@ -35,6 +35,7 @@ struct DevOptionsView: View {
         .onChange(of: appClock.simulatedNow) { _, simulated in
             if let simulated {
                 simulatedPickerDate = simulated
+                controller.handleSimulatedClockChanged(to: simulated)
             }
         }
         .alert(item: $pendingDangerAction) { action in
