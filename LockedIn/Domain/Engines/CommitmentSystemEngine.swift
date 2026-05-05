@@ -153,7 +153,7 @@ final class CommitmentSystemEngine {
                 system.nonNegotiables[index].state = .active
             }
 
-            resumeSuspendedIfCapacityAllows(in: &system)
+            resumeSuspendedIfCapacityAllows(in: &system, recoveryRestoredAt: referenceDate)
             system.recoveryCleanDayStreak = 0
         }
 
@@ -161,7 +161,10 @@ final class CommitmentSystemEngine {
     }
 
     @discardableResult
-    func normalizeRecoveryDomain(in system: inout CommitmentSystem) -> RecoveryNormalizationDecision {
+    func normalizeRecoveryDomain(
+        in system: inout CommitmentSystem,
+        referenceDate: Date = Date()
+    ) -> RecoveryNormalizationDecision {
         var clearedPausedProtocolId = false
         var clearedPendingState = false
         var exitedRecovery = false
@@ -183,7 +186,7 @@ final class CommitmentSystemEngine {
                 system.nonNegotiables[index].state = .active
             }
 
-            resumeSuspendedIfCapacityAllows(in: &system)
+            resumeSuspendedIfCapacityAllows(in: &system, recoveryRestoredAt: referenceDate)
             system.recoveryCleanDayStreak = 0
             exitedRecovery = true
         }
@@ -317,19 +320,11 @@ final class CommitmentSystemEngine {
     }
 
     private func recoveryEligibleProtocolIds(in system: CommitmentSystem) -> [UUID] {
-        system.nonNegotiables
-            .filter { isRecoveryEligible($0) }
-            .sorted { lhs, rhs in
-                if lhs.createdAt != rhs.createdAt {
-                    return lhs.createdAt < rhs.createdAt
-                }
-                return lhs.id.uuidString < rhs.id.uuidString
-            }
-            .map(\.id)
+        sortedProtocolIds(in: system) { isRecoveryEligible($0) }
     }
 
     private func recomputeRecoveryEntryPendingDecision(in system: CommitmentSystem) -> RecoveryEntryPendingDecision {
-        let candidateIds = recoveryEligibleProtocolIds(in: system)
+        let candidateIds = recoveryPauseCandidateIds(in: system)
 
         guard system.recoveryEntryPendingResolution else {
             return RecoveryEntryPendingDecision(
@@ -340,7 +335,7 @@ final class CommitmentSystemEngine {
             )
         }
 
-        let needsUserDecision = system.recoveryPausedProtocolId == nil && candidateIds.count > 1
+        let needsUserDecision = system.recoveryPausedProtocolId == nil && candidateIds.isEmpty == false
         if needsUserDecision == false {
             return RecoveryEntryPendingDecision(
                 pendingResolution: false,
@@ -373,6 +368,31 @@ final class CommitmentSystemEngine {
             triggerProtocolId: nextTriggerProtocolId,
             candidateProtocolIds: candidateIds
         )
+    }
+
+    private func recoveryPauseCandidateIds(in system: CommitmentSystem) -> [UUID] {
+        let activeCandidates = sortedProtocolIds(in: system) { $0.state == .active }
+        if activeCandidates.isEmpty == false {
+            return activeCandidates
+        }
+
+        let recoveryCandidates = sortedProtocolIds(in: system) { $0.state == .recovery }
+        return recoveryCandidates.count > 1 ? recoveryCandidates : []
+    }
+
+    private func sortedProtocolIds(
+        in system: CommitmentSystem,
+        matching predicate: (NonNegotiable) -> Bool
+    ) -> [UUID] {
+        system.nonNegotiables
+            .filter(predicate)
+            .sorted { lhs, rhs in
+                if lhs.createdAt != rhs.createdAt {
+                    return lhs.createdAt < rhs.createdAt
+                }
+                return lhs.id.uuidString < rhs.id.uuidString
+            }
+            .map(\.id)
     }
 
     private func isRecoveryEligible(_ nonNegotiable: NonNegotiable) -> Bool {
@@ -500,7 +520,38 @@ final class CommitmentSystemEngine {
         guard isInitialPartialGraceWeek(for: nonNegotiable, in: week, calendar: calendar) == false else {
             return 0
         }
+        guard isPostRestorationPartialWeek(
+            for: nonNegotiable,
+            in: week,
+            normalizedTarget: normalizedTarget,
+            calendar: calendar
+        ) == false else {
+            return 0
+        }
         return normalizedTarget
+    }
+
+    private func isPostRestorationPartialWeek(
+        for nonNegotiable: NonNegotiable,
+        in week: DateInterval,
+        normalizedTarget: Int,
+        calendar: Calendar
+    ) -> Bool {
+        guard nonNegotiable.definition.mode == .session else { return false }
+        guard let restoredAt = nonNegotiable.recoveryRestoredAt else { return false }
+        guard DateRules.weekID(for: restoredAt, calendar: calendar) == DateRules.weekID(for: week.start, calendar: calendar) else {
+            return false
+        }
+        guard restoredAt > week.start else { return false }
+
+        let restoredDay = DateRules.startOfDay(restoredAt, calendar: calendar)
+        let availableDays = feasibleCompletionDays(
+            from: restoredDay,
+            withinWeek: week,
+            lock: nonNegotiable.lock,
+            calendar: calendar
+        )
+        return availableDays < normalizedTarget
     }
 
     private func isInitialPartialGraceWeek(
@@ -553,6 +604,26 @@ final class CommitmentSystemEngine {
         return count
     }
 
+    private func feasibleCompletionDays(
+        from startDay: Date,
+        withinWeek week: DateInterval,
+        lock: LockConfiguration,
+        calendar: Calendar
+    ) -> Int {
+        var cursor = DateRules.startOfDay(startDay, calendar: calendar)
+        var count = 0
+        while cursor < week.end {
+            if isWithinLockInterval(day: cursor, lock: lock, calendar: calendar) {
+                count += 1
+            }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else {
+                break
+            }
+            cursor = next
+        }
+        return count
+    }
+
     private func isWithinLockInterval(
         day: Date,
         lock: LockConfiguration,
@@ -574,7 +645,10 @@ final class CommitmentSystemEngine {
         return moment >= lockStart && moment < lockEnd
     }
 
-    private func resumeSuspendedIfCapacityAllows(in system: inout CommitmentSystem) {
+    private func resumeSuspendedIfCapacityAllows(
+        in system: inout CommitmentSystem,
+        recoveryRestoredAt: Date
+    ) {
         let suspendedByCreatedAt = system.nonNegotiables
             .enumerated()
             .filter { $0.element.state == .suspended }
@@ -586,6 +660,7 @@ final class CommitmentSystemEngine {
                 break
             }
             system.nonNegotiables[index].state = .active
+            system.nonNegotiables[index].recoveryRestoredAt = recoveryRestoredAt
         }
     }
 }

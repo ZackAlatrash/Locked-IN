@@ -40,6 +40,18 @@ final class AppRouter: ObservableObject {
         presentRecoveryEntry = true
     }
 
+    func updateRecoveryEntryPresentation(shouldPresent: Bool) {
+        if shouldPresent {
+            if presentDailyCheckIn {
+                return
+            }
+            requestRecoveryEntryPresentation()
+            dismissDailyCheckIn()
+        } else {
+            dismissRecoveryEntry()
+        }
+    }
+
     func dismissRecoveryEntry() {
         presentRecoveryEntry = false
     }

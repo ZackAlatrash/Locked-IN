@@ -122,7 +122,7 @@
 /* Begin PBXFileReference section */
 		404BE58E2F9AD6F80028D4ED /* WelcomeContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeContentView.swift; sourceTree = "<group>"; };
 		404BE5902F9C33060028D4ED /* icons8-gavel-100.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icons8-gavel-100.png"; sourceTree = "<group>"; };
-		40A779F22F3CCA1E00BC4E39 /* LockedIn.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LockedIn.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		40A779F22F3CCA1E00BC4E39 /* Locked In: Protocol.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Locked In: Protocol.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		40A77A382F3CD39800BC4E39 /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GlassCard.swift; path = LockedIn/CoreUI/Components/GlassCard.swift; sourceTree = SOURCE_ROOT; };
 		40A77A392F3CD39800BC4E39 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PrimaryButton.swift; path = LockedIn/CoreUI/Components/PrimaryButton.swift; sourceTree = SOURCE_ROOT; };
 		40A77A3A2F3CD39800BC4E39 /* ProgressIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProgressIndicator.swift; path = LockedIn/CoreUI/Components/ProgressIndicator.swift; sourceTree = SOURCE_ROOT; };
@@ -350,7 +350,7 @@
 		40A779F32F3CCA1E00BC4E39 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				40A779F22F3CCA1E00BC4E39 /* LockedIn.app */,
+				40A779F22F3CCA1E00BC4E39 /* Locked In: Protocol.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -521,7 +521,7 @@
 			packageProductDependencies = (
 			);
 			productName = LockedIn;
-			productReference = 40A779F22F3CCA1E00BC4E39 /* LockedIn.app */;
+			productReference = 40A779F22F3CCA1E00BC4E39 /* Locked In: Protocol.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -834,7 +834,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Epistles-of-Wisdom.LockedIn";
-				PRODUCT_NAME = LockedIn;
+				PRODUCT_NAME = "Locked In: Protocol";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -870,7 +870,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Epistles-of-Wisdom.LockedIn";
-				PRODUCT_NAME = LockedIn;
+				PRODUCT_NAME = "Locked In: Protocol";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;

@@ -135,7 +135,7 @@ private extension RecoveryModePopup {
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(textMuted)
                     } else {
-                        Text("Recovery has started. No pause is required because only one active protocol remains.")
+                        Text("Recovery has started. No pause is required because no other active protocols exist.")
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(textMuted)
                         Text("Keep clean days to return to normal operation.")
@@ -173,7 +173,7 @@ private extension RecoveryModePopup {
                 .font(.system(size: 15, weight: .bold))
                 .foregroundColor(textMain)
 
-            Text("Select exactly one active protocol. Paused protocols cannot be completed, planned, or regulator-placed during recovery.")
+            Text("Select exactly one protocol. Paused protocols cannot be completed, planned, or regulator-placed during recovery.")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(textMuted)
 

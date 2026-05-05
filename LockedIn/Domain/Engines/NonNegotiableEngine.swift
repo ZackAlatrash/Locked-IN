@@ -214,11 +214,18 @@ struct NonNegotiableEngine {
             for: nn,
             weekId: weekId
         )
+        let shouldSuppressPostRestorationShortfall = shouldSuppressPostRestorationWeeklyShortfall(
+            for: nn,
+            weekId: weekId,
+            weekInterval: weekInterval,
+            expected: expected
+        )
         let stateBefore = nn.state
         let weeklyViolationCountBefore = nn.windows[windowIndex].weeklyViolationCount
         let shouldAppendMissedWeekly = completionCount < expected &&
             shouldSuppressShortfall == false &&
-            shouldSuppressDailyCreationWeekShortfall == false
+            shouldSuppressDailyCreationWeekShortfall == false &&
+            shouldSuppressPostRestorationShortfall == false
 
         if shouldAppendMissedWeekly {
             nn.windows[windowIndex].weeklyViolationCount += 1
@@ -342,6 +349,45 @@ struct NonNegotiableEngine {
 
     private func expectedCompletionsPerWeek(for definition: NonNegotiableDefinition) -> Int {
         NonNegotiableDefinition.normalizedFrequency(definition.frequencyPerWeek, mode: definition.mode)
+    }
+
+    private func shouldSuppressPostRestorationWeeklyShortfall(
+        for nn: NonNegotiable,
+        weekId: WeekID,
+        weekInterval: DateInterval,
+        expected: Int
+    ) -> Bool {
+        guard nn.definition.mode == .session else { return false }
+        guard expected > 0 else { return false }
+        guard let restoredAt = nn.recoveryRestoredAt else { return false }
+        guard DateRules.weekID(for: restoredAt, calendar: calendar) == weekId else { return false }
+        guard restoredAt > weekInterval.start else { return false }
+
+        let restoredDay = DateRules.startOfDay(restoredAt, calendar: calendar)
+        let availableDays = feasibleCompletionDays(from: restoredDay, withinWeek: weekInterval, lock: nn.lock)
+        return availableDays < expected
+    }
+
+    private func feasibleCompletionDays(
+        from startDay: Date,
+        withinWeek week: DateInterval,
+        lock: LockConfiguration
+    ) -> Int {
+        var cursor = DateRules.startOfDay(startDay, calendar: calendar)
+        let lockEnd = DateRules.addingDays(lock.totalLockDays, to: lock.startDate, calendar: calendar)
+        var count = 0
+
+        while cursor < week.end {
+            if cursor >= lock.startDate && cursor < lockEnd {
+                count += 1
+            }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else {
+                break
+            }
+            cursor = next
+        }
+
+        return count
     }
 
     private func shouldSuppressInitialPartialWeeklyShortfall(

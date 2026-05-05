@@ -38,7 +38,7 @@ final class RecoveryModeViewModel: ObservableObject {
         warningMessage = nil
         let now = referenceDateProvider()
 
-        guard let context = commitmentStore.recoveryEntryContext(referenceDate: now) else {
+        guard let context = commitmentStore.recoveryEntryContext() else {
             isPendingResolution = false
             return
         }
@@ -136,8 +136,7 @@ final class RecoveryModeViewModel: ObservableObject {
 
         do {
             let now = referenceDateProvider()
-            try commitmentStore.pauseProtocolForRecovery(protocolId: selectedProtocolId, referenceDate: now)
-            planStore.pauseAllocations(for: selectedProtocolId, referenceDate: now)
+            try commitmentStore.pauseProtocolForRecoveryWithPlanSync(protocolId: selectedProtocolId, planStore: planStore, referenceDate: now)
             pausedProtocolTitle = commitmentStore.nonNegotiable(id: selectedProtocolId)?.definition.title
             step = .confirmed
             return true

@@ -230,6 +230,14 @@ private extension DevOptionsView {
 
                 Button {
                     Haptics.selection()
+                    runRecoveryPopupPresentationSimulation()
+                } label: {
+                    rowButtonLabel("Run Recovery Popup Simulation", icon: "exclamationmark.bubble.fill")
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    Haptics.selection()
                     pendingDangerAction = .resetHints
                 } label: {
                     rowButtonLabel("Reset one-time hints and entrances", icon: "arrow.clockwise")

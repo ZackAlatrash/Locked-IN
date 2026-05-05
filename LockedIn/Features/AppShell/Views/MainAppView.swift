@@ -246,12 +246,8 @@ private extension MainAppView {
     }
 
     func evaluateRecoveryEntryPresentation(now: Date = Date()) {
-        if store.recoveryEntryContext(referenceDate: now) != nil {
-            if router.presentDailyCheckIn {
-                return
-            }
-            router.requestRecoveryEntryPresentation()
-            router.dismissDailyCheckIn()
+        if store.recoveryEntryContext() != nil {
+            router.updateRecoveryEntryPresentation(shouldPresent: true)
         } else {
             if store.system.nonNegotiables.contains(where: { $0.state == .recovery }) == false {
                 planStore.finalizeRecoveryAllocationStatuses(
@@ -259,7 +255,7 @@ private extension MainAppView {
                     restorableProtocolIds: activeProtocolIdsForRecoveryRestoration()
                 )
             }
-            router.dismissRecoveryEntry()
+            router.updateRecoveryEntryPresentation(shouldPresent: false)
         }
     }
 
@@ -272,7 +268,7 @@ private extension MainAppView {
     }
 
     func evaluateDailyCheckInAutoPresentation(now: Date = Date()) {
-        if router.presentRecoveryEntry || store.recoveryEntryContext(referenceDate: now) != nil {
+        if router.presentRecoveryEntry || store.recoveryEntryContext() != nil {
             return
         }
 

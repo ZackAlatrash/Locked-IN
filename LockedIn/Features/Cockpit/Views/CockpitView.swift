@@ -526,7 +526,7 @@ private extension CockpitView {
         case .retire(let nnId):
             do {
                 store.runDailyIntegrityTick(referenceDate: appClock.now)
-                try store.retireNonNegotiable(id: nnId, referenceDate: appClock.now)
+                try store.retireNonNegotiable(id: nnId, referenceDate: appClock.now, planStore: planStore)
                 Haptics.success()
                 detailsSelection = nil
             } catch {

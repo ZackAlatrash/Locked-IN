@@ -51,6 +51,22 @@ struct CommitmentSystem: Codable, Equatable {
         recoveryEntryRequiresPauseSelection = try container.decodeIfPresent(Bool.self, forKey: .recoveryEntryRequiresPauseSelection) ?? false
         recoveryEntryTriggerProtocolId = try container.decodeIfPresent(UUID.self, forKey: .recoveryEntryTriggerProtocolId)
         recoveryPausedProtocolId = try container.decodeIfPresent(UUID.self, forKey: .recoveryPausedProtocolId)
+
+        let nonRetiredProtocolIds = Set(
+            nonNegotiables
+                .filter { $0.state != .retired }
+                .map(\.id)
+        )
+
+        if let pausedId = recoveryPausedProtocolId,
+           nonRetiredProtocolIds.contains(pausedId) == false {
+            recoveryPausedProtocolId = nil
+        }
+
+        if let triggerId = recoveryEntryTriggerProtocolId,
+           nonRetiredProtocolIds.contains(triggerId) == false {
+            recoveryEntryTriggerProtocolId = nil
+        }
     }
 
     var activeNonNegotiables: [NonNegotiable] {

@@ -349,11 +349,38 @@ final class PlanStore: ObservableObject {
         referenceDate: Date = Date(),
         restorableProtocolIds: Set<UUID>
     ) {
+        finalizeRecoveryAllocationStatuses(
+            referenceDate: referenceDate,
+            restorableProtocolIds: restorableProtocolIds,
+            targetProtocolIds: nil
+        )
+    }
+
+    func finalizeRecoveryAllocationStatuses(
+        for protocolId: UUID,
+        referenceDate: Date = Date()
+    ) {
+        finalizeRecoveryAllocationStatuses(
+            referenceDate: referenceDate,
+            restorableProtocolIds: [],
+            targetProtocolIds: [protocolId]
+        )
+    }
+
+    private func finalizeRecoveryAllocationStatuses(
+        referenceDate: Date,
+        restorableProtocolIds: Set<UUID>,
+        targetProtocolIds: Set<UUID>?
+    ) {
         let now = referenceDate
         var didMutate = false
 
         for index in allAllocations.indices {
             guard allAllocations[index].status == .paused else { continue }
+            if let targetProtocolIds,
+               targetProtocolIds.contains(allAllocations[index].protocolId) == false {
+                continue
+            }
             guard let effectiveStart = effectiveAllocationStartDate(allAllocations[index]) else { continue }
 
             let protocolId = allAllocations[index].protocolId

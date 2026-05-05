@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Recovery Plan — 0/10 Done</title>
+  <title>Recovery Plan — 0/11 Done</title>
   <style>
     :root {
       --bg: #f5f1ea;
@@ -308,7 +308,7 @@
     <div class="hero-top">
       <div>
         <h1>Recovery Mode — Implementation Plan</h1>
-        <p>10 tasks across 3 phases. Based on the Recovery Mode Behavior Specification. Track progress, check off acceptance criteria, and assign work to the right AI tool.</p>
+        <p>11 tasks across 3 phases. Based on the Recovery Mode Behavior Specification. Track progress, check off acceptance criteria, and assign work to the right AI tool.</p>
       </div>
       <div class="hero-actions">
         <button class="btn-reset" onclick="resetAll()">↺ Reset Progress</button>
@@ -335,7 +335,7 @@
       </div>
       <div class="stat-sep"></div>
       <div class="stat">
-        <span class="stat-label">of 10 tasks</span>
+        <span class="stat-label">of 11 tasks</span>
       </div>
     </div>
 
@@ -389,10 +389,10 @@
         <span class="phase-id a">Phase A</span>
         <div class="phase-info">
           <h2>P0 Correctness Fixes — Must Ship First</h2>
-          <p>Critical bugs that can produce corrupt state. No Phase B work begins until all three tasks are done.</p>
+          <p>Critical bugs that can produce corrupt state. No Phase B work begins until all four tasks are done.</p>
         </div>
         <div class="phase-progress">
-          <div class="phase-progress-label" id="phase-a-label">0 / 3</div>
+          <div class="phase-progress-label" id="phase-a-label">0 / 4</div>
           <div class="phase-track"><div class="phase-fill a" id="phase-a-fill" style="width:0%"></div></div>
         </div>
       </div>
@@ -596,6 +596,65 @@
           <div class="notes-section">
             <h4>Notes</h4>
             <textarea class="notes-area" id="notes-a3" placeholder="Add implementation notes, blockers, or decisions here…" oninput="saveNotes('a3')"></textarea>
+          </div>
+        </div>
+      </div>
+      <!-- A4 -->
+      <div class="task-card" id="card-a4" data-tool="claude" data-pri="p0" data-status="none">
+        <div class="task-header" onclick="toggleCard('a4')">
+          <span class="tid">A4</span>
+          <span class="task-title" id="title-a4">Fix DevOptions seed so recovery entry can be tested</span>
+          <span class="badge claude">Claude Code</span>
+          <span class="badge p0">P0</span>
+          <span class="badge effort">🔹 Small · 1–2 h</span>
+          <span class="status-pill none" id="pill-a4" onclick="cycleStatus(event,'a4')">Not Started</span>
+          <span class="chevron" id="chev-a4">▾</span>
+        </div>
+        <div class="task-body" id="body-a4">
+          <div class="body-grid">
+            <div class="body-section">
+              <h4>What To Do</h4>
+              <p>Add a dedicated DevOptions recovery simulation scenario (e.g. <code>inRecovery</code>) that correctly seeds recovery state so the popup and all recovery flows can be manually tested. The existing seeds (<code>usedForAWhile</code>, <code>overloadedWeek</code>) do not trigger recovery because they create protocols at <code>appClock.now</code> but run historical ticks starting 19 days in the past — since <code>lock.startDate = today</code>, <code>evaluateDailyComplianceIfNeeded</code> finds no history before the lock period, and <code>evaluateWeekCatchUp</code> sees no closed weeks, so zero violations accumulate. The new scenario should either: (a) create protocols with a backdated <code>startDate</code> matching the historical tick window so violations accumulate naturally, or (b) directly set protocol states and window violation counts to the threshold, then call <code>runDailyIntegrityTick</code> to let <code>handleRecoveryTransition</code> detect the entry and show the popup.</p>
+            </div>
+            <div class="body-section">
+              <h4>Root Cause</h4>
+              <p><code>DevOptionsController.seedUsedForAWhile</code> calls <code>createNonNegotiable(definition:totalLockDays:referenceDate: appClock.now)</code> which sets <code>lock.startDate = today</code>. The seed then runs ticks at historical dates (today − 19 … today). <code>evaluateDailyComplianceIfNeeded</code> computes <code>evaluationStart = max(rawStart, lockStart) = today</code> and <code>evaluationEnd = yesterday_of_tick</code>; since <code>today &gt; yesterday_of_tick</code> the guard fires and no daily violations are recorded. <code>evaluateWeekCatchUp</code> uses the same <code>lock.startDate</code> as its earliest start, so no closed weeks exist to evaluate. Result: zero <code>weeklyViolationCount</code>, recovery threshold never crossed.</p>
+            </div>
+            <div class="body-section">
+              <h4>Files</h4>
+              <div class="file-list">
+                <div class="file-item">LockedIn/Application/DevOptionsController.swift (<code>seedUsedForAWhile</code>, <code>seedOverloadedWeek</code>, new <code>seedInRecovery</code>)</div>
+              </div>
+            </div>
+            <div class="body-section">
+              <h4>Risk If Skipped</h4>
+              <p>All recovery mode features are untestable via DevOptions. Any regression in recovery entry, popup flow, pause action, or clean-day exit goes undetected until it reaches a real user who has legitimately violated enough to enter recovery.</p>
+            </div>
+          </div>
+          <div class="ac-section">
+            <h4>Acceptance Criteria</h4>
+            <div class="ac-list" id="ac-a4">
+              <div class="ac-item" onclick="toggleAC('a4',0)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Applying the new recovery scenario via DevOptions causes the recovery popup to appear immediately after seeding</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('a4',1)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text"><code>recoveryEntryPendingResolution == true</code> and at least one protocol is in <code>.recovery</code> after seeding</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('a4',2)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">The pause-selection step (if applicable) lists only <code>.active</code> protocols as candidates</span>
+              </div>
+              <div class="ac-item" onclick="toggleAC('a4',3)">
+                <div class="ac-check"><span class="ac-checkmark">✓</span></div>
+                <span class="ac-text">Build succeeds</span>
+              </div>
+            </div>
+          </div>
+          <div class="notes-section">
+            <h4>Notes</h4>
+            <textarea class="notes-area" id="notes-a4" placeholder="Add implementation notes, blockers, or decisions here…" oninput="saveNotes('a4')"></textarea>
           </div>
         </div>
       </div>
@@ -1100,13 +1159,13 @@
 </div><!-- /wrap -->
 
 <script>
-  const TASKS = ['a1','a2','a3','b1','b2','b3','b4','c1','c2','c3'];
+  const TASKS = ['a1','a2','a3','a4','b1','b2','b3','b4','c1','c2','c3'];
   const PHASES = {
-    a: ['a1','a2','a3'],
+    a: ['a1','a2','a3','a4'],
     b: ['b1','b2','b3','b4'],
     c: ['c1','c2','c3']
   };
-  const AC_COUNTS = { a1:5, a2:5, a3:4, b1:4, b2:4, b3:5, b4:5, c1:5, c2:4, c3:3 };
+  const AC_COUNTS = { a1:5, a2:5, a3:4, a4:4, b1:4, b2:4, b3:5, b4:5, c1:5, c2:4, c3:3 };
 
   const STATUS_CYCLE = { none:'prog', prog:'done', done:'none' };
   const STATUS_LABEL = { none:'Not Started', prog:'In Progress', done:'Done' };

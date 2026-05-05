@@ -83,6 +83,8 @@ final class DevOptionsController: ObservableObject {
                 try seedOverloadedWeek(weekStart: weekStart)
             case .checkInDueTonight:
                 try seedCheckInDueTonight(weekStart: weekStart, referenceNow: referenceNow)
+            case .inRecovery:
+                try seedInRecovery(referenceNow: referenceNow)
             case .usedForAWhile:
                 try seedUsedForAWhile(referenceNow: referenceNow)
             }
@@ -231,6 +233,71 @@ final class DevOptionsController: ObservableObject {
         userDefaults.set(0, forKey: DailyCheckInPolicy.Keys.deferredUntilTimestamp)
     }
 
+    private func seedInRecovery(referenceNow: Date) throws {
+        let referenceWeekStart = DateRules.startOfDay(
+            DateRules.weekInterval(containing: referenceNow, calendar: calendar).start,
+            calendar: calendar
+        )
+        guard let firstWeekStart = calendar.date(byAdding: .day, value: -14, to: referenceWeekStart),
+              let secondWeekStart = calendar.date(byAdding: .day, value: -7, to: referenceWeekStart) else {
+            throw NSError(domain: "DevOptionsController", code: 500, userInfo: [NSLocalizedDescriptionKey: "Could not build recovery seed dates."])
+        }
+
+        let creationDate = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: firstWeekStart) ?? firstWeekStart
+        let recoveryProtocolId = try createProtocol(
+            title: "Recovery Trigger",
+            mode: .session,
+            frequencyPerWeek: 5,
+            preferredSlot: .am,
+            durationMinutes: 90,
+            iconSystemName: "exclamationmark.triangle.fill",
+            referenceDate: creationDate
+        )
+        let pauseCandidateId = try createProtocol(
+            title: "Pause Candidate",
+            mode: .session,
+            frequencyPerWeek: 1,
+            preferredSlot: .pm,
+            durationMinutes: 45,
+            iconSystemName: "pause.circle.fill",
+            referenceDate: calendar.date(byAdding: .hour, value: 1, to: creationDate) ?? creationDate
+        )
+
+        try logCompletion(protocolId: pauseCandidateId, on: day(1, weekStart: firstWeekStart), hour: 14)
+        try logCompletion(protocolId: pauseCandidateId, on: day(1, weekStart: secondWeekStart), hour: 14)
+
+        let firstClosedWeekTick = calendar.date(bySettingHour: 23, minute: 0, second: 0, of: secondWeekStart) ?? secondWeekStart
+        let secondClosedWeekTick = calendar.date(bySettingHour: 23, minute: 0, second: 0, of: referenceWeekStart) ?? referenceWeekStart
+        commitmentStore.runDailyIntegrityTick(referenceDate: firstClosedWeekTick)
+        commitmentStore.runDailyIntegrityTick(referenceDate: secondClosedWeekTick)
+
+        guard commitmentStore.system.recoveryEntryPendingResolution,
+              commitmentStore.system.nonNegotiables.contains(where: { $0.id == recoveryProtocolId && $0.state == .recovery }) else {
+            throw NSError(domain: "DevOptionsController", code: 501, userInfo: [NSLocalizedDescriptionKey: "Recovery seed did not enter recovery."])
+        }
+        let candidateIds = commitmentStore.recoveryEntryContext()?.candidateProtocolIds ?? []
+        let activeProtocolIds = Set(commitmentStore.system.nonNegotiables.filter { $0.state == .active }.map(\.id))
+        guard candidateIds.contains(pauseCandidateId),
+              candidateIds.allSatisfy({ activeProtocolIds.contains($0) }) else {
+            throw NSError(domain: "DevOptionsController", code: 502, userInfo: [NSLocalizedDescriptionKey: "Recovery seed did not expose an active pause candidate."])
+        }
+
+        planStore.refresh(system: commitmentStore.system, calendarEvents: [], referenceDate: referenceNow)
+        let allocationDay = day(3, weekStart: referenceWeekStart)
+        let draftResult = planStore.applyDraft([
+            PlanAllocationDraft(
+                protocolId: pauseCandidateId,
+                weekId: DateRules.weekID(for: allocationDay, calendar: calendar),
+                day: allocationDay,
+                slot: .pm,
+                durationMinutes: 45
+            ),
+        ])
+        if case .failure(let error) = draftResult {
+            throw NSError(domain: "DevOptionsController", code: 503, userInfo: [NSLocalizedDescriptionKey: error.localizedDescription])
+        }
+    }
+
     private func seedUsedForAWhile(referenceNow: Date) throws {
         let deepWorkId = try createProtocol(
             title: "Deep Work",
@@ -304,7 +371,8 @@ final class DevOptionsController: ObservableObject {
         frequencyPerWeek: Int,
         preferredSlot: PreferredExecutionSlot,
         durationMinutes: Int,
-        iconSystemName: String
+        iconSystemName: String,
+        referenceDate: Date? = nil
     ) throws -> UUID {
         let definition = NonNegotiableDefinition(
             title: title,
@@ -319,7 +387,7 @@ final class DevOptionsController: ObservableObject {
         try commitmentStore.createNonNegotiable(
             definition: definition,
             totalLockDays: 28,
-            referenceDate: appClock.now
+            referenceDate: referenceDate ?? appClock.now
         )
 
         guard let created = commitmentStore.system.nonNegotiables
@@ -360,6 +428,9 @@ final class DevOptionsController: ObservableObject {
         case .checkInDueTonight:
             target = day(3, weekStart: weekStart)
             return calendar.date(bySettingHour: 19, minute: 15, second: 0, of: target) ?? target
+        case .inRecovery:
+            target = day(2, weekStart: weekStart)
+            return calendar.date(bySettingHour: 10, minute: 0, second: 0, of: target) ?? target
         case .usedForAWhile:
             let future = calendar.date(byAdding: .day, value: 19, to: weekStart) ?? weekStart
             return calendar.date(bySettingHour: 20, minute: 0, second: 0, of: future) ?? future

@@ -244,21 +244,53 @@ func runRecoveryRetirementNormalizationSimulation() {
 
     let engine = NonNegotiableEngine(calendar: calendar)
 
+    func makePausedAllocation(protocolId: UUID, day: Date, slot: PlanSlot) -> PlanAllocation {
+        PlanAllocation(
+            id: UUID(),
+            protocolId: protocolId,
+            weekId: DateRules.weekID(for: day, calendar: calendar),
+            day: day,
+            slot: slot,
+            startTime: nil,
+            durationMinutes: 60,
+            createdAt: startDate,
+            updatedAt: startDate,
+            status: .paused
+        )
+    }
+
     // Case 1: Paused protocol retires during recovery.
     do {
         let recovering = makeNonNegotiable(title: "Recovering", state: .recovery, createdAtOffset: 0, engine: engine)
         let active = makeNonNegotiable(title: "Active", state: .active, createdAtOffset: 1, engine: engine)
         let paused = makeNonNegotiable(title: "Paused", state: .suspended, createdAtOffset: 2, engine: engine)
+        let otherPaused = makeNonNegotiable(title: "Other Paused", state: .suspended, createdAtOffset: 3, engine: engine)
 
-        var system = CommitmentSystem(nonNegotiables: [recovering, active, paused], createdAt: startDate)
+        var system = CommitmentSystem(nonNegotiables: [recovering, active, paused, otherPaused], createdAt: startDate)
         system.recoveryPausedProtocolId = paused.id
         let store = makeStore(system: system)
 
-        try store.retireNonNegotiable(id: paused.id, referenceDate: retirementDate)
+        let futureDay = DateRules.date(year: 2026, month: 2, day: 12, hour: 9, calendar: calendar)
+        let retiredAllocation = makePausedAllocation(protocolId: paused.id, day: futureDay, slot: .am)
+        let otherAllocation = makePausedAllocation(protocolId: otherPaused.id, day: futureDay, slot: .pm)
+        let planStore = PlanStore(
+            repository: InMemoryPlanAllocationRepository(value: [retiredAllocation, otherAllocation]),
+            calendar: calendar
+        )
+
+        try store.retireNonNegotiable(id: paused.id, referenceDate: retirementDate, planStore: planStore)
 
         verify("Case 1 - paused protocol retired", store.nonNegotiable(id: paused.id)?.state == .retired)
         verify("Case 1 - stale paused id cleared", store.system.recoveryPausedProtocolId == nil)
         verify("Case 1 - recovery continues when eligible set is still >= 2", store.system.nonNegotiables.contains(where: { $0.state == .recovery }))
+        verify("Case 1 - retired paused allocation finalized", planStore.allocation(id: retiredAllocation.id)?.status == .skippedDueToRecovery)
+        verify("Case 1 - no retired allocation remains paused", planStore.allocation(id: retiredAllocation.id)?.status != .paused)
+        verify("Case 1 - unrelated paused allocation left untouched", planStore.allocation(id: otherAllocation.id)?.status == .paused)
+        planStore.finalizeRecoveryAllocationStatuses(
+            referenceDate: futureDay,
+            restorableProtocolIds: [active.id]
+        )
+        verify("Case 1 - full exit leaves retired allocation terminal", planStore.allocation(id: retiredAllocation.id)?.status == .skippedDueToRecovery)
     } catch {
         print("Recovery-Retirement Simulation - Case 1 threw error: \(error)")
     }
@@ -332,6 +364,165 @@ func runRecoveryRetirementNormalizationSimulation() {
         verify("Case 5 - recovery still active with 2 eligible protocols", store.system.nonNegotiables.contains(where: { $0.state == .recovery }))
     } catch {
         print("Recovery-Retirement Simulation - Case 5 threw error: \(error)")
+    }
+}
+
+func runRecoveryPostDecodeValidationSimulation() {
+    let calendar = DateRules.isoCalendar
+    let startDate = DateRules.date(year: 2026, month: 1, day: 1, hour: 0, calendar: calendar)
+    let engine = NonNegotiableEngine(calendar: calendar)
+    let encoder = JSONEncoder()
+    let decoder = JSONDecoder()
+
+    @discardableResult
+    func verify(_ label: String, _ condition: @autoclosure () -> Bool) -> Bool {
+        let passed = condition()
+        print("Recovery-Post-Decode Simulation - \(label): \(passed ? "PASS" : "FAIL")")
+        return passed
+    }
+
+    func makeNonNegotiable(title: String, state: NonNegotiableState) -> NonNegotiable {
+        var nonNegotiable = try! engine.create(
+            definition: NonNegotiableDefinition(
+                title: title,
+                frequencyPerWeek: 3,
+                mode: .session,
+                goalId: UUID()
+            ),
+            startDate: startDate,
+            totalLockDays: 14
+        )
+        nonNegotiable.state = state
+        return nonNegotiable
+    }
+
+    func fixture(
+        nonNegotiables: [NonNegotiable],
+        recoveryEntryTriggerProtocolId: UUID? = nil,
+        recoveryPausedProtocolId: UUID? = nil
+    ) throws -> Data {
+        let nonNegotiablesJSON = String(
+            data: try encoder.encode(nonNegotiables),
+            encoding: .utf8
+        )!
+        let createdAtJSON = String(data: try encoder.encode(startDate), encoding: .utf8)!
+        let triggerJSON = recoveryEntryTriggerProtocolId.map { "\"\($0.uuidString)\"" } ?? "null"
+        let pausedJSON = recoveryPausedProtocolId.map { "\"\($0.uuidString)\"" } ?? "null"
+
+        let json = """
+        {
+          "nonNegotiables": \(nonNegotiablesJSON),
+          "createdAt": \(createdAtJSON),
+          "recoveryCleanDayStreak": 0,
+          "recoveryEntryPendingResolution": true,
+          "recoveryEntryRequiresPauseSelection": true,
+          "recoveryEntryTriggerProtocolId": \(triggerJSON),
+          "recoveryPausedProtocolId": \(pausedJSON)
+        }
+        """
+        return Data(json.utf8)
+    }
+
+    do {
+        let retired = makeNonNegotiable(title: "Retired Pause", state: .retired)
+        let stalePaused = try decoder.decode(
+            CommitmentSystem.self,
+            from: fixture(nonNegotiables: [retired], recoveryPausedProtocolId: retired.id)
+        )
+        verify("stale retired recoveryPausedProtocolId cleared", stalePaused.recoveryPausedProtocolId == nil)
+
+        let active = makeNonNegotiable(title: "Active Trigger", state: .active)
+        let staleTrigger = try decoder.decode(
+            CommitmentSystem.self,
+            from: fixture(nonNegotiables: [active], recoveryEntryTriggerProtocolId: retired.id)
+        )
+        verify("missing recoveryEntryTriggerProtocolId cleared", staleTrigger.recoveryEntryTriggerProtocolId == nil)
+
+        let suspended = makeNonNegotiable(title: "Suspended Pause", state: .suspended)
+        let validPaused = try decoder.decode(
+            CommitmentSystem.self,
+            from: fixture(nonNegotiables: [suspended], recoveryPausedProtocolId: suspended.id)
+        )
+        verify("valid recoveryPausedProtocolId preserved", validPaused.recoveryPausedProtocolId == suspended.id)
+    } catch {
+        print("Recovery-Post-Decode Simulation failed with error: \(error)")
+    }
+}
+
+func runRecoveryPostRestorationWeeklyFeasibilitySimulation() {
+    let calendar = DateRules.isoCalendar
+    let monday = DateRules.date(year: 2026, month: 1, day: 5, hour: 9, calendar: calendar)
+    let thursday = DateRules.date(year: 2026, month: 1, day: 8, hour: 9, calendar: calendar)
+    let sunday = DateRules.date(year: 2026, month: 1, day: 11, hour: 23, minute: 59, calendar: calendar)
+    let engine = NonNegotiableEngine(calendar: calendar)
+    let commitmentEngine = CommitmentSystemEngine(nonNegotiableEngine: engine)
+
+    @discardableResult
+    func verify(_ label: String, _ condition: @autoclosure () -> Bool) -> Bool {
+        let passed = condition()
+        print("Recovery-Post-Restoration Weekly Simulation - \(label): \(passed ? "PASS" : "FAIL")")
+        return passed
+    }
+
+    func makeDefinition(title: String, frequency: Int = 5) -> NonNegotiableDefinition {
+        NonNegotiableDefinition(title: title, frequencyPerWeek: frequency, mode: .session, goalId: UUID())
+    }
+
+    func makeProtocol(title: String, state: NonNegotiableState, frequency: Int = 5) -> NonNegotiable {
+        var nonNegotiable = try! engine.create(
+            definition: makeDefinition(title: title, frequency: frequency),
+            startDate: DateRules.date(year: 2025, month: 12, day: 29, hour: 9, calendar: calendar),
+            totalLockDays: 28
+        )
+        nonNegotiable.state = state
+        return nonNegotiable
+    }
+
+    // Case 1: Recovery exits Thursday, restored 5x/week protocol gets a partial-week exemption.
+    do {
+        let recovering = makeProtocol(title: "Recovering", state: .recovery, frequency: 3)
+        let paused = makeProtocol(title: "Restored Thursday", state: .suspended, frequency: 5)
+
+        var system = CommitmentSystem(nonNegotiables: [recovering, paused], createdAt: monday)
+        system.recoveryPausedProtocolId = paused.id
+        _ = commitmentEngine.normalizeRecoveryDomain(in: &system, referenceDate: thursday)
+
+        guard let restoredIndex = system.nonNegotiables.firstIndex(where: { $0.id == paused.id }) else {
+            verify("Case 1 - restored protocol exists", false)
+            return
+        }
+
+        verify("Case 1 - suspended protocol restored", system.nonNegotiables[restoredIndex].state == .active)
+        verify("Case 1 - restoration marker set", system.nonNegotiables[restoredIndex].recoveryRestoredAt == thursday)
+
+        var restored = system.nonNegotiables[restoredIndex]
+        engine.evaluateWeekIfNeeded(&restored, weekEnding: sunday)
+
+        let missedWeeklyCount = restored.violations.filter { $0.kind == .missedWeeklyFrequency }.count
+        verify("Case 1 - Thursday restore has no week-end miss", missedWeeklyCount == 0)
+        verify("Case 1 - Thursday restore does not re-enter recovery", restored.state == .active)
+    }
+
+    // Case 2: Recovery exits Monday, a full week is available and normal weekly evaluation applies.
+    do {
+        var restored = makeProtocol(title: "Restored Monday", state: .active, frequency: 5)
+        restored.recoveryRestoredAt = monday
+
+        engine.evaluateWeekIfNeeded(&restored, weekEnding: sunday)
+
+        let missedWeeklyCount = restored.violations.filter { $0.kind == .missedWeeklyFrequency }.count
+        verify("Case 2 - Monday restore keeps normal weekly miss", missedWeeklyCount == 1)
+    }
+
+    // Case 3: Suspended protocols remain protected from weekly violations.
+    do {
+        var suspended = makeProtocol(title: "Still Suspended", state: .suspended, frequency: 5)
+        suspended.recoveryRestoredAt = thursday
+
+        engine.evaluateWeekIfNeeded(&suspended, weekEnding: sunday)
+
+        verify("Case 3 - suspended protocol records zero violations", suspended.violations.isEmpty)
+        verify("Case 3 - suspended protocol remains suspended", suspended.state == .suspended)
     }
 }
 
@@ -412,11 +603,11 @@ func runRecoveryPendingResolutionRecomputeSimulation() {
         let store = makeStore(system: system)
 
         try store.retireNonNegotiable(id: activeB.id, referenceDate: retirementDate)
-        let context = store.recoveryEntryContext(referenceDate: retirementDate)
+        let context = store.recoveryEntryContext()
 
         verify("Case 1 - pending still open", context != nil)
         verify("Case 1 - retired candidate removed", context?.candidateProtocolIds.contains(activeB.id) == false)
-        verify("Case 1 - selectable set refreshed", Set(context?.candidateProtocolIds ?? []) == Set([recovering.id, activeA.id]))
+        verify("Case 1 - selectable set refreshed", Set(context?.candidateProtocolIds ?? []) == Set([activeA.id]))
     } catch {
         print("Recovery-Pending Simulation - Case 1 threw error: \(error)")
     }
@@ -434,7 +625,7 @@ func runRecoveryPendingResolutionRecomputeSimulation() {
 
         try store.retireNonNegotiable(id: active.id, referenceDate: retirementDate)
 
-        verify("Case 2 - pending flow closed", store.recoveryEntryContext(referenceDate: retirementDate) == nil)
+        verify("Case 2 - pending flow closed", store.recoveryEntryContext() == nil)
         verify("Case 2 - pending flag false", store.system.recoveryEntryPendingResolution == false)
     } catch {
         print("Recovery-Pending Simulation - Case 2 threw error: \(error)")
@@ -453,10 +644,10 @@ func runRecoveryPendingResolutionRecomputeSimulation() {
         let store = makeStore(system: system)
 
         try store.retireNonNegotiable(id: activeA.id, referenceDate: retirementDate)
-        let context = store.recoveryEntryContext(referenceDate: retirementDate)
+        let context = store.recoveryEntryContext()
 
         verify("Case 3 - pending still needs decision", context?.requiresPauseSelection == true)
-        verify("Case 3 - candidate set changed and valid", Set(context?.candidateProtocolIds ?? []) == Set([recovering.id, activeB.id]))
+        verify("Case 3 - candidate set changed and valid", Set(context?.candidateProtocolIds ?? []) == Set([activeB.id]))
     } catch {
         print("Recovery-Pending Simulation - Case 3 threw error: \(error)")
     }
@@ -474,7 +665,7 @@ func runRecoveryPendingResolutionRecomputeSimulation() {
         let store = makeStore(system: system)
 
         try store.retireNonNegotiable(id: recoveringA.id, referenceDate: retirementDate)
-        let context = store.recoveryEntryContext(referenceDate: retirementDate)
+        let context = store.recoveryEntryContext()
 
         verify("Case 4 - pending trigger repaired", context?.triggerProtocolId == recoveringB.id)
         verify("Case 4 - retired trigger not selectable", context?.candidateProtocolIds.contains(recoveringA.id) == false)
@@ -503,6 +694,64 @@ func runRecoveryPendingResolutionRecomputeSimulation() {
         verify("Case 5 - stale paused id cleared", store.system.recoveryPausedProtocolId == nil)
     } catch {
         print("Recovery-Pending Simulation - Case 5 threw error: \(error)")
+    }
+
+    // Case 6: Candidate list prefers .active protocols when active candidates exist.
+    do {
+        let recovering = makeNonNegotiable(title: "Recovering", state: .recovery, createdAtOffset: 0, engine: engine)
+        let active = makeNonNegotiable(title: "Active", state: .active, createdAtOffset: 1, engine: engine)
+
+        var system = CommitmentSystem(nonNegotiables: [recovering, active], createdAt: startDate)
+        system.recoveryEntryPendingResolution = true
+        system.recoveryEntryRequiresPauseSelection = true
+        system.recoveryEntryTriggerProtocolId = recovering.id
+        let store = makeStore(system: system)
+
+        let context = store.recoveryEntryContext()
+        let candidates = context?.candidateProtocolIds ?? []
+        let candidateStates = candidates.compactMap { id in
+            store.system.nonNegotiables.first(where: { $0.id == id })?.state
+        }
+
+        verify("Case 6 - candidates contain active-only protocols", candidateStates.allSatisfy { $0 == .active })
+        verify("Case 6 - recovering protocol not in candidates", candidates.contains(recovering.id) == false)
+        verify("Case 6 - active protocol in candidates", candidates.contains(active.id))
+    }
+
+    // Case 7: With no active candidates, multiple recovery protocols remain selectable.
+    do {
+        let recoveringA = makeNonNegotiable(title: "Recovering-A", state: .recovery, createdAtOffset: 0, engine: engine)
+        let recoveringB = makeNonNegotiable(title: "Recovering-B", state: .recovery, createdAtOffset: 1, engine: engine)
+        let active = makeNonNegotiable(title: "Active", state: .active, createdAtOffset: 2, engine: engine)
+
+        var system = CommitmentSystem(nonNegotiables: [recoveringA, recoveringB, active], createdAt: startDate)
+        system.recoveryEntryPendingResolution = true
+        system.recoveryEntryRequiresPauseSelection = true
+        system.recoveryEntryTriggerProtocolId = recoveringA.id
+        let store = makeStore(system: system)
+
+        try! store.retireNonNegotiable(id: active.id, referenceDate: retirementDate)
+        let context = store.recoveryEntryContext()
+
+        verify("Case 7 - pending remains resolvable", context?.requiresPauseSelection == true)
+        verify("Case 7 - recovery protocols are fallback candidates", Set(context?.candidateProtocolIds ?? []) == Set([recoveringA.id, recoveringB.id]))
+    }
+
+    // Case 8: A single remaining recovery protocol closes stale pending resolution.
+    do {
+        let recoveringA = makeNonNegotiable(title: "Recovering-A", state: .recovery, createdAtOffset: 0, engine: engine)
+        let recoveringB = makeNonNegotiable(title: "Recovering-B", state: .recovery, createdAtOffset: 1, engine: engine)
+
+        var system = CommitmentSystem(nonNegotiables: [recoveringA, recoveringB], createdAt: startDate)
+        system.recoveryEntryPendingResolution = true
+        system.recoveryEntryRequiresPauseSelection = true
+        system.recoveryEntryTriggerProtocolId = recoveringA.id
+        let store = makeStore(system: system)
+
+        try! store.retireNonNegotiable(id: recoveringB.id, referenceDate: retirementDate)
+
+        verify("Case 8 - pending flow closes with no pause candidate", store.recoveryEntryContext() == nil)
+        verify("Case 8 - pending flag false", store.system.recoveryEntryPendingResolution == false)
     }
 }
 
@@ -751,5 +1000,400 @@ func runCreationDateSourceSimulation() {
         )
     } catch {
         print("Creation-Date Source Simulation failed with error: \(error)")
+    }
+}
+
+@MainActor
+func runRecoveryPauseSyncSimulation() {
+    let calendar = DateRules.isoCalendar
+    let reference = DateRules.date(year: 2026, month: 1, day: 12, hour: 9, calendar: calendar)
+    let futureDay = DateRules.date(year: 2026, month: 1, day: 19, hour: 9, calendar: calendar)
+
+    let nonNegotiableEngine = NonNegotiableEngine(calendar: calendar)
+    let commitmentEngine = CommitmentSystemEngine(nonNegotiableEngine: nonNegotiableEngine)
+
+    @discardableResult
+    func verify(_ label: String, _ condition: @autoclosure () -> Bool) -> Bool {
+        let passed = condition()
+        print("Recovery-Pause-Sync Simulation - \(label): \(passed ? "PASS" : "FAIL")")
+        return passed
+    }
+
+    func makeDefinition(title: String) -> NonNegotiableDefinition {
+        NonNegotiableDefinition(title: title, frequencyPerWeek: 3, mode: .session, goalId: UUID())
+    }
+
+    func makeCommitmentStore(system: CommitmentSystem) -> CommitmentSystemStore {
+        CommitmentSystemStore(
+            repository: InMemoryCommitmentSystemRepository(initialSystem: system),
+            systemEngine: commitmentEngine,
+            nonNegotiableEngine: nonNegotiableEngine,
+            policy: CommitmentPolicyEngine(calendar: calendar),
+            streakEngine: StreakEngine(),
+            calendar: calendar
+        )
+    }
+
+    // After coordinator call, domain state is .suspended AND plan allocations are .paused.
+    do {
+        var recoveringProtocol = try! nonNegotiableEngine.create(
+            definition: makeDefinition(title: "Recovering"),
+            startDate: reference,
+            totalLockDays: 28
+        )
+        recoveringProtocol.state = .recovery
+
+        var activeProtocol = try! nonNegotiableEngine.create(
+            definition: makeDefinition(title: "Active"),
+            startDate: reference,
+            totalLockDays: 28
+        )
+        activeProtocol.state = .active
+
+        var secondActiveProtocol = try! nonNegotiableEngine.create(
+            definition: makeDefinition(title: "Second Active"),
+            startDate: reference,
+            totalLockDays: 28
+        )
+        secondActiveProtocol.state = .active
+
+        var system = CommitmentSystem(
+            nonNegotiables: [recoveringProtocol, activeProtocol, secondActiveProtocol],
+            createdAt: reference
+        )
+        system.recoveryEntryPendingResolution = true
+        system.recoveryEntryRequiresPauseSelection = true
+        system.recoveryEntryTriggerProtocolId = recoveringProtocol.id
+
+        let commitmentStore = makeCommitmentStore(system: system)
+
+        let weekId = DateRules.weekID(for: futureDay, calendar: calendar)
+        let allocationId = UUID()
+        let allocation = PlanAllocation(
+            id: allocationId,
+            protocolId: activeProtocol.id,
+            weekId: weekId,
+            day: futureDay,
+            slot: .am,
+            startTime: nil,
+            durationMinutes: 60,
+            createdAt: reference,
+            updatedAt: reference
+        )
+        let secondAllocationId = UUID()
+        let secondAllocation = PlanAllocation(
+            id: secondAllocationId,
+            protocolId: secondActiveProtocol.id,
+            weekId: weekId,
+            day: futureDay,
+            slot: .pm,
+            startTime: nil,
+            durationMinutes: 60,
+            createdAt: reference,
+            updatedAt: reference
+        )
+        let planStore = PlanStore(
+            repository: InMemoryPlanAllocationRepository(value: [allocation, secondAllocation]),
+            calendar: calendar
+        )
+
+        try! commitmentStore.pauseProtocolForRecoveryWithPlanSync(
+            protocolId: activeProtocol.id,
+            planStore: planStore,
+            referenceDate: reference
+        )
+
+        verify("Coordinator - domain state is .suspended", commitmentStore.nonNegotiable(id: activeProtocol.id)?.state == .suspended)
+        verify("Coordinator - allocation status is .paused", planStore.allocation(id: allocationId)?.status == .paused)
+        verify("Coordinator - recoveryPausedProtocolId set", commitmentStore.system.recoveryPausedProtocolId == activeProtocol.id)
+
+        do {
+            try commitmentStore.pauseProtocolForRecoveryWithPlanSync(
+                protocolId: secondActiveProtocol.id,
+                planStore: planStore,
+                referenceDate: reference
+            )
+            verify("Invariant I10 - second pause rejected", false)
+        } catch {
+            verify("Invariant I10 - second pause rejected", true)
+        }
+
+        let suspendedCount = commitmentStore.system.nonNegotiables.filter { $0.state == .suspended }.count
+        verify("Invariant I10 - second pause does not add suspended protocol", suspendedCount == 1)
+        verify("Invariant I10 - second protocol remains active", commitmentStore.nonNegotiable(id: secondActiveProtocol.id)?.state == .active)
+        verify("Invariant I10 - second allocation remains active", planStore.allocation(id: secondAllocationId)?.status == .active)
+        verify("Invariant I10 - recoveryPausedProtocolId unchanged", commitmentStore.system.recoveryPausedProtocolId == activeProtocol.id)
+    }
+}
+
+@MainActor
+func runRecoveryPopupPresentationSimulation() {
+    let calendar = DateRules.isoCalendar
+    let reference = DateRules.date(year: 2026, month: 1, day: 12, hour: 9, calendar: calendar)
+    let nonNegotiableEngine = NonNegotiableEngine(calendar: calendar)
+    let commitmentEngine = CommitmentSystemEngine(nonNegotiableEngine: nonNegotiableEngine)
+
+    @discardableResult
+    func verify(_ label: String, _ condition: @autoclosure () -> Bool) -> Bool {
+        let passed = condition()
+        print("Recovery-Popup-Presentation Simulation - \(label): \(passed ? "PASS" : "FAIL")")
+        return passed
+    }
+
+    func makeDefinition(title: String) -> NonNegotiableDefinition {
+        NonNegotiableDefinition(
+            title: title,
+            frequencyPerWeek: 3,
+            mode: .session,
+            goalId: UUID()
+        )
+    }
+
+    func makeStore(system: CommitmentSystem) -> CommitmentSystemStore {
+        CommitmentSystemStore(
+            repository: InMemoryCommitmentSystemRepository(initialSystem: system),
+            systemEngine: commitmentEngine,
+            nonNegotiableEngine: nonNegotiableEngine,
+            policy: CommitmentPolicyEngine(calendar: calendar),
+            streakEngine: StreakEngine(),
+            calendar: calendar
+        )
+    }
+
+    do {
+        var recoveringProtocol = try nonNegotiableEngine.create(
+            definition: makeDefinition(title: "Popup Recovery Trigger"),
+            startDate: reference,
+            totalLockDays: 28
+        )
+        recoveringProtocol.state = .recovery
+
+        var activeProtocol = try nonNegotiableEngine.create(
+            definition: makeDefinition(title: "Popup Pause Candidate"),
+            startDate: reference,
+            totalLockDays: 28
+        )
+        activeProtocol.state = .active
+
+        var pendingSystem = CommitmentSystem(
+            nonNegotiables: [recoveringProtocol, activeProtocol],
+            createdAt: reference,
+            recoveryEntryPendingResolution: true,
+            recoveryEntryRequiresPauseSelection: true,
+            recoveryEntryTriggerProtocolId: recoveringProtocol.id
+        )
+
+        let store = makeStore(system: pendingSystem)
+        let pendingContext = store.recoveryEntryContext()
+        let pendingRouter = AppRouter()
+        pendingRouter.updateRecoveryEntryPresentation(shouldPresent: pendingContext != nil)
+
+        verify("Case 1 - context exists when pending", pendingContext != nil)
+        verify("Case 1 - router presents popup when context exists", pendingRouter.presentRecoveryEntry)
+        verify("Case 1 - active pause candidate is surfaced", pendingContext?.candidateProtocolIds == [activeProtocol.id])
+
+        store.completeRecoveryEntryResolution()
+        let resolvedContext = store.recoveryEntryContext()
+        pendingRouter.updateRecoveryEntryPresentation(shouldPresent: resolvedContext != nil)
+
+        verify("Case 2 - context nil after resolution", resolvedContext == nil)
+        verify("Case 2 - router dismisses popup after resolution", pendingRouter.presentRecoveryEntry == false)
+
+        pendingSystem.recoveryEntryPendingResolution = true
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(pendingSystem)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let restartedSystem = try decoder.decode(CommitmentSystem.self, from: data)
+        let restartedStore = makeStore(system: restartedSystem)
+        let restartedContext = restartedStore.recoveryEntryContext()
+        let restartedRouter = AppRouter()
+        restartedRouter.updateRecoveryEntryPresentation(shouldPresent: restartedContext != nil)
+
+        verify("Case 3 - context exists after simulated restart", restartedContext != nil)
+        verify("Case 3 - router re-presents popup after simulated restart", restartedRouter.presentRecoveryEntry)
+        verify("Case 3 - trigger id survives simulated restart", restartedContext?.triggerProtocolId == recoveringProtocol.id)
+    } catch {
+        print("Recovery-Popup-Presentation Simulation failed with error: \(error)")
+    }
+}
+
+@MainActor
+func runRecoveryModeViewModelRankingSimulation() {
+    let calendar = DateRules.isoCalendar
+    let reference = DateRules.date(year: 2026, month: 1, day: 12, hour: 9, calendar: calendar)
+    let weekId = DateRules.weekID(for: reference, calendar: calendar)
+    let nonNegotiableEngine = NonNegotiableEngine(calendar: calendar)
+    let commitmentEngine = CommitmentSystemEngine(nonNegotiableEngine: nonNegotiableEngine)
+
+    @discardableResult
+    func verify(_ label: String, _ condition: @autoclosure () -> Bool) -> Bool {
+        let passed = condition()
+        print("RecoveryModeViewModel Ranking Simulation - \(label): \(passed ? "PASS" : "FAIL")")
+        return passed
+    }
+
+    func makeDefinition(title: String) -> NonNegotiableDefinition {
+        NonNegotiableDefinition(
+            title: title,
+            frequencyPerWeek: 3,
+            mode: .session,
+            goalId: UUID()
+        )
+    }
+
+    func makeProtocol(title: String, state: NonNegotiableState, createdAt: Date, violationCount: Int = 0) throws -> NonNegotiable {
+        var protocolValue = try nonNegotiableEngine.create(
+            definition: makeDefinition(title: title),
+            startDate: DateRules.startOfDay(reference, calendar: calendar),
+            totalLockDays: 28
+        )
+        protocolValue.state = state
+
+        for offset in 0..<violationCount {
+            let violationDate = calendar.date(byAdding: .minute, value: offset, to: reference) ?? reference
+            protocolValue.violations.append(
+                Violation(
+                    date: violationDate,
+                    kind: .missedWeeklyFrequency,
+                    windowIndex: 0,
+                    weekId: weekId
+                )
+            )
+        }
+
+        if protocolValue.createdAt != createdAt {
+            protocolValue = NonNegotiable(
+                id: protocolValue.id,
+                goalId: protocolValue.goalId,
+                definition: protocolValue.definition,
+                state: protocolValue.state,
+                lock: protocolValue.lock,
+                createdAt: createdAt,
+                windows: protocolValue.windows,
+                completions: protocolValue.completions,
+                violations: protocolValue.violations,
+                lastDailyComplianceCheckedDay: protocolValue.lastDailyComplianceCheckedDay,
+                recoveryRestoredAt: protocolValue.recoveryRestoredAt
+            )
+        }
+
+        return protocolValue
+    }
+
+    func makeAllocation(protocolId: UUID, dayOffset: Int, slot: PlanSlot) -> PlanAllocation {
+        let day = DateRules.addingDays(dayOffset, to: DateRules.startOfDay(reference, calendar: calendar), calendar: calendar)
+        return PlanAllocation(
+            id: UUID(),
+            protocolId: protocolId,
+            weekId: DateRules.weekID(for: day, calendar: calendar),
+            day: day,
+            slot: slot,
+            startTime: nil,
+            durationMinutes: 60,
+            createdAt: reference,
+            updatedAt: reference
+        )
+    }
+
+    func makeCommitmentStore(system: CommitmentSystem) -> CommitmentSystemStore {
+        CommitmentSystemStore(
+            repository: InMemoryCommitmentSystemRepository(initialSystem: system),
+            systemEngine: commitmentEngine,
+            nonNegotiableEngine: nonNegotiableEngine,
+            policy: CommitmentPolicyEngine(calendar: calendar),
+            streakEngine: StreakEngine(),
+            calendar: calendar
+        )
+    }
+
+    func makeViewModel(system: CommitmentSystem, allocations: [PlanAllocation]) -> RecoveryModeViewModel {
+        let commitmentStore = makeCommitmentStore(system: system)
+        let planStore = PlanStore(
+            repository: InMemoryPlanAllocationRepository(value: allocations),
+            calendar: calendar
+        )
+        planStore.refresh(system: commitmentStore.system, calendarEvents: [], referenceDate: reference)
+        return RecoveryModeViewModel(
+            commitmentStore: commitmentStore,
+            planStore: planStore,
+            referenceDateProvider: { reference }
+        )
+    }
+
+    do {
+        let recovering = try makeProtocol(
+            title: "Recovery Trigger",
+            state: .recovery,
+            createdAt: reference
+        )
+        let highestViolations = try makeProtocol(
+            title: "Highest Violations",
+            state: .active,
+            createdAt: DateRules.addingDays(1, to: reference, calendar: calendar),
+            violationCount: 2
+        )
+        let higherPlannedLoad = try makeProtocol(
+            title: "Higher Planned Load",
+            state: .active,
+            createdAt: DateRules.addingDays(2, to: reference, calendar: calendar),
+            violationCount: 1
+        )
+        let lowerPlannedLoad = try makeProtocol(
+            title: "Lower Planned Load",
+            state: .active,
+            createdAt: DateRules.addingDays(3, to: reference, calendar: calendar),
+            violationCount: 1
+        )
+
+        var system = CommitmentSystem(
+            nonNegotiables: [recovering, highestViolations, higherPlannedLoad, lowerPlannedLoad],
+            createdAt: reference
+        )
+        system.recoveryEntryPendingResolution = true
+        system.recoveryEntryRequiresPauseSelection = true
+        system.recoveryEntryTriggerProtocolId = recovering.id
+
+        let allocations = [
+            makeAllocation(protocolId: higherPlannedLoad.id, dayOffset: 0, slot: .am),
+            makeAllocation(protocolId: higherPlannedLoad.id, dayOffset: 1, slot: .pm),
+            makeAllocation(protocolId: lowerPlannedLoad.id, dayOffset: 2, slot: .eve),
+        ]
+        let viewModel = makeViewModel(system: system, allocations: allocations)
+        viewModel.refresh()
+
+        let sortedIds = viewModel.protocolOptions.map(\.id)
+        verify("Case 1 - highest-violation protocol ranks first", sortedIds.first == highestViolations.id)
+        verify("Case 1 - first option is recommended", viewModel.recommendedProtocolId == highestViolations.id)
+
+        guard let higherPlannedIndex = sortedIds.firstIndex(of: higherPlannedLoad.id),
+              let lowerPlannedIndex = sortedIds.firstIndex(of: lowerPlannedLoad.id) else {
+            verify("Case 2 - tied planned-load options exist", false)
+            return
+        }
+
+        verify("Case 2 - higher planned load wins tied violations", higherPlannedIndex < lowerPlannedIndex)
+        verify(
+            "Case 2 - planned load values come from active allocations",
+            viewModel.protocolOptions.first(where: { $0.id == higherPlannedLoad.id })?.plannedLoadCount == 2 &&
+                viewModel.protocolOptions.first(where: { $0.id == lowerPlannedLoad.id })?.plannedLoadCount == 1
+        )
+
+        var emptyCandidateSystem = CommitmentSystem(
+            nonNegotiables: [recovering],
+            createdAt: reference
+        )
+        emptyCandidateSystem.recoveryEntryPendingResolution = true
+        emptyCandidateSystem.recoveryEntryRequiresPauseSelection = false
+        emptyCandidateSystem.recoveryEntryTriggerProtocolId = recovering.id
+
+        let emptyViewModel = makeViewModel(system: emptyCandidateSystem, allocations: [])
+        emptyViewModel.refresh()
+
+        verify("Case 3 - empty candidate list returns empty options", emptyViewModel.protocolOptions.isEmpty)
+        verify("Case 3 - empty candidate list remains pending", emptyViewModel.isPendingResolution)
+    } catch {
+        print("RecoveryModeViewModel Ranking Simulation failed with error: \(error)")
     }
 }

@@ -11,4 +11,5 @@ struct NonNegotiable: Codable, Equatable {
     var completions: [CompletionRecord]
     var violations: [Violation]
     var lastDailyComplianceCheckedDay: Date?
+    var recoveryRestoredAt: Date? = nil
 }

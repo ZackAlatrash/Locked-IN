@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import OSLog
 
 enum CommitmentStoreError: Error {
     case policyDenied(PolicyReason)
@@ -8,6 +9,11 @@ enum CommitmentStoreError: Error {
 
 @MainActor
 final class CommitmentSystemStore: ObservableObject {
+    private static let logger = Logger(
+        subsystem: "Epistles-of-Wisdom.LockedIn",
+        category: "CommitmentSystemStore"
+    )
+
     struct RecoveryEntryContext: Equatable {
         let triggerProtocolId: UUID?
         let pausedProtocolId: UUID?
@@ -175,7 +181,11 @@ final class CommitmentSystemStore: ObservableObject {
         return removed
     }
 
-    func retireNonNegotiable(id: UUID, referenceDate: Date = Date()) throws {
+    func retireNonNegotiable(
+        id: UUID,
+        referenceDate: Date = Date(),
+        planStore: PlanStore? = nil
+    ) throws {
         guard let index = system.nonNegotiables.firstIndex(where: { $0.id == id }) else {
             throw CommitmentStoreError.domain(CommitmentSystemError.nonNegotiableNotFound)
         }
@@ -188,7 +198,11 @@ final class CommitmentSystemStore: ObservableObject {
 
         var updated = system
         updated.nonNegotiables[index].state = .retired
-        applyPostMutationRecoveryNormalization(updated, referenceDate: referenceDate)
+        applyPostMutationRecoveryNormalization(
+            updated,
+            referenceDate: referenceDate,
+            planStore: planStore
+        )
     }
 
     func removeNonNegotiable(id: UUID) throws {
@@ -298,7 +312,8 @@ final class CommitmentSystemStore: ObservableObject {
             windows: current.windows,
             completions: current.completions,
             violations: current.violations,
-            lastDailyComplianceCheckedDay: current.lastDailyComplianceCheckedDay
+            lastDailyComplianceCheckedDay: current.lastDailyComplianceCheckedDay,
+            recoveryRestoredAt: current.recoveryRestoredAt
         )
 
         system = updated
@@ -395,20 +410,11 @@ final class CommitmentSystemStore: ObservableObject {
         applySystemUpdate(updated, referenceDate: currentDate)
     }
 
-    func recoveryEntryContext(referenceDate: Date = Date()) -> RecoveryEntryContext? {
-        _ = referenceDate
+    func recoveryEntryContext() -> RecoveryEntryContext? {
         guard system.recoveryEntryPendingResolution else { return nil }
         guard system.nonNegotiables.contains(where: { $0.state == .recovery }) else { return nil }
 
-        let candidateIds = system.nonNegotiables
-            .filter { $0.state == .active || $0.state == .recovery }
-            .sorted { lhs, rhs in
-                if lhs.createdAt != rhs.createdAt {
-                    return lhs.createdAt < rhs.createdAt
-                }
-                return lhs.id.uuidString < rhs.id.uuidString
-            }
-            .map(\.id)
+        let candidateIds = recoveryPauseCandidateIds(in: system)
 
         return RecoveryEntryContext(
             triggerProtocolId: system.recoveryEntryTriggerProtocolId,
@@ -418,11 +424,24 @@ final class CommitmentSystemStore: ObservableObject {
         )
     }
 
-    func pauseProtocolForRecovery(protocolId: UUID, referenceDate: Date = Date()) throws {
-        _ = referenceDate
+    func pauseProtocolForRecovery(protocolId: UUID) throws {
         guard system.recoveryEntryPendingResolution else { return }
+
+        guard system.nonNegotiables.contains(where: { $0.state == .suspended }) == false else {
+            Self.logger.fault("Invariant I10 blocked recovery pause while a protocol is already suspended.")
+            throw CommitmentStoreError.policyDenied(
+                .generic(message: "A protocol is already paused for recovery.")
+            )
+        }
+
         guard let index = system.nonNegotiables.firstIndex(where: { $0.id == protocolId }) else {
             throw CommitmentStoreError.domain(CommitmentSystemError.nonNegotiableNotFound)
+        }
+
+        guard recoveryPauseCandidateIds(in: system).contains(protocolId) else {
+            throw CommitmentStoreError.policyDenied(
+                .generic(message: "Selected protocol cannot be paused for recovery.")
+            )
         }
 
         let currentState = system.nonNegotiables[index].state
@@ -437,6 +456,20 @@ final class CommitmentSystemStore: ObservableObject {
 
         system = updated
         persistSystem()
+    }
+
+    func pauseProtocolForRecoveryWithPlanSync(
+        protocolId: UUID,
+        planStore: PlanStore,
+        referenceDate: Date = Date()
+    ) throws {
+        try pauseProtocolForRecovery(protocolId: protocolId)
+        guard system.recoveryPausedProtocolId == protocolId,
+              nonNegotiable(id: protocolId)?.state == .suspended else {
+            return
+        }
+
+        planStore.pauseAllocations(for: protocolId, referenceDate: referenceDate)
     }
 
     func completeRecoveryEntryResolution() {
@@ -765,10 +798,23 @@ final class CommitmentSystemStore: ObservableObject {
 
     private func applyPostMutationRecoveryNormalization(
         _ updatedSystem: CommitmentSystem,
-        referenceDate: Date
+        referenceDate: Date,
+        planStore: PlanStore? = nil
     ) {
         var normalized = updatedSystem
-        _ = systemEngine.normalizeRecoveryDomain(in: &normalized)
+        let pausedProtocolIdBeforeNormalization = normalized.recoveryPausedProtocolId
+        let decision = systemEngine.normalizeRecoveryDomain(in: &normalized, referenceDate: referenceDate)
+
+        if decision.clearedPausedProtocolId,
+           let pausedProtocolIdBeforeNormalization,
+           normalized.recoveryPausedProtocolId == nil,
+           normalized.nonNegotiables.first(where: { $0.id == pausedProtocolIdBeforeNormalization })?.state == .retired {
+            planStore?.finalizeRecoveryAllocationStatuses(
+                for: pausedProtocolIdBeforeNormalization,
+                referenceDate: referenceDate
+            )
+        }
+
         applySystemUpdate(normalized, referenceDate: referenceDate)
     }
 
@@ -791,12 +837,10 @@ final class CommitmentSystemStore: ObservableObject {
                     return lhs.id.uuidString < rhs.id.uuidString
                 }
 
-            let activeOrRecoveryCount = updated.nonNegotiables.filter {
-                $0.state == .active || $0.state == .recovery
-            }.count
+            let candidateIds = recoveryPauseCandidateIds(in: updated)
 
             updated.recoveryEntryPendingResolution = true
-            updated.recoveryEntryRequiresPauseSelection = activeOrRecoveryCount > 1
+            updated.recoveryEntryRequiresPauseSelection = candidateIds.isEmpty == false
             updated.recoveryEntryTriggerProtocolId = enteredRecovery.first?.id
             updated.recoveryPausedProtocolId = nil
             updated.recoveryCleanDayStreak = 0
@@ -811,6 +855,31 @@ final class CommitmentSystemStore: ObservableObject {
             updated.recoveryEntryTriggerProtocolId = nil
             updated.recoveryPausedProtocolId = nil
         }
+    }
+
+    private func recoveryPauseCandidateIds(in system: CommitmentSystem) -> [UUID] {
+        let activeCandidates = sortedNonNegotiableIds(in: system) { $0.state == .active }
+        if activeCandidates.isEmpty == false {
+            return activeCandidates
+        }
+
+        let recoveryCandidates = sortedNonNegotiableIds(in: system) { $0.state == .recovery }
+        return recoveryCandidates.count > 1 ? recoveryCandidates : []
+    }
+
+    private func sortedNonNegotiableIds(
+        in system: CommitmentSystem,
+        matching predicate: (NonNegotiable) -> Bool
+    ) -> [UUID] {
+        system.nonNegotiables
+            .filter(predicate)
+            .sorted { lhs, rhs in
+                if lhs.createdAt != rhs.createdAt {
+                    return lhs.createdAt < rhs.createdAt
+                }
+                return lhs.id.uuidString < rhs.id.uuidString
+            }
+            .map(\.id)
     }
 
     private func hasRelevantProtocol(on day: Date) -> Bool {
