@@ -13,3 +13,9 @@ struct NonNegotiable: Codable, Equatable {
     var lastDailyComplianceCheckedDay: Date?
     var recoveryRestoredAt: Date? = nil
 }
+
+extension NonNegotiable {
+    func violationCount(inWindow windowIndex: Int) -> Int {
+        violations.filter { $0.windowIndex == windowIndex }.count
+    }
+}

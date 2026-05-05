@@ -49,7 +49,7 @@ struct NonNegotiableEngine {
         let expected: Int?
         let missedWeeklyAppended: Bool
         let missedDailyAppended: Bool
-        let weeklyViolationCountBefore: Int
+        let violationCountBefore: Int
         let stateBefore: NonNegotiableState
     }
 
@@ -146,8 +146,7 @@ struct NonNegotiableEngine {
 
                 if !didCompleteOnDay {
                     let stateBefore = nn.state
-                    let weeklyViolationCountBefore = nn.windows[windowIndex].weeklyViolationCount
-                    nn.windows[windowIndex].weeklyViolationCount += 1
+                    let violationCountBefore = nn.violationCount(inWindow: windowIndex)
                     nn.violations.append(
                         Violation(
                             date: dayCursor,
@@ -168,7 +167,7 @@ struct NonNegotiableEngine {
                             expected: expectedCompletionsPerWeek(for: nn.definition),
                             missedWeeklyAppended: false,
                             missedDailyAppended: true,
-                            weeklyViolationCountBefore: weeklyViolationCountBefore,
+                            violationCountBefore: violationCountBefore,
                             stateBefore: stateBefore
                         )
                     )
@@ -221,7 +220,7 @@ struct NonNegotiableEngine {
             expected: expected
         )
         let stateBefore = nn.state
-        let weeklyViolationCountBefore = nn.windows[windowIndex].weeklyViolationCount
+        let violationCountBefore = nn.violationCount(inWindow: windowIndex)
         let alreadyHasWeeklyViolation = nn.violations.contains { $0.weekId == weekId && $0.kind == .missedWeeklyFrequency }
         let shouldAppendMissedWeekly = completionCount < expected &&
             shouldSuppressShortfall == false &&
@@ -230,7 +229,6 @@ struct NonNegotiableEngine {
             alreadyHasWeeklyViolation == false
 
         if shouldAppendMissedWeekly {
-            nn.windows[windowIndex].weeklyViolationCount += 1
             nn.violations.append(
                 Violation(
                     date: date,
@@ -254,7 +252,7 @@ struct NonNegotiableEngine {
                 expected: expected,
                 missedWeeklyAppended: shouldAppendMissedWeekly,
                 missedDailyAppended: false,
-                weeklyViolationCountBefore: weeklyViolationCountBefore,
+                violationCountBefore: violationCountBefore,
                 stateBefore: stateBefore
             )
         )
@@ -275,8 +273,8 @@ struct NonNegotiableEngine {
                 expected: expected,
                 shouldSuppressShortfall: shouldSuppressShortfall,
                 missedWeeklyAppended: shouldAppendMissedWeekly,
-                weeklyViolationCountBefore: weeklyViolationCountBefore,
-                weeklyViolationCountAfter: nn.windows[windowIndex].weeklyViolationCount,
+                violationCountBefore: violationCountBefore,
+                violationCountAfter: nn.violationCount(inWindow: windowIndex),
                 stateBefore: stateBefore,
                 stateAfter: nn.state
             )
@@ -320,8 +318,7 @@ struct NonNegotiableEngine {
         guard completionCount + remainingFeasibleDays < expected else { return }
 
         let stateBefore = nn.state
-        let weeklyViolationCountBefore = nn.windows[windowIndex].weeklyViolationCount
-        nn.windows[windowIndex].weeklyViolationCount += 1
+        let violationCountBefore = nn.violationCount(inWindow: windowIndex)
         nn.violations.append(
             Violation(
                 date: today,
@@ -342,7 +339,7 @@ struct NonNegotiableEngine {
                 expected: expected,
                 missedWeeklyAppended: true,
                 missedDailyAppended: false,
-                weeklyViolationCountBefore: weeklyViolationCountBefore,
+                violationCountBefore: violationCountBefore,
                 stateBefore: stateBefore
             )
         )
@@ -549,8 +546,8 @@ struct NonNegotiableEngine {
         expected: Int,
         shouldSuppressShortfall: Bool,
         missedWeeklyAppended: Bool,
-        weeklyViolationCountBefore: Int,
-        weeklyViolationCountAfter: Int,
+        violationCountBefore: Int,
+        violationCountAfter: Int,
         stateBefore: NonNegotiableState,
         stateAfter: NonNegotiableState
     ) {
@@ -570,8 +567,8 @@ struct NonNegotiableEngine {
             "expected=\(expected) " +
             "shouldSuppressShortfall=\(shouldSuppressShortfall) " +
             "missedWeeklyAppended=\(missedWeeklyAppended) " +
-            "weeklyViolationCountBefore=\(weeklyViolationCountBefore) " +
-            "weeklyViolationCountAfter=\(weeklyViolationCountAfter) " +
+            "violationCountBefore=\(violationCountBefore) " +
+            "violationCountAfter=\(violationCountAfter) " +
             "stateBefore=\(stateBefore.rawValue) " +
             "stateAfter=\(stateAfter.rawValue)"
         )
@@ -661,10 +658,10 @@ struct NonNegotiableEngine {
         debugContext: RecoveryUpdateDebugContext? = nil
     ) {
         let stateBefore = debugContext?.stateBefore ?? nn.state
-        let weeklyViolationCountBefore = debugContext?.weeklyViolationCountBefore ?? nn.windows[windowIndex].weeklyViolationCount
+        let violationCountBefore = debugContext?.violationCountBefore ?? nn.violationCount(inWindow: windowIndex)
         let threshold = recoveryViolationThreshold(for: nn.definition.mode)
-        let weeklyViolationCountAfter = nn.windows[windowIndex].weeklyViolationCount
-        let thresholdReached = weeklyViolationCountAfter >= threshold
+        let violationCountAfter = nn.violationCount(inWindow: windowIndex)
+        let thresholdReached = violationCountAfter >= threshold
 
         if nn.state != .recovery && thresholdReached {
             nn.state = .recovery
@@ -699,8 +696,8 @@ struct NonNegotiableEngine {
                 expected: debugContext?.expected,
                 missedWeeklyAppended: debugContext?.missedWeeklyAppended ?? false,
                 missedDailyAppended: debugContext?.missedDailyAppended ?? false,
-                weeklyViolationCountBefore: weeklyViolationCountBefore,
-                weeklyViolationCountAfter: weeklyViolationCountAfter,
+                violationCountBefore: violationCountBefore,
+                violationCountAfter: violationCountAfter,
                 threshold: threshold,
                 stateBefore: stateBefore,
                 stateAfter: stateAfter,
@@ -738,8 +735,8 @@ struct NonNegotiableEngine {
         expected: Int?,
         missedWeeklyAppended: Bool,
         missedDailyAppended: Bool,
-        weeklyViolationCountBefore: Int,
-        weeklyViolationCountAfter: Int,
+        violationCountBefore: Int,
+        violationCountAfter: Int,
         threshold: Int,
         stateBefore: NonNegotiableState,
         stateAfter: NonNegotiableState,
@@ -763,8 +760,8 @@ struct NonNegotiableEngine {
             "expected=\(expected.map(String.init) ?? "n/a") " +
             "missedWeeklyAppended=\(missedWeeklyAppended) " +
             "missedDailyAppended=\(missedDailyAppended) " +
-            "weeklyViolationCountBefore=\(weeklyViolationCountBefore) " +
-            "weeklyViolationCountAfter=\(weeklyViolationCountAfter) " +
+            "violationCountBefore=\(violationCountBefore) " +
+            "violationCountAfter=\(violationCountAfter) " +
             "recoveryThreshold=\(threshold) " +
             "stateBefore=\(stateBefore.rawValue) " +
             "stateAfter=\(stateAfter.rawValue) " +

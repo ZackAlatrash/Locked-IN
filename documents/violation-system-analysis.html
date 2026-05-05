@@ -748,9 +748,10 @@
       <h5>Test scenario — inevitable miss within the week</h5>
       <ul>
         <li>Create a 5×/week session protocol on Monday.</li>
-        <li>Complete 0 sessions. Advance to Saturday via DevOptions.</li>
-        <li>On Saturday: <code>completionCount (0) + remainingFeasibleDays (2: Sat, Sun) = 2 &lt; 5</code> → violation should be written immediately without waiting for Monday.</li>
-        <li>Recovery should trigger on Saturday (count ≥ threshold 1).</li>
+        <li>Complete 0 sessions. Advance day by day via DevOptions.</li>
+        <li>On Wednesday: <code>completionCount (0) + remainingFeasibleDays (5: Wed–Sun) = 5</code> → no violation yet because the target is still mathematically possible.</li>
+        <li>On Thursday: <code>completionCount (0) + remainingFeasibleDays (4: Thu–Sun) = 4 &lt; 5</code> → violation should be written immediately without waiting for Monday.</li>
+        <li>Recovery should trigger on Thursday (count ≥ threshold 1).</li>
       </ul>
 
       <h5>If it does not fire</h5>

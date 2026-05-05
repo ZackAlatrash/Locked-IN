@@ -62,7 +62,7 @@ func runNonNegotiableEngineSimulation() {
         print("Session over-cap kind: \(overCapSession.kind.rawValue) (expected extra)")
 
         engine.evaluateWeekIfNeeded(&sessionNN, weekEnding: DateRules.date(year: 2026, month: 1, day: 11, hour: 23, minute: 59, calendar: calendar))
-        print("Session Week 1 violations: \(sessionNN.windows[0].weeklyViolationCount) (expected 0)")
+        print("Session Week 1 violations: \(sessionNN.violationCount(inWindow: 0)) (expected 0)")
 
         // Week 2 intentionally under-completed for weekly violation.
         _ = try engine.recordCompletion(&sessionNN, at: DateRules.date(year: 2026, month: 1, day: 12, hour: 8, calendar: calendar))
@@ -542,6 +542,30 @@ func runNonNegotiableEngineSimulation() {
         verify(
             "Grace Case 8 - Friday 5x/week remains grace-exempt",
             fridayFivePerWeek.violations.contains(where: { $0.kind == .missedWeeklyFrequency }) == false
+        )
+
+        var intraWeekFivePerWeek = try engine.create(
+            definition: fivePerWeekDefinition,
+            startDate: DateRules.date(year: 2026, month: 1, day: 12, hour: 9, calendar: calendar),
+            totalLockDays: 28
+        )
+        engine.evaluateIntraWeekSessionShortfallIfNeeded(
+            &intraWeekFivePerWeek,
+            at: DateRules.date(year: 2026, month: 1, day: 14, hour: 9, calendar: calendar)
+        )
+        verify(
+            "Intra-week Case 1 - Wednesday 5x/week is still feasible",
+            intraWeekFivePerWeek.violations.contains(where: { $0.kind == .missedWeeklyFrequency }) == false &&
+            intraWeekFivePerWeek.state == .active
+        )
+        engine.evaluateIntraWeekSessionShortfallIfNeeded(
+            &intraWeekFivePerWeek,
+            at: DateRules.date(year: 2026, month: 1, day: 15, hour: 9, calendar: calendar)
+        )
+        verify(
+            "Intra-week Case 2 - Thursday 5x/week triggers inevitable miss",
+            intraWeekFivePerWeek.violations.filter { $0.kind == .missedWeeklyFrequency }.count == 1 &&
+            intraWeekFivePerWeek.state == .recovery
         )
 
         let legacyJSON = """
