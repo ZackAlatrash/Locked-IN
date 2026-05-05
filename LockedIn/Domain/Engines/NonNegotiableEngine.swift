@@ -187,19 +187,29 @@ struct NonNegotiableEngine {
         guard nn.state != .retired, nn.state != .completed, nn.state != .suspended else { return }
 
         advanceWindowIfNeeded(&nn, currentDate: date)
-        guard let windowIndex = windowIndex(for: nn, date: date) else { return }
+        guard nn.state == .active || nn.state == .recovery else { return }
 
         let weekId = DateRules.weekID(for: date, calendar: calendar)
-        if nn.windows[windowIndex].weeksEvaluated.contains(weekId) {
+        let weekInterval = DateRules.weekInterval(containing: date, calendar: calendar)
+        let lockEnd = lockEndDate(for: nn)
+        guard weekInterval.start < lockEnd else { return }
+
+        let effectiveWeekEnd = min(weekInterval.end, lockEnd)
+        let weekLastMoment = calendar.date(byAdding: .second, value: -1, to: effectiveWeekEnd) ?? effectiveWeekEnd
+        guard let weeklyWindowIndex = windowIndex(for: nn, date: weekLastMoment)
+            ?? windowIndex(for: nn, date: weekInterval.start)
+            ?? windowIndex(for: nn, date: date) else {
             return
         }
 
-        let weekInterval = DateRules.weekInterval(containing: date, calendar: calendar)
+        if nn.windows[weeklyWindowIndex].weeksEvaluated.contains(weekId) {
+            return
+        }
+
         let completionCount = countCompletions(
             in: nn,
             for: weekId,
-            within: weekInterval,
-            windowIndex: windowIndex
+            within: weekInterval
         )
 
         let expected = expectedCompletionsPerWeek(for: nn.definition)
@@ -220,7 +230,7 @@ struct NonNegotiableEngine {
             expected: expected
         )
         let stateBefore = nn.state
-        let violationCountBefore = nn.violationCount(inWindow: windowIndex)
+        let violationCountBefore = nn.violationCount(inWindow: weeklyWindowIndex)
         let alreadyHasWeeklyViolation = nn.violations.contains { $0.weekId == weekId && $0.kind == .missedWeeklyFrequency }
         let shouldAppendMissedWeekly = completionCount < expected &&
             shouldSuppressShortfall == false &&
@@ -233,16 +243,16 @@ struct NonNegotiableEngine {
                 Violation(
                     date: date,
                     kind: .missedWeeklyFrequency,
-                    windowIndex: windowIndex,
+                    windowIndex: weeklyWindowIndex,
                     weekId: weekId
                 )
             )
         }
 
-        nn.windows[windowIndex].weeksEvaluated.insert(weekId)
+        nn.windows[weeklyWindowIndex].weeksEvaluated.insert(weekId)
         updateRecoveryState(
             &nn,
-            windowIndex: windowIndex,
+            windowIndex: weeklyWindowIndex,
             debugContext: RecoveryUpdateDebugContext(
                 source: "evaluateWeekIfNeeded",
                 tickDate: date,
@@ -274,7 +284,7 @@ struct NonNegotiableEngine {
                 shouldSuppressShortfall: shouldSuppressShortfall,
                 missedWeeklyAppended: shouldAppendMissedWeekly,
                 violationCountBefore: violationCountBefore,
-                violationCountAfter: nn.violationCount(inWindow: windowIndex),
+                violationCountAfter: nn.violationCount(inWindow: weeklyWindowIndex),
                 stateBefore: stateBefore,
                 stateAfter: nn.state
             )
@@ -309,7 +319,7 @@ struct NonNegotiableEngine {
             expected: expected
         ) { return }
 
-        let completionCount = countCompletions(in: nn, for: weekId, within: weekInterval, windowIndex: windowIndex)
+        let completionCount = countCompletions(in: nn, for: weekId, within: weekInterval)
 
         // Remaining days in the week that are within the lock period (today inclusive).
         let remainingFeasibleDays = feasibleCompletionDays(from: today, withinWeek: weekInterval, lock: nn.lock)
@@ -583,10 +593,8 @@ struct NonNegotiableEngine {
     private func countCompletions(
         in nn: NonNegotiable,
         for weekId: WeekID,
-        within weekInterval: DateInterval,
-        windowIndex: Int
+        within weekInterval: DateInterval
     ) -> Int {
-        let window = nn.windows[windowIndex]
         let lockEnd = lockEndDate(for: nn)
 
         return nn.completions.filter { record in
@@ -594,8 +602,6 @@ struct NonNegotiableEngine {
             && record.kind == .counted
             && record.date >= weekInterval.start
             && record.date < weekInterval.end
-            && record.date >= window.startDate
-            && record.date < window.endDate
             && record.date >= nn.lock.startDate
             && record.date < lockEnd
         }.count

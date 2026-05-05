@@ -568,6 +568,57 @@ func runNonNegotiableEngineSimulation() {
             intraWeekFivePerWeek.state == .recovery
         )
 
+        let onePerWeekDefinition = NonNegotiableDefinition(
+            title: "Boundary One Per Week",
+            frequencyPerWeek: 1,
+            mode: .session,
+            goalId: UUID()
+        )
+        let tuesdayBoundaryStart = DateRules.date(year: 2026, month: 1, day: 6, hour: 9, calendar: calendar)
+        let affectedWeekCompletion = DateRules.date(year: 2026, month: 1, day: 19, hour: 8, calendar: calendar)
+        let affectedWeekEnd = DateRules.date(year: 2026, month: 1, day: 25, hour: 23, minute: 59, calendar: calendar)
+
+        var boundarySatisfied = try engine.create(
+            definition: onePerWeekDefinition,
+            startDate: tuesdayBoundaryStart,
+            totalLockDays: 28
+        )
+        _ = try engine.recordCompletion(&boundarySatisfied, at: affectedWeekCompletion)
+        engine.evaluateWeekIfNeeded(&boundarySatisfied, weekEnding: affectedWeekEnd)
+        verify(
+            "Boundary Case 1 - completion before Tuesday window boundary counts for full ISO week",
+            boundarySatisfied.violations.contains(where: { $0.kind == .missedWeeklyFrequency }) == false &&
+            boundarySatisfied.windows.indices.contains(1) &&
+            boundarySatisfied.windows[1].weeksEvaluated.contains(DateRules.weekID(for: affectedWeekEnd, calendar: calendar))
+        )
+
+        var boundaryMissed = try engine.create(
+            definition: onePerWeekDefinition,
+            startDate: tuesdayBoundaryStart,
+            totalLockDays: 28
+        )
+        engine.evaluateWeekIfNeeded(&boundaryMissed, weekEnding: affectedWeekEnd)
+        let boundaryMiss = boundaryMissed.violations.first { $0.kind == .missedWeeklyFrequency }
+        verify(
+            "Boundary Case 2 - skipped boundary week emits violation in week-end window",
+            boundaryMissed.violations.filter { $0.kind == .missedWeeklyFrequency }.count == 1 &&
+            boundaryMiss?.windowIndex == 1 &&
+            boundaryMissed.state == .recovery
+        )
+
+        var lockEndedMidWeek = try engine.create(
+            definition: onePerWeekDefinition,
+            startDate: DateRules.date(year: 2026, month: 1, day: 6, hour: 9, calendar: calendar),
+            totalLockDays: 28
+        )
+        let finalWeekEnd = DateRules.date(year: 2026, month: 2, day: 8, hour: 23, minute: 59, calendar: calendar)
+        engine.evaluateWeekIfNeeded(&lockEndedMidWeek, weekEnding: finalWeekEnd)
+        verify(
+            "Boundary Case 3 - completed lock is not re-evaluated into recovery",
+            lockEndedMidWeek.state == .completed &&
+            lockEndedMidWeek.violations.contains(where: { $0.kind == .missedWeeklyFrequency }) == false
+        )
+
         let legacyJSON = """
         {
           "title":"Legacy NN",
