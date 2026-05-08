@@ -7,4 +7,8 @@ enum NonNegotiableState: String, Codable, Equatable {
     case suspended
     case completed
     case retired
+
+    var isTerminal: Bool {
+        self == .retired || self == .completed
+    }
 }

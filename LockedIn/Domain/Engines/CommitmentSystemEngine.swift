@@ -124,40 +124,57 @@ final class CommitmentSystemEngine {
         in system: inout CommitmentSystem,
         calendar: Calendar = DateRules.isoCalendar
     ) {
-        // Evaluate the most recently closed day so the result is deterministic and
-        // does not depend on what time the app happened to run today.
         let today = DateRules.startOfDay(referenceDate, calendar: calendar)
-        guard let evaluationDay = calendar.date(byAdding: .day, value: -1, to: today) else {
-            return
-        }
+        guard let yesterday = calendar.date(byAdding: .day, value: -1, to: today) else { return }
 
-        if let last = system.lastRecoveryEvaluationDay,
-           last >= evaluationDay {
-            return
-        }
-
-        guard isSystemInRecovery(system) else {
-            system.recoveryCleanDayStreak = 0
-            system.lastRecoveryEvaluationDay = evaluationDay
-            return
-        }
-
-        if isCleanRecoveryDay(evaluationDay, in: system, calendar: calendar) {
-            system.recoveryCleanDayStreak += 1
+        // Determine the first unchecked day. If we have never evaluated, start from yesterday only.
+        let firstUnchecked: Date
+        if let last = system.lastRecoveryEvaluationDay {
+            guard last < yesterday else { return }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: last) else { return }
+            firstUnchecked = next
         } else {
-            system.recoveryCleanDayStreak = 0
+            firstUnchecked = yesterday
         }
 
-        if system.recoveryCleanDayStreak >= 7 {
-            for index in system.nonNegotiables.indices where system.nonNegotiables[index].state == .recovery {
-                system.nonNegotiables[index].state = .active
+        // Walk every unchecked closed day up through yesterday (catch-up loop for REC-EC-01/02).
+        var cursor = firstUnchecked
+        while cursor <= yesterday {
+            defer {
+                cursor = calendar.date(byAdding: .day, value: 1, to: cursor) ?? yesterday.addingTimeInterval(1)
             }
 
-            resumeSuspendedIfCapacityAllows(in: &system, recoveryRestoredAt: referenceDate)
-            system.recoveryCleanDayStreak = 0
-        }
+            guard isSystemInRecovery(system) else {
+                // Recovery ended mid-loop; reset streak and keep advancing the pointer.
+                system.recoveryCleanDayStreak = 0
+                system.lastRecoveryEvaluationDay = cursor
+                continue
+            }
 
-        system.lastRecoveryEvaluationDay = evaluationDay
+            // REC-EC-11: do not count streak days while the entry popup is unresolved.
+            if system.recoveryEntryPendingResolution {
+                system.lastRecoveryEvaluationDay = cursor
+                continue
+            }
+
+            if isCleanRecoveryDay(cursor, in: system, calendar: calendar) {
+                system.recoveryCleanDayStreak += 1
+            } else {
+                system.recoveryCleanDayStreak = 0
+            }
+
+            if system.recoveryCleanDayStreak >= 7 {
+                // REC-EC-13: set recoveryRestoredAt on recovery→active protocols (not just suspended ones).
+                for index in system.nonNegotiables.indices where system.nonNegotiables[index].state == .recovery {
+                    system.nonNegotiables[index].state = .active
+                    system.nonNegotiables[index].recoveryRestoredAt = referenceDate
+                }
+                resumeSuspendedIfCapacityAllows(in: &system, recoveryRestoredAt: referenceDate)
+                system.recoveryCleanDayStreak = 0
+            }
+
+            system.lastRecoveryEvaluationDay = cursor
+        }
     }
 
     @discardableResult
@@ -179,9 +196,10 @@ final class CommitmentSystemEngine {
 
         let recoveryEligibleIds = recoveryEligibleProtocolIds(in: system)
         let recoveryEligibleCount = recoveryEligibleIds.count
+        let activeRecoverySupportCount = system.nonNegotiables.filter { $0.state == .active }.count
 
         let hasRecovery = system.nonNegotiables.contains(where: { $0.state == .recovery })
-        if hasRecovery && recoveryEligibleCount < 2 {
+        if hasRecovery && (recoveryEligibleCount < 2 || activeRecoverySupportCount == 0) {
             for index in system.nonNegotiables.indices where system.nonNegotiables[index].state == .recovery {
                 system.nonNegotiables[index].state = .active
             }
@@ -192,6 +210,19 @@ final class CommitmentSystemEngine {
         }
 
         let stillInRecovery = system.nonNegotiables.contains(where: { $0.state == .recovery })
+
+        // REC-EC-06/17: Resume orphan .suspended protocols when no recovery is active and no
+        // recoveryPausedProtocolId is set. These are stuck protocols that got stranded (e.g. app
+        // killed between domain pause and recovery state write, or legacy data).
+        if !stillInRecovery && system.recoveryPausedProtocolId == nil {
+            resumeSuspendedIfCapacityAllows(in: &system, recoveryRestoredAt: referenceDate)
+        }
+
+        // REC-EC-08: Streak cannot legally reach 7 while recovery is still active in the same
+        // normalization pass. Clamp to 6 to prevent a phantom exit in the next tick.
+        if stillInRecovery && system.recoveryCleanDayStreak >= 7 {
+            system.recoveryCleanDayStreak = 6
+        }
 
         if stillInRecovery {
             let pendingDecision = recomputeRecoveryEntryPendingDecision(in: system)
@@ -271,7 +302,9 @@ final class CommitmentSystemEngine {
     func advanceWindows(currentDate: Date, in system: inout CommitmentSystem) {
         for index in system.nonNegotiables.indices {
             let state = system.nonNegotiables[index].state
-            if state != .active && state != .recovery {
+            // LIF-EC-11: include .suspended so a suspended protocol reaching lock end becomes
+            // .completed rather than remaining suspended indefinitely.
+            if state != .active && state != .recovery && state != .suspended {
                 continue
             }
 
@@ -386,13 +419,7 @@ final class CommitmentSystemEngine {
     }
 
     private func recoveryPauseCandidateIds(in system: CommitmentSystem) -> [UUID] {
-        let activeCandidates = sortedProtocolIds(in: system) { $0.state == .active }
-        if activeCandidates.isEmpty == false {
-            return activeCandidates
-        }
-
-        let recoveryCandidates = sortedProtocolIds(in: system) { $0.state == .recovery }
-        return recoveryCandidates.count > 1 ? recoveryCandidates : []
+        return sortedProtocolIds(in: system) { $0.state == .active }
     }
 
     private func sortedProtocolIds(

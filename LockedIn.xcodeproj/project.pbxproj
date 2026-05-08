@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CE2C49BC6C41474586C190A6 /* RecoveryModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A75BCB96F24A81987DAB69 /* RecoveryModeTests.swift */; };
+		A1B2C3D4E5F67890A1B2C3D4 /* LifecycleProtocolStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F67891A1B2C3D4 /* LifecycleProtocolStateTests.swift */; };
 		404BE58F2F9AD6F80028D4ED /* WelcomeContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 404BE58E2F9AD6F80028D4ED /* WelcomeContentView.swift */; };
 		404BE5912F9C33070028D4ED /* icons8-gavel-100.png in Resources */ = {isa = PBXBuildFile; fileRef = 404BE5902F9C33060028D4ED /* icons8-gavel-100.png */; };
 		40A77A482F3CD39800BC4E39 /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40A77A382F3CD39800BC4E39 /* GlassCard.swift */; };
@@ -119,7 +121,20 @@
 		A10000000000000000000054 /* LogsWalkthroughOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000054 /* LogsWalkthroughOverlay.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		4803F339CCF043B491ACE229 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 40A779EA2F3CCA1E00BC4E39 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 40A779F12F3CCA1E00BC4E39;
+			remoteInfo = LockedIn;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		F6A75BCB96F24A81987DAB69 /* RecoveryModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryModeTests.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F67891A1B2C3D4 /* LifecycleProtocolStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifecycleProtocolStateTests.swift; sourceTree = "<group>"; };
+		77401DC07B9C484688DCC003 /* LockedInTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LockedInTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		404BE58E2F9AD6F80028D4ED /* WelcomeContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeContentView.swift; sourceTree = "<group>"; };
 		404BE5902F9C33060028D4ED /* icons8-gavel-100.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icons8-gavel-100.png"; sourceTree = "<group>"; };
 		40A779F22F3CCA1E00BC4E39 /* Locked In: Protocol.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Locked In: Protocol.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -236,6 +251,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		243C94FC0B3F46168A1C02AC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		40A779EF2F3CCA1E00BC4E39 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -342,6 +364,7 @@
 			isa = PBXGroup;
 			children = (
 				40A77A472F3CD39800BC4E39 /* LockedIn */,
+				D146D5D7B56E478798E6D48A /* LockedInTests */,
 				40A779F32F3CCA1E00BC4E39 /* Products */,
 				403C397F2F44F45200F8E21B /* Recovered References */,
 			);
@@ -351,8 +374,18 @@
 			isa = PBXGroup;
 			children = (
 				40A779F22F3CCA1E00BC4E39 /* Locked In: Protocol.app */,
+				77401DC07B9C484688DCC003 /* LockedInTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		D146D5D7B56E478798E6D48A /* LockedInTests */ = {
+			isa = PBXGroup;
+			children = (
+				F6A75BCB96F24A81987DAB69 /* RecoveryModeTests.swift */,
+				A1B2C3D4E5F67891A1B2C3D4 /* LifecycleProtocolStateTests.swift */,
+			);
+			path = LockedInTests;
 			sourceTree = "<group>";
 		};
 		40A77A372F3CD39800BC4E39 /* App */ = {
@@ -505,6 +538,26 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		2EC814035A994C3383DE36CB /* LockedInTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 28E1B05A1E774FA7B4EF357D /* Build configuration list for PBXNativeTarget "LockedInTests" */;
+			buildPhases = (
+				299341998E484BCE8291FEB9 /* Sources */,
+				243C94FC0B3F46168A1C02AC /* Frameworks */,
+				FC0F8E0DB75145F29E69DB9D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A9AEB5E125AA4DA4AAA57C14 /* PBXTargetDependency */,
+			);
+			name = LockedInTests;
+			packageProductDependencies = (
+			);
+			productName = LockedInTests;
+			productReference = 77401DC07B9C484688DCC003 /* LockedInTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		40A779F12F3CCA1E00BC4E39 /* LockedIn */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 40A779FF2F3CCA1F00BC4E39 /* Build configuration list for PBXNativeTarget "LockedIn" */;
@@ -534,6 +587,10 @@
 				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					2EC814035A994C3383DE36CB = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = 40A779F12F3CCA1E00BC4E39;
+					};
 					40A779F12F3CCA1E00BC4E39 = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -554,11 +611,19 @@
 			projectRoot = "";
 			targets = (
 				40A779F12F3CCA1E00BC4E39 /* LockedIn */,
+				2EC814035A994C3383DE36CB /* LockedInTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		FC0F8E0DB75145F29E69DB9D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		40A779F02F3CCA1E00BC4E39 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -572,6 +637,15 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		299341998E484BCE8291FEB9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CE2C49BC6C41474586C190A6 /* RecoveryModeTests.swift in Sources */,
+				A1B2C3D4E5F67890A1B2C3D4 /* LifecycleProtocolStateTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		40A779EE2F3CCA1E00BC4E39 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -688,7 +762,65 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		A9AEB5E125AA4DA4AAA57C14 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 40A779F12F3CCA1E00BC4E39 /* LockedIn */;
+			targetProxy = 4803F339CCF043B491ACE229 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		71A5D4D6277F48289C3D2C12 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2A6452539P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lockedin.LockedInTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Locked In: Protocol.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Locked In: Protocol";
+			};
+			name = Debug;
+		};
+		F1EDBE9177E24963A810B212 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2A6452539P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lockedin.LockedInTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Locked In: Protocol.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Locked In: Protocol";
+			};
+			name = Release;
+		};
 		40A779FD2F3CCA1F00BC4E39 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -819,6 +951,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2A6452539P;
+				ENABLE_TESTABILITY = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LockedIn/Resources/Info.plist;
@@ -834,6 +967,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Epistles-of-Wisdom.LockedIn";
+				PRODUCT_MODULE_NAME = LockedIn;
 				PRODUCT_NAME = "Locked In: Protocol";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -855,6 +989,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2A6452539P;
+				ENABLE_TESTABILITY = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LockedIn/Resources/Info.plist;
@@ -870,6 +1005,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Epistles-of-Wisdom.LockedIn";
+				PRODUCT_MODULE_NAME = LockedIn;
 				PRODUCT_NAME = "Locked In: Protocol";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -885,6 +1021,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		28E1B05A1E774FA7B4EF357D /* Build configuration list for PBXNativeTarget "LockedInTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				71A5D4D6277F48289C3D2C12 /* Debug */,
+				F1EDBE9177E24963A810B212 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		40A779ED2F3CCA1E00BC4E39 /* Build configuration list for PBXProject "LockedIn" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

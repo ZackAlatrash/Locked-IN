@@ -163,6 +163,16 @@ final class PlanStore: ObservableObject {
     }
 
     func selectProtocol(_ id: UUID?) {
+        guard let id else {
+            selectedQueueProtocolId = nil
+            return
+        }
+
+        guard queueItems.first(where: { $0.protocolId == id })?.isDisabled != true else {
+            selectedQueueProtocolId = nil
+            return
+        }
+
         if selectedQueueProtocolId == id {
             selectedQueueProtocolId = nil
         } else {
@@ -176,7 +186,9 @@ final class PlanStore: ObservableObject {
             return
         }
 
-        if queueItems.contains(where: { $0.protocolId == id }) || protocolsById[id] != nil {
+        if queueItems.first(where: { $0.protocolId == id })?.isDisabled == true {
+            selectedQueueProtocolId = nil
+        } else if queueItems.contains(where: { $0.protocolId == id }) || protocolsById[id] != nil {
             selectedQueueProtocolId = id
         } else {
             selectedQueueProtocolId = nil
@@ -200,6 +212,7 @@ final class PlanStore: ObservableObject {
         }
 
         buildProtocolDescriptors(from: system, referenceDate: referenceDate)
+        repairPausedAllocations(referenceDate: referenceDate)
         normalizeAllocations()
         buildQueue(referenceDate: referenceDate)
         buildWeekDays(referenceDate: referenceDate)
@@ -399,6 +412,32 @@ final class PlanStore: ObservableObject {
 
         guard didMutate else { return }
         saveAndRefresh()
+    }
+
+    private func repairPausedAllocations(referenceDate: Date) {
+        guard let lastSystem else { return }
+        let statesById = Dictionary(uniqueKeysWithValues: lastSystem.nonNegotiables.map { ($0.id, $0.state) })
+        let today = DateRules.startOfDay(referenceDate, calendar: calendar)
+        var didMutate = false
+
+        for index in allAllocations.indices where allAllocations[index].status == .paused {
+            let allocationDay = DateRules.startOfDay(allAllocations[index].day, calendar: calendar)
+            let state = statesById[allAllocations[index].protocolId]
+            let shouldSkip =
+                allocationDay < today ||
+                state == nil ||
+                state?.isTerminal == true
+
+            if shouldSkip {
+                allAllocations[index].status = .skippedDueToRecovery
+                allAllocations[index].updatedAt = Date()
+                didMutate = true
+            }
+        }
+
+        if didMutate {
+            try? repository.save(allAllocations)
+        }
     }
 
     func reconcileAfterCompletion(

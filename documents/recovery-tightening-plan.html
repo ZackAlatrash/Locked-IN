@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recovery Mode Tightening Plan — Locked IN</title>
+  <style>
+    :root {
+      --bg: #f5f1ea;
+      --panel: #fffdfa;
+      --ink: #1f2937;
+      --muted: #5b6472;
+      --line: #d7d2ca;
+      --accent: #9f1d1d;
+      --accent-soft: #fde8e8;
+      --warn: #8a5a00;
+      --warn-soft: #fff4db;
+      --good: #165c3a;
+      --good-soft: #e8f6ee;
+      --info: #1a4a7a;
+      --info-soft: #e8f0fb;
+      --danger: #9f1d1d;
+      --danger-soft: #fde8e8;
+      --proposed: #5b3a8a;
+      --proposed-soft: #f0e8fb;
+      --neutral: #374151;
+      --mono: "SFMono-Regular", "Menlo", "Consolas", monospace;
+      --sans: "Inter", "Helvetica Neue", "Arial", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: linear-gradient(180deg, #f7f3ed 0%, #f1ebe2 100%);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 40px 24px 100px; }
+
+    h1, h2, h3, h4 { line-height: 1.15; margin: 0 0 12px; }
+    h1 { font-size: 34px; letter-spacing: -0.03em; }
+    h2 { margin-top: 52px; font-size: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--line); }
+    h3 { margin-top: 20px; font-size: 16px; font-weight: 700; }
+    p  { margin: 0 0 13px; }
+    ul, ol { margin: 0 0 14px 22px; }
+    li { margin: 0 0 7px; }
+    code { font-family: var(--mono); font-size: 0.86em; background: rgba(0,0,0,0.05); padding: 2px 5px; border-radius: 4px; }
+    strong { font-weight: 700; }
+
+    .hero {
+      background:
+        radial-gradient(circle at top right, rgba(159,29,29,0.08), transparent 35%),
+        var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 34px 36px 26px;
+      box-shadow: 0 12px 36px rgba(24,29,39,0.06);
+    }
+
+    .callout {
+      margin: 14px 0;
+      padding: 13px 17px;
+      border-radius: 11px;
+      border-left: 3px solid var(--line);
+      background: #fbf8f3;
+      font-size: 13.5px;
+      line-height: 1.55;
+    }
+    .callout.warn     { border-color: #d97706; background: var(--warn-soft); }
+    .callout.good     { border-color: #16a34a; background: var(--good-soft); }
+    .callout.info     { border-color: #2563eb; background: var(--info-soft); }
+    .callout.danger   { border-color: #dc2626; background: var(--danger-soft); }
+    .callout.proposed { border-color: #7c3aed; background: var(--proposed-soft); }
+
+    .pill { display: inline-block; padding: 2px 9px; border-radius: 100px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
+    .pill.p0      { background: var(--danger-soft);   color: var(--danger);   border: 1px solid #fca5a5; }
+    .pill.p1      { background: var(--warn-soft);     color: var(--warn);     border: 1px solid #fcd34d; }
+    .pill.p2      { background: var(--proposed-soft); color: var(--proposed); border: 1px solid #c4b5fd; }
+    .pill.done    { background: var(--good-soft);     color: var(--good);     border: 1px solid #86efac; }
+    .pill.neutral { background: #f3f4f6;              color: var(--neutral);  border: 1px solid #d1d5db; }
+
+    /* ── Step card ────────────────────────────────────── */
+    .step {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      margin-top: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(24,29,39,0.04);
+    }
+
+    .step-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 18px 22px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #f9f6f1;
+    }
+
+    .step-badge {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-badge.p0 { background: var(--danger-soft); color: var(--danger); border: 2px solid #fca5a5; }
+    .step-badge.p1 { background: var(--warn-soft);   color: var(--warn);   border: 2px solid #fcd34d; }
+    .step-badge.p2 { background: var(--proposed-soft); color: var(--proposed); border: 2px solid #c4b5fd; }
+
+    .step-head-meta { flex: 1; }
+    .step-head-meta h3 { margin: 0 0 6px; font-size: 16px; }
+    .step-meta-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+    .meta-item {
+      font-size: 11.5px;
+      color: var(--muted);
+      background: rgba(0,0,0,0.04);
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .step-body { padding: 20px 22px; }
+    .step-body > h4 {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--muted); margin: 18px 0 8px;
+    }
+    .step-body > h4:first-child { margin-top: 0; }
+
+    /* ── Code block ───────────────────────────────────── */
+    pre {
+      background: #1e2030;
+      color: #cdd6f4;
+      border-radius: 11px;
+      padding: 15px 18px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.7;
+      margin: 10px 0 14px;
+    }
+    pre .c { color: #6c7086; }
+    pre .k { color: #cba6f7; }
+    pre .s { color: #a6e3a1; }
+    pre .t { color: #89dceb; }
+    pre .n { color: #fab387; }
+    pre .f { color: #89b4fa; }
+
+    /* ── Acceptance checklist ─────────────────────────── */
+    .checks {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .checks li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13.5px;
+      padding: 8px 12px;
+      border-radius: 9px;
+      margin-bottom: 5px;
+      background: #f6f3ee;
+      border: 1px solid var(--line);
+    }
+    .checks li::before {
+      content: '✓';
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--good);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── Table ────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; margin: 12px 0 18px; }
+    table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font-size: 13px; }
+    th, td { vertical-align: top; text-align: left; padding: 9px 13px; border-bottom: 1px solid var(--line); }
+    th { background: #f3ede4; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Phase divider ────────────────────────────────── */
+    .phase-header {
+      display: flex; align-items: center; gap: 14px;
+      margin: 40px 0 0;
+    }
+    .phase-header::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+    .phase-label {
+      font-weight: 800; font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.08em; padding: 5px 14px; border-radius: 100px;
+      white-space: nowrap;
+    }
+    .phase-label.p0 { background: var(--danger-soft); color: var(--danger); }
+    .phase-label.p1 { background: var(--warn-soft); color: var(--warn); }
+    .phase-label.p2 { background: var(--proposed-soft); color: var(--proposed); }
+
+    /* ── Nav pills ────────────────────────────────────── */
+    .nav-pills { display: flex; flex-wrap: wrap; gap: 7px; margin: 16px 0 0; }
+    .nav-pills a { text-decoration: none; color: var(--muted); font-size: 12.5px; padding: 4px 11px; border: 1px solid var(--line); border-radius: 100px; background: var(--panel); }
+    .nav-pills a:hover { color: var(--ink); border-color: #a0aab4; }
+
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 14px; }
+    .stat { text-align: center; padding: 16px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+    .stat .n { font-size: 28px; font-weight: 900; letter-spacing: -0.04em; line-height: 1; margin-bottom: 5px; }
+    .stat .l { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat.danger .n { color: var(--danger); }
+    .stat.warn .n   { color: var(--warn); }
+    .stat.good .n   { color: var(--good); }
+
+    .footer { margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+      <span class="pill p0">3 P0 fixes</span>
+      <span class="pill p1">5 P1 fixes</span>
+      <span class="pill p2">4 edge-case hardening steps</span>
+      <span class="pill neutral">12 steps total</span>
+      <span class="pill neutral">May 2026</span>
+    </div>
+    <h1>Recovery Mode — Tightening Plan</h1>
+    <p style="color:var(--muted); font-size:15px; margin:0 0 16px;">Step-by-step implementation plan to close all identified gaps, harden edge cases, and make recovery mode airtight. Each step is independently shippable and includes acceptance checks you can run manually or automate later.</p>
+    <div class="nav-pills">
+      <a href="#overview">Overview</a>
+      <a href="#phase-a">Phase A — Critical</a>
+      <a href="#phase-b">Phase B — Correctness</a>
+      <a href="#phase-c">Phase C — Edge Cases</a>
+      <a href="#phase-d">Phase D — Coverage</a>
+      <a href="#order">Execution Order</a>
+    </div>
+  </div>
+
+  <!-- STAT SUMMARY -->
+  <div class="grid-3" style="margin-top:18px;">
+    <div class="stat danger">
+      <div class="n">3</div>
+      <div class="l">P0 — must fix before next release</div>
+    </div>
+    <div class="stat warn">
+      <div class="n">5</div>
+      <div class="l">P1 — fix in next sprint</div>
+    </div>
+    <div class="stat good">
+      <div class="n">4</div>
+      <div class="l">Edge case + coverage steps</div>
+    </div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <h2 id="overview">Overview</h2>
+  <div class="callout info">
+    This plan is derived from a full source audit of the recovery mode implementation. All file names, function names, and line-level observations are verified against the current code. Steps are ordered so each one can be implemented, tested, and committed independently.
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Step</th><th>Gap/EC</th><th>Priority</th><th>Effort</th><th>Touches</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Fix pause candidate filter</td><td>G-1</td><td><span class="pill p0">P0</span></td><td>30 min</td><td>CommitmentSystemStore</td></tr>
+        <tr><td>2</td><td>Add rollback to pause coordinator</td><td>G-2</td><td><span class="pill p0">P0</span></td><td>45 min</td><td>CommitmentSystemStore</td></tr>
+        <tr><td>3</td><td>Verify regulator suspension filter</td><td>G-11</td><td><span class="pill p0">P0</span></td><td>20 min</td><td>PlanRegulatorEngine (audit only)</td></tr>
+        <tr><td>4</td><td>Add <code>isTerminalState</code> + extend decode validation</td><td>G-8 + EC-10</td><td><span class="pill p1">P1</span></td><td>45 min</td><td>CommitmentSystem, NonNegotiableState</td></tr>
+        <tr><td>5</td><td>Finalize allocations atomically on retirement</td><td>G-5</td><td><span class="pill p1">P1</span></td><td>30 min</td><td>CommitmentSystemStore, PlanStore</td></tr>
+        <tr><td>6</td><td>Guard zero-target week in both engines</td><td>G-9 + EC-15</td><td><span class="pill p1">P1</span></td><td>30 min</td><td>NonNegotiableEngine, CommitmentSystemEngine</td></tr>
+        <tr><td>7</td><td>One-time threshold migration pass</td><td>G-12</td><td><span class="pill p1">P1</span></td><td>30 min</td><td>CommitmentSystemStore (app launch)</td></tr>
+        <tr><td>8</td><td>Resolve unused referenceDate parameters</td><td>G-3</td><td><span class="pill p1">P1</span></td><td>20 min</td><td>CommitmentSystemStore</td></tr>
+        <tr><td>9</td><td>Best-violation trigger ID selection</td><td>EC-8</td><td><span class="pill p2">P2</span></td><td>20 min</td><td>CommitmentSystemStore</td></tr>
+        <tr><td>10</td><td>Multi-protocol popup entry copy</td><td>EC-9</td><td><span class="pill p2">P2</span></td><td>30 min</td><td>RecoveryModeViewModel, RecoveryModePopup</td></tr>
+        <tr><td>11</td><td>Empty-system guard + single-protocol audit</td><td>EC-12 + EC-16</td><td><span class="pill p2">P2</span></td><td>20 min</td><td>CommitmentSystemStore, CommitmentSystemEngine</td></tr>
+        <tr><td>12</td><td>Simulation coverage for T-35 – T-44</td><td>All new tests</td><td><span class="pill p2">P2</span></td><td>2 hr</td><td>CommitmentSystemSimulation or new file</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════ PHASE A ═══════════════ -->
+  <div class="phase-header" id="phase-a">
+    <span class="phase-label p0">Phase A — Critical (P0)</span>
+  </div>
+
+  <!-- ─── STEP 1 ─── -->
+  <div class="step" id="step-1">
+    <div class="step-head">
+      <div class="step-badge p0">1</div>
+      <div class="step-head-meta">
+        <h3>Fix pause candidate filter — stop offering recovery protocols as pause targets</h3>
+        <div class="step-meta-row">
+          <span class="pill p0">P0</span>
+          <span class="meta-item">⏱ 30 min</span>
+          <span class="meta-item">📁 CommitmentSystemStore.swift</span>
+          <span class="meta-item">🔗 Gap G-1</span>
+          <span class="meta-item">No dependencies</span>
+        </div>
+      </div>
+    </div>
+    <div class="step-body">
+      <h4>Background</h4>
+      <p><code>recoveryPauseCandidateIds()</code> currently falls back to returning <code>.recovery</code> protocols when no <code>.active</code> protocols exist. This means a user with two protocols both in recovery could be asked to pause one of the recovering protocols — which provides zero capacity relief and semantically makes no sense. If the fallback is selected, the system ends up with a suspended-but-still-recovering protocol and a dangling paused reference.</p>
+
+      <h4>What to change</h4>
+      <p><strong>File:</strong> <code>CommitmentSystemStore.swift</code> → <code>recoveryPauseCandidateIds(in:)</code></p>
+      <pre><code><span class="c">// BEFORE (lines 862-870):</span>
+<span class="k">private func</span> <span class="f">recoveryPauseCandidateIds</span>(in system: <span class="t">CommitmentSystem</span>) -> [<span class="t">UUID</span>] {
+    <span class="k">let</span> activeCandidates = sortedNonNegotiableIds(in: system) { $0.state == .active }
+    <span class="k">if</span> activeCandidates.isEmpty == <span class="k">false</span> { <span class="k">return</span> activeCandidates }
+    <span class="k">let</span> recoveryCandidates = sortedNonNegotiableIds(in: system) { $0.state == .recovery }
+    <span class="k">return</span> recoveryCandidates.count > <span class="n">1</span> ? recoveryCandidates : []
+}
+
+<span class="c">// AFTER — never offer recovery protocols as candidates:</span>
+<span class="k">private func</span> <span class="f">recoveryPauseCandidateIds</span>(in system: <span class="t">CommitmentSystem</span>) -> [<span class="t">UUID</span>] {
+    <span class="k">return</span> sortedNonNegotiableIds(in: system) { $0.state == .active }
+    <span class="c">// If result is empty, caller sets recoveryEntryRequiresPauseSelection = false</span>
+}</code></pre>
+      <p>Also update <code>handleRecoveryTransition()</code> line 845 — the logic for setting <code>recoveryEntryRequiresPauseSelection</code> already uses <code>candidateIds.isEmpty == false</code>, so it will automatically set the flag to <code>false</code> when no active protocols are available. No additional change needed there.</p>
+
+      <h4>Acceptance checks</h4>
+      <ul class="checks">
+        <li>Create two session protocols. Advance dates to put both in recovery. Open app — popup appears. The selection step shows zero candidates, popup skips directly to confirmed step without offering a selection.</li>
+        <li>Create two protocols where one is active and one is in recovery. Popup shows only the active protocol as a candidate, never the recovering one.</li>
+        <li>Verify <code>recoveryEntryRequiresPauseSelection == false</code> when <code>candidateIds.isEmpty</code>.</li>
+        <li>Verify no protocol ever enters <code>.suspended</code> state via this path when all candidates are <code>.recovery</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─── STEP 2 ─── -->
+  <div class="step" id="step-2">
+    <div class="step-head">
+      <div class="step-badge p0">2</div>
+      <div class="step-head-meta">
+        <h3>Add rollback to the two-store pause coordinator</h3>
+        <div class="step-meta-row">
+          <span class="pill p0">P0</span>
+          <span class="meta-item">⏱ 45 min</span>
+          <span class="meta-item">📁 CommitmentSystemStore.swift</span>
+          <span class="meta-item">🔗 Gap G-2</span>
+          <span class="meta-item">No dependencies</span>
+        </div>
+      </div>
+    </div>
+    <div class="step-body">
+      <h4>Background</h4>
+      <p><code>pauseProtocolForRecoveryWithPlanSync()</code> calls <code>pauseProtocolForRecovery()</code> (which mutates commitment state and persists) then calls <code>planStore.pauseAllocations()</code>. If the plan store call fails or throws after the commitment store has already persisted, the domain shows the protocol as <code>.suspended</code> but all its future allocations remain <code>.active</code>. The plan and domain are now out of sync. The current code has no rollback.</p>
+
+      <h4>What to change</h4>
+      <p><strong>File:</strong> <code>CommitmentSystemStore.swift</code> → <code>pauseProtocolForRecoveryWithPlanSync()</code></p>
+      <pre><code><span class="c">// BEFORE (lines 463-475) — no rollback:</span>
+<span class="k">func</span> <span class="f">pauseProtocolForRecoveryWithPlanSync</span>(
+    protocolId: <span class="t">UUID</span>,
+    planStore: <span class="t">PlanStore</span>,
+    referenceDate: <span class="t">Date</span> = Date()
+) <span class="k">throws</span> {
+    <span class="k">try</span> pauseProtocolForRecovery(protocolId: protocolId)
+    guard system.recoveryPausedProtocolId == protocolId,
+          nonNegotiable(id: protocolId)?.state == .suspended <span class="k">else</span> { <span class="k">return</span> }
+    planStore.pauseAllocations(for: protocolId, referenceDate: referenceDate)
+}
+
+<span class="c">// AFTER — snapshot + rollback on plan failure:</span>
+<span class="k">func</span> <span class="f">pauseProtocolForRecoveryWithPlanSync</span>(
+    protocolId: <span class="t">UUID</span>,
+    planStore: <span class="t">PlanStore</span>,
+    referenceDate: <span class="t">Date</span> = Date()
+) <span class="k">throws</span> {
+    <span class="c">// 1. Capture snapshot before any mutation</span>
+    <span class="k">let</span> systemSnapshot = system
+
+    <span class="c">// 2. Mutate commitment store (throws on validation failure)</span>
+    <span class="k">try</span> pauseProtocolForRecovery(protocolId: protocolId)
+
+    guard system.recoveryPausedProtocolId == protocolId,
+          nonNegotiable(id: protocolId)?.state == .suspended <span class="k">else</span> { <span class="k">return</span> }
+
+    <span class="c">// 3. Attempt plan store update; rollback commitment store if it fails</span>
+    <span class="k">do</span> {
+        <span class="k">try</span> planStore.pauseAllocations(for: protocolId, referenceDate: referenceDate)
+    } <span class="k">catch</span> {
+        <span class="c">// Restore commitment store to pre-pause state</span>
+        system = systemSnapshot
+        persistSystem()
+        <span class="k">throw</span> error
+    }
+}</code></pre>
+      <div class="callout warn">Note: <code>PlanStore.pauseAllocations()</code> currently doesn't throw — it's <code>func pauseAllocations(...)</code>. Update its signature to <code>throws</code> so failures can propagate. If it cannot fail in practice, the rollback can remain as a safety net even for a non-throwing call (just remove the <code>try/catch</code> wrapper and call rollback unconditionally on any post-condition mismatch).</div>
+
+      <h4>Acceptance checks</h4>
+      <ul class="checks">
+        <li>Normal path: pause a protocol — verify both commitment store (protocol = <code>.suspended</code>) and plan store (future allocations = <code>.paused</code>) are updated atomically.</li>
+        <li>After successful pause, verify <code>system.recoveryPausedProtocolId</code> == paused protocol ID.</li>
+        <li>Failure simulation (requires DevOptions or unit test): if <code>pauseAllocations</code> is forced to throw, verify the commitment store rolls back to its snapshot — no protocol should be in <code>.suspended</code> state, <code>recoveryPausedProtocolId</code> should be nil.</li>
+        <li>Verify no partial state is persisted to disk during a failed pause.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─── STEP 3 ─── -->
+  <div class="step" id="step-3">
+    <div class="step-head">
+      <div class="step-badge p0">3</div>
+      <div class="step-head-meta">
+        <h3>Verify plan regulator suspension filter is complete</h3>
+        <div class="step-meta-row">
+          <span class="pill p0">P0</span>
+          <span class="meta-item">⏱ 20 min (audit)</span>
+          <span class="meta-item">📁 PlanRegulatorEngine.swift, PlanStore.swift</span>
+          <span class="meta-item">🔗 Gap G-11</span>
+          <span class="meta-item">No dependencies</span>
+        </div>
+      </div>
+    </div>
+    <div class="step-body">
+      <h4>Background</h4>
+      <p><strong>Good news:</strong> the regulator already handles this partially. Line 92 of <code>PlanRegulatorEngine.swift</code> filters out suspended protocols from the round-robin scheduler: <code>.filter { $0.state != .suspended && remainingSessions(for: $0) > 0 }</code>. Lines 70-81 handle suspended protocols separately — they generate a <code>.warning</code> suggestion with zero confidence, not an actual <code>PlanAllocationDraft</code>. This means the regulator does not draft allocations for suspended protocols.</p>
+      <p>However, the concern is whether any other code path creates allocations for suspended protocols independently of the regulator — for example, a manual placement flow, a "fill missing weeks" job, or any code that iterates all active protocols without checking the suspension flag.</p>
+
+      <h4>What to verify (audit checklist)</h4>
+      <ul>
+        <li>Search all sites in <code>PlanStore.swift</code> that create <code>PlanAllocation</code> objects. For each one, verify the protocol's state is checked and <code>.suspended</code> protocols are excluded.</li>
+        <li>Search for <code>PlanAllocation(</code> constructors across the codebase. Any that don't check <code>state != .suspended</code> are candidates for a bug.</li>
+        <li>Verify that when the regulator's output is applied by <code>PlanStore</code>, only <code>draftAllocations</code> are converted to real allocations — not <code>suggestions</code> of kind <code>.warning</code>.</li>
+        <li>If any allocation-creation path does not check suspension: add <code>guard protocol.state != .suspended else { continue }</code>.</li>
+      </ul>
+
+      <h4>Acceptance checks</h4>
+      <ul class="checks">
+        <li>Pause a protocol for recovery. Advance 3 weeks via DevOptions. Open Plan screen. Verify no new <code>.active</code> allocation rows exist for the suspended protocol in those 3 weeks.</li>
+        <li>Verify the plan regulator's output for those 3 weeks contains only <code>.warning</code> suggestions (not actual allocations) for the suspended protocol.</li>
+        <li>If a manual "place allocation" UI exists, verify it does not allow placement for a suspended protocol (policy gate should block this via <code>CommitmentPolicyEngine.canPlaceAllocation</code>).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PHASE B ═══════════════ -->
+  <div class="phase-header" id="phase-b">
+    <span class="phase-label p1">Phase B — Correctness (P1)</span>
+  </div>
+
+  <!-- ─── STEP 4 ─── -->
+  <div class="step" id="step-4">
+    <div class="step-head">
+      <div class="step-badge p1">4</div>
+      <div class="step-head-meta">
+        <h3>Add <code>isTerminalState</code> helper + extend post-decode validation</h3>
+        <div class="step-meta-row">
+          <span class="pill p1">P1</span>
+          <span class="meta-item">⏱ 45 min</span>
+          <span class="meta-item">📁 NonNegotiableState.swift, CommitmentSystem.swift</span>
+          <span class="meta-item">🔗 Gap G-8, EC-10</span>
+          <span class="meta-item">No dependencies</span>
+        </div>
+      </div>
+    </div>
+    <div class="step-body">
+      <h4>Background</h4>
+      <p>The post-decode validator in <code>CommitmentSystem.init(from:)</code> only builds <code>nonRetiredProtocolIds</code> — it checks <code>$0.state != .retired</code>. If a referenced protocol is in <code>.completed</code> state (lock period expired), the stale ID is NOT cleared. This also affects the normalization path in <code>CommitmentSystemEngine.normalizeRecoveryDomain</code>, which checks <code>pausedProtocolState != .suspended</code> but doesn't explicitly handle <code>.completed</code> either. Additionally, there is no guard that <code>recoveryPausedProtocolId ≠ recoveryEntryTriggerProtocolId</code>.</p>
+
+      <h4>Step 4a — Add <code>isTerminalState</code> to <code>NonNegotiableState</code></h4>
+      <p><strong>File:</strong> <code>NonNegotiableState.swift</code></p>
+      <pre><code><span class="k">extension</span> <span class="t">NonNegotiableState</span> {
+    <span class="c">/// A terminal state means the protocol is no longer active in any capacity.</span>
+    <span class="c">/// References to terminal protocols should be treated as stale.</span>
+    <span class="k">var</span> isTerminal: <span class="t">Bool</span> {
+        self == .retired || self == .completed
+    }
+}</code></pre>
+
+      <h4>Step 4b — Update post-decode validation in <code>CommitmentSystem.init(from:)</code></h4>
+      <p><strong>File:</strong> <code>CommitmentSystem.swift</code> lines 55-69</p>
+      <pre><code><span class="c">// BEFORE:</span>
+<span class="k">let</span> nonRetiredProtocolIds = Set(
+    nonNegotiables.filter { $0.state != .retired }.map(\.id)
+)
+
+<span class="c">// AFTER — use isTerminal to cover both .retired and .completed:</span>
+<span class="k">let</span> activeProtocolIds = Set(
+    nonNegotiables.filter { !$0.state.isTerminal }.map(\.id)
+)
+
+<span class="k">if let</span> pausedId = recoveryPausedProtocolId,
+   activeProtocolIds.contains(pausedId) == <span class="k">false</span> {
+    recoveryPausedProtocolId = <span class="k">nil</span>
+}
+
+<span class="k">if let</span> triggerId = recoveryEntryTriggerProtocolId,
+   activeProtocolIds.contains(triggerId) == <span class="k">false</span> {
+    recoveryEntryTriggerProtocolId = <span class="k">nil</span>
+}
+
+<span class="c">// New: paused and trigger IDs should never be the same protocol</span>
+<span class="k">if</span> recoveryPausedProtocolId != <span class="k">nil</span>
+   && recoveryPausedProtocolId == recoveryEntryTriggerProtocolId {
+    recoveryPausedProtocolId = <span class="k">nil</span>  <span class="c">// trigger is in recovery, cannot also be paused</span>
+}</code></pre>
+
+      <h4>Step 4c — Replace raw state checks in normalization with <code>isTerminal</code></h4>
+      <p><strong>File:</strong> <code>CommitmentSystemEngine.swift</code> → <code>normalizeRecoveryDomain()</code></p>
+      <p>The check <code>pausedProtocolState != .suspended</code> already catches the case where a protocol is completed/retired (those states aren't <code>.suspended</code>). However, update the comment and any explicit <code>== .retired</code> checks elsewhere in the engine to use <code>isTerminal</code> for clarity and correctness.</p>
+
+      <h4>Acceptance checks</h4>
+      <ul class="checks">
+        <li>Lock period expires on the paused protocol (state becomes <code>.completed</code>) while in recovery. Verify that on next app launch, <code>recoveryPausedProtocolId</code> is <code>nil</code>.</li>
+        <li>Craft a JSON fixture where <code>recoveryPausedProtocolId</code> equals a protocol with state <code>.completed</code>. Decode it — verify the ID is cleared.</li>
+        <li>Craft a JSON fixture where <code>recoveryPausedProtocolId == recoveryEntryTriggerProtocolId</code>. Decode it — verify <code>recoveryPausedProtocolId</code> is cleared.</li>
+        <li>Normal scenario: retired protocol reference cleared (existing behavior preserved).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─── STEP 5 ─── -->
+  <div class="step" id="step-5">
+    <div class="step-head">
+      <div class="step-badge p1">5</div>
+      <div class="step-head-meta">
+        <h3>Finalize plan allocations atomically on paused-protocol retirement</h3>
+        <div class="step-meta-row">
+          <span class="pill p1">P1</span>
+          <span class="meta-item">⏱ 30 min</span>
+          <span class="meta-item">📁 CommitmentSystemStore.swift</span>
+          <span class="meta-item">🔗 Gap G-5</span>
+          <span class="meta-item">No dependencies</span>
+        </div>
+      </div>
+    </div>
+    <div class="step-body">
+      <h4>Background</h4>
+      <p>When the paused protocol is retired during recovery, <code>normalizeRecoveryDomain</code> eventually clears <code>recoveryPausedProtocolId</code>. But plan allocations for that protocol stay in <code>.paused</code> state until recovery fully exits (which could be 7+ days later). During this window, the plan screen shows zombie paused slots for a retired protocol with no explanation.</p>
+      <p>The plan store already has a two-overload <code>finalizeRecoveryAllocationStatuses</code> — the single-protocol overload takes a <code>protocolId</code> and marks all its paused allocations as <code>.skippedDueToRecovery</code>. We just need to call it at the right time.</p>
+
+      <h4>What to change</h4>
+      <p><strong>File:</strong> <code>CommitmentSystemStore.swift</code> → <code>applyPostMutationRecoveryNormalization()</code></p>
+      <p>After <code>normalizeRecoveryDomain()</code> runs, inspect its <code>RecoveryNormalizationDecision</code>. If the decision indicates a paused ID was cleared because the protocol is now terminal, immediately finalize that protocol's allocations:</p>
+      <pre><code><span class="c">// In applyPostMutationRecoveryNormalization() after normalization runs:</span>
+<span class="k">let</span> decision = systemEngine.normalizeRecoveryDomain(in: &updated, referenceDate: referenceDate)
+
+<span class="c">// If a paused protocol became terminal, finalize its allocations immediately</span>
+<span class="k">if</span> decision.clearedPausedProtocolId,
+   <span class="k">let</span> clearedId = previousPausedId {  <span class="c">// capture before normalization</span>
+    planStore?.finalizeRecoveryAllocationStatuses(
+        protocolId: clearedId,
+        referenceDate: referenceDate
+    )
+}
+</code></pre>
+      <div class="callout info">You need to capture <code>system.recoveryPausedProtocolId</code> <em>before</em> calling <code>normalizeRecoveryDomain</code>, then use it in the finalization call. The normalization decision's <code>clearedPausedProtocolId: Bool</code> flag tells you whether a clear happened.</div>
+
+      <h4>Acceptance checks</h4>
+      <ul class="checks">
+        <li>During recovery with a paused protocol: retire that protocol. Immediately open the Plan screen. Verify no allocations for the retired protocol are in <code>.paused</code> state — they should all be <code>.skippedDueToRecovery</code>.</li>
+        <li>Verify recovery itself continues (if other recovering protocols remain above the minimum threshold).</li>
+        <li>Verify <code>finalizeRecoveryAllocationStatuses</code> is not called again for the same protocol when recovery eventually exits.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─── STEP 6 ─── -->
+  <div class="step" id="step-6">
+    <div class="step-head">
+      <div class="step-badge p1">6</div>
+      <div class="step-head-meta">
+        <h3>Guard zero-target week from producing false violations</h3>
+        <div class="step-meta-row">
+          <span class="pill p1">P1</span>
+          <span class="meta-item">⏱ 30 min</span>
+          <span class="meta-item">📁 NonNegotiableEngine.swift, CommitmentSystemEngine.swift</span>
+          <span class="meta-item">🔗 Gap G-9, EC-15</span>
+          <span class="meta-item">No dependencies</span>
+        </div>
+      </div>
+    </div>
+    <div class="step-body">
+      <h4>Background</h4>
+      <p><code>isPostRestorationPartialWeek()</code> returns <code>true</code> when a restored protocol has fewer available days than its weekly target, causing <code>effectiveWeeklyTarget()</code> to return 0. This is correct — the target is reduced to zero for that partial week. However, neither <code>evaluateWeekIfNeeded</code> nor <code>evaluateRecoveryDay</code> explicitly guard against the case where <code>effectiveWeeklyTarget == 0</code>. If the end-of-week evaluation compares <code>completionCount (0) &lt; effectiveTarget (0)</code>, it evaluates to <code>false</code> so no violation fires — this is accidentally correct. But the clean-day evaluator might separately treat a zero-target day incorrectly.</p>
+      <p>Making the zero-target guard explicit removes the reliance on accidental correctness and prevents future regressions.</p>
+
+      <h4>What to change</h4>
+      <p><strong>File 1:</strong> <code>NonNegotiableEngine.swift</code> → <code>evaluateWeekIfNeeded()</code> or <code>evaluateWeekCatchUp()</code></p>
+      <pre><code><span class="c">// Add at the top of the weekly violation check, after computing effectiveTarget:</span>
+<span class="k">let</span> target = effectiveWeeklyTarget(for: nn, in: weekInterval, calendar: calendar)
+<span class="k">guard</span> target > <span class="n">0</span> <span class="k">else</span> {
+    <span class="c">// Week is fully exempted (creation grace, post-restoration, post-recovery grace).</span>
+    <span class="c">// Mark as evaluated so we don't re-check it, but record no violation.</span>
+    nn.windows[windowIndex].weeksEvaluated.insert(weekId)
+    <span class="k">continue</span>
+}</code></pre>
+
+      <p><strong>File 2:</strong> <code>CommitmentSystemEngine.swift</code> → <code>evaluateRecoveryDay()</code> via <code>requiresCountedCompletionForRecovery()</code></p>
+      <pre><code><span class="c">// In requiresCountedCompletionForRecovery(), when effectiveWeeklyTarget == 0:</span>
+<span class="k">let</span> target = effectiveWeeklyTarget(for: nn, in: week, calendar: calendar)
+<span class="k">if</span> target == <span class="n">0</span> { <span class="k">return false</span> }  <span class="c">// no completion required — week is fully exempted</span></code></pre>
+
+      <h4>Acceptance checks</h4>
+      <ul class="checks">
+        <li>Session protocol (3×/week), restored on Saturday (0 feasible days remaining). Advance to Monday (week-end fires). Verify: zero violations recorded for the restoration week, <code>isPostRestorationPartialWeek</code> returned true, week marked evaluated.</li>
+        <li>Session protocol (2×/week), restored on Thursday (3 feasible days). Advance to Monday with 0 completions. Verify: violation IS recorded (3 feasible days ≥ 2 target, so no grace).</li>
+        <li>During recovery, a day where <code>effectiveWeeklyTarget == 0</code> should count as clean without requiring a completion. Verify streak increments on that day.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─── STEP 7 ─── -->
+  <div class="step" id="step-7">
+    <div class="step-head">
+      <div class="step-badge p1">7</div>
+      <div class="step-head-meta">
+        <h3>One-time migration pass for existing users over new threshold</h3>
+        <div class="step-meta-row">
+          <span class="pill p1">P1</span>
+          <span class="meta-item">⏱ 30 min</span>
+          <span class="meta-item">📁 CommitmentSystemStore.swift or Locked_INApp.swift</span>
+          <span class="meta-item">🔗 Gap G-12</span>
+          <span class="meta-item">No dependencies</span>
+        </div>
+      </div>
+    </div>
+    <div class="step-body">
+      <h4>Background</h4>
+      <p>Thresholds were lowered from daily: 3→2 and session: 2→1. Recovery entry only fires when <code>updateRecoveryState</code> is called after appending a new violation. Existing users who had 2 daily violations in their window (previously under the threshold of 3) are now over the new threshold of 2, but they won't enter recovery until their next violation is recorded. This is a silent inconsistency — their current state should be recovery but the system shows them as active.</p>
+
+      <h4>What to change</h4>
+      <p><strong>File:</strong> <code>CommitmentSystemStore.swift</code> — add to the store's initialization or to <code>runSystemIntegrityCheck()</code></p>
+      <pre><code><span class="k">private func</span> <span class="f">runThresholdMigrationIfNeeded</span>() {
+    <span class="k">let</span> key = <span class="s">"didRunThresholdMigration20260506"</span>
+    <span class="k">guard</span> !UserDefaults.standard.bool(forKey: key) <span class="k">else</span> { <span class="k">return</span> }
+    <span class="k">defer</span> { UserDefaults.standard.set(<span class="k">true</span>, forKey: key) }
+
+    <span class="k">var</span> updated = system
+    <span class="k">for</span> index <span class="k">in</span> updated.nonNegotiables.indices {
+        <span class="k">guard</span> updated.nonNegotiables[index].state == .active <span class="k">else</span> { <span class="k">continue</span> }
+        <span class="k">var</span> nn = updated.nonNegotiables[index]
+        <span class="c">// Let the engine re-evaluate recovery state from current window counts</span>
+        nonNegotiableEngine.reevaluateRecoveryStateFromExistingViolations(&nn)
+        updated.nonNegotiables[index] = nn
+    }
+    applySystemUpdate(updated, referenceDate: appClock.now)
+}</code></pre>
+      <p>You will need to add <code>reevaluateRecoveryStateFromExistingViolations()</code> to <code>NonNegotiableEngine</code>. It reads the current window's violation count and calls the existing recovery-state transition logic without appending a new violation:</p>
+      <pre><code><span class="k">func</span> <span class="f">reevaluateRecoveryStateFromExistingViolations</span>(_ nn: <span class="k">inout</span> <span class="t">NonNegotiable</span>) {
+    <span class="k">guard</span> nn.state == .active <span class="k">else</span> { <span class="k">return</span> }
+    <span class="k">guard let</span> windowIndex = currentWindowIndex(for: nn) <span class="k">else</span> { <span class="k">return</span> }
+    <span class="k">let</span> count = nn.windows[windowIndex].weeklyViolationCount
+    <span class="k">let</span> threshold = recoveryViolationThreshold(for: nn.definition.mode)
+    <span class="k">if</span> count >= threshold {
+        nn.state = .recovery
+    }
+}</code></pre>
+      <p>Call <code>runThresholdMigrationIfNeeded()</code> from <code>runSystemIntegrityCheck()</code> before the main tick, or from the store's <code>init</code> after loading from disk.</p>
+
+      <h4>Acceptance checks</h4>
+      <ul class="checks">
+        <li>Using DevOptions or a crafted JSON state: create a protocol with 2 daily violations in the current window (state = <code>.active</code>). Launch the app. With the migration sentinel not yet set, the migration runs and the protocol transitions to <code>.recovery</code> on first launch.</li>
+        <li>Launch the app a second time. Migration sentinel is set — migration does not run again. Protocol stays in recovery (already there from last launch).</li>
+        <li>Protocol that has 1 daily violation (below threshold of 2): migration does not transition it.</li>
+        <li>Protocol already in <code>.recovery</code>: migration guard (<code>state == .active</code>) skips it.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─── STEP 8 ─── -->
+  <div class="step" id="step-8">
+    <div class="step-head">
+      <div class="step-badge p1">8</div>
+      <div class="step-head-meta">
+        <h3>Resolve unused <code>referenceDate</code> parameters in public recovery API</h3>
+        <div class="step-meta-row">
+          <span class="pill p1">P1</span>
+          <span class="meta-item">⏱ 20 min</span>
+          <span class="meta-item">📁 CommitmentSystemStore.swift</span>
+          <span class="meta-item">🔗 Gap G-3</span>
+          <span class="meta-item">No dependencies</span>
+        </div>
+      </div>
+    </div>
+    <div class="step-body">
+      <h4>Background</h4>
+      <p><code>pauseProtocolForRecoveryWithPlanSync(protocolId:planStore:referenceDate:)</code> accepts a <code>referenceDate</code> and pipes it to <code>planStore.pauseAllocations(for:referenceDate:)</code> — this one IS used. However, <code>recoveryEntryContext()</code> has no date parameter but internally uses <code>appClock.now</code> implicitly. Any caller that wants to test a specific date cannot do so. The rule: every public function that behaves differently based on the current date must accept a date parameter and use it consistently throughout.</p>
+
+      <h4>What to verify and change</h4>
+      <ul>
+        <li>Search <code>CommitmentSystemStore</code> for all public functions that use <code>appClock.now</code>, <code>Date()</code>, or <code>calendar.startOfDay(for: Date())</code> internally. Each should accept a <code>referenceDate: Date</code> parameter instead.</li>
+        <li><code>recoveryEntryContext()</code> — if it uses the current date internally, add a default parameter: <code>func recoveryEntryContext(referenceDate: Date = appClock.now) -> RecoveryEntryContext?</code>. Update all call sites in <code>MainAppView</code> to pass <code>appClock.now</code>.</li>
+        <li>Any function that <em>genuinely</em> doesn't use a date (pure state reads) should NOT have a date parameter. Remove dead parameters.</li>
+      </ul>
+
+      <h4>Acceptance checks</h4>
+      <ul class="checks">
+        <li>Every public recovery function that reads the current time accepts a <code>referenceDate</code> and uses it (no internal <code>Date()</code> calls).</li>
+        <li>All call sites in <code>MainAppView</code>, <code>RecoveryModeViewModel</code>, and <code>CommitmentSystemStore</code> pass <code>appClock.now</code> explicitly.</li>
+        <li>No public function takes a <code>referenceDate</code> parameter that it ignores.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PHASE C ═══════════════ -->
+  <div class="phase-header" id="phase-c">
+    <span class="phase-label p2">Phase C — Edge Case Hardening</span>
+  </div>
+
+  <!-- ─── STEP 9 ─── -->
+  <div class="step" id="step-9">
+    <div class="step-head">
+      <div class="step-badge p2">9</div>
+      <div class="step-head-meta">
+        <h3>Pick best-violation protocol as recovery trigger, not oldest</h3>
+        <div class="step-meta-row">
+          <span class="pill p2">P2</span>
+          <span class="meta-item">⏱ 20 min</span>
+          <span class="meta-item">📁 CommitmentSystemStore.swift</span>
+          <span class="meta-item">🔗 EC-8</span>
+          <span class="meta-item">No dependencies</span>
+        </div>
+      </div>
+    </div>
+    <div class="step-body">
+      <h4>Background</h4>
+      <p>When two protocols cross the recovery threshold in the same tick, <code>handleRecoveryTransition()</code> sorts newly-recovered protocols by <code>createdAt</code> (oldest first) and picks the first as the trigger. The popup entry step then references that protocol by name. This is misleading — the older protocol may not be the one causing the most damage. The trigger should be the protocol with the highest current-window violation count, as it most clearly explains why recovery was entered.</p>
+
+      <h4>What to change</h4>
+      <p><strong>File:</strong> <code>CommitmentSystemStore.swift</code> → <code>handleRecoveryTransition()</code> lines 833-840</p>
+      <pre><code><span class="c">// BEFORE — sorted by creation date (oldest first):</span>
+<span class="k">let</span> enteredRecovery = updated.nonNegotiables
+    .filter { $0.state == .recovery && previousRecoveryIds.contains($0.id) == <span class="k">false</span> }
+    .sorted { lhs, rhs in
+        lhs.createdAt != rhs.createdAt
+            ? lhs.createdAt < rhs.createdAt
+            : lhs.id.uuidString < rhs.id.uuidString
+    }
+
+<span class="c">// AFTER — sorted by current window violation count (most violations first):</span>
+<span class="k">let</span> enteredRecovery = updated.nonNegotiables
+    .filter { $0.state == .recovery && previousRecoveryIds.contains($0.id) == <span class="k">false</span> }
+    .sorted { lhs, rhs in
+        <span class="k">let</span> lhsCount = lhs.currentWindowViolationCount
+        <span class="k">let</span> rhsCount = rhs.currentWindowViolationCount
+        <span class="k">if</span> lhsCount != rhsCount { <span class="k">return</span> lhsCount > rhsCount }
+        <span class="k">if</span> lhs.createdAt != rhs.createdAt { <span class="k">return</span> lhs.createdAt < rhs.createdAt }
+        <span class="k">return</span> lhs.id.uuidString < rhs.id.uuidString
+    }</code></pre>
+      <p>Add a computed property on <code>NonNegotiable</code> (or use an existing helper):</p>
+      <pre><code><span class="k">extension</span> <span class="t">NonNegotiable</span> {
+    <span class="k">var</span> currentWindowViolationCount: <span class="t">Int</span> {
+        windows.last.map { $0.weeklyViolationCount } ?? <span class="n">0</span>
+    }
+}</code></pre>
+
+      <h4>Acceptance checks</h4>
+      <ul class="checks">
+        <li>Create protocol A (3 violations in current window) and protocol B (2 violations). Both transition to recovery in the same tick. Verify <code>recoveryEntryTriggerProtocolId == A.id</code>.</li>
+        <li>Tie scenario: two protocols with equal violations. Verify oldest is chosen (tiebreaker).</li>
+        <li>Single new-recovery protocol: trigger ID still set correctly.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─── STEP 10 ─── -->
+  <div class="step" id="step-10">
+    <div class="step-head">
+      <div class="step-badge p2">10</div>
+      <div class="step-head-meta">
+        <h3>Update popup entry copy when multiple protocols are in recovery</h3>
+        <div class="step-meta-row">
+          <span class="pill p2">P2</span>
+          <span class="meta-item">⏱ 30 min</span>
+          <span class="meta-item">📁 RecoveryModeViewModel.swift, RecoveryModePopup.swift</span>
+          <span class="meta-item">🔗 EC-9</span>
+          <span class="meta-item">No dependencies</span>
+        </div>
+      </div>
+    </div>
+    <div class="step-body">
+      <h4>Background</h4>
+      <p>If a second protocol enters recovery while the popup is already showing (pending resolution is true), the existing popup copy only references the original trigger protocol by name. The user has no idea a second protocol has also entered recovery. The entry step should reflect how many protocols are currently in recovery mode so the user has full context before making the pause selection.</p>
+
+      <h4>What to change</h4>
+      <p><strong>File:</strong> <code>RecoveryModeViewModel.swift</code> → expose a count property</p>
+      <pre><code><span class="c">// Add to the ViewModel's refresh() or as a derived property:</span>
+<span class="k">var</span> recoveringProtocolCount: <span class="t">Int</span> {
+    commitmentStore.system.recoveringNonNegotiables.count
+}</code></pre>
+      <p><strong>File:</strong> <code>RecoveryModePopup.swift</code> → entry step header and body text</p>
+      <pre><code><span class="c">// In the entry step header, replace single-protocol title with:</span>
+<span class="k">let</span> title: <span class="t">String</span> = viewModel.recoveringProtocolCount > <span class="n">1</span>
+    ? <span class="s">"\(viewModel.recoveringProtocolCount) protocols have entered recovery mode"</span>
+    : <span class="s">"Recovery mode activated"</span>
+
+<span class="c">// In body text, show the count prominently if > 1:</span>
+<span class="k">if</span> viewModel.recoveringProtocolCount > <span class="n">1</span> {
+    <span class="c">// Show: "Your [A] and [B] protocols are struggling. We need to reduce your load."</span>
+} <span class="k">else</span> {
+    <span class="c">// Show: existing single-protocol copy with trigger protocol name</span>
+}</code></pre>
+
+      <h4>Acceptance checks</h4>
+      <ul class="checks">
+        <li>One protocol in recovery: popup shows existing single-protocol copy with the protocol's name.</li>
+        <li>Two protocols in recovery simultaneously: popup header reads "2 protocols have entered recovery mode." Body copy acknowledges both.</li>
+        <li>Second protocol enters recovery while popup is open: if the ViewModel observes the store, the count updates live. Verify the popup reflects the updated count without requiring dismiss and re-open.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ─── STEP 11 ─── -->
+  <div class="step" id="step-11">
+    <div class="step-head">
+      <div class="step-badge p2">11</div>
+      <div class="step-head-meta">
+        <h3>Empty-system guard + audit single-protocol normalization exit</h3>
+        <div class="step-meta-row">
+          <span class="pill p2">P2</span>
+          <span class="meta-item">⏱ 20 min</span>
+          <span class="meta-item">📁 CommitmentSystemStore.swift, CommitmentSystemEngine.swift</span>
+          <span class="meta-item">🔗 EC-12, EC-16</span>
+          <span class="meta-item">Depends on Step 1 (candidate filter)</span>
+        </div>
+      </div>
+    </div>
+    <div class="step-body">
+      <h4>Background — EC-12: Empty system</h4>
+      <p>If the user retires every protocol while the recovery popup is showing, <code>recoveryEntryContext()</code> already guards on <code>system.nonNegotiables.contains(where: { $0.state == .recovery })</code>. If all protocols are retired, no protocol is in <code>.recovery</code> → context returns <code>nil</code> → popup auto-dismisses. This is actually already handled correctly. However, <code>recoveryEntryPendingResolution</code> may still be <code>true</code> in persisted state even though the system is empty, which is a corrupt state.</p>
+      <p>Add a cleanup call: when the last protocol is retired, call <code>clearRecoveryEntryState()</code> to ensure the flag is reset.</p>
+
+      <h4>Background — EC-16: Single-protocol stuck in recovery</h4>
+      <p><code>normalizeRecoveryDomain()</code> checks <code>recoveryEligibleCount &lt; 2</code> and exits recovery early. <code>recoveryEligibleProtocolIds</code> returns protocols in <code>.active</code> or <code>.recovery</code> state. With exactly 1 protocol in <code>.recovery</code> and nothing else, <code>recoveryEligibleCount == 1 &lt; 2 → recovery exits immediately</code>. This means a single-protocol system should ALREADY exit recovery via normalization on every mutation. Verify this works as expected; if it does, no code change is needed — only a simulation test (Step 12).</p>
+
+      <h4>What to change (EC-12)</h4>
+      <p><strong>File:</strong> <code>CommitmentSystemStore.swift</code> → wherever protocol retirement is finalized</p>
+      <pre><code><span class="c">// After retiring the last non-retired protocol, clear any stale recovery entry state:</span>
+<span class="k">let</span> hasAnyNonTerminal = updated.nonNegotiables.contains { !$0.state.isTerminal }
+<span class="k">if</span> !hasAnyNonTerminal {
+    updated.recoveryEntryPendingResolution = <span class="k">false</span>
+    updated.recoveryEntryRequiresPauseSelection = <span class="k">false</span>
+    updated.recoveryEntryTriggerProtocolId = <span class="k">nil</span>
+    updated.recoveryPausedProtocolId = <span class="k">nil</span>
+    updated.recoveryCleanDayStreak = <span class="n">0</span>
+}</code></pre>
+
+      <h4>Acceptance checks</h4>
+      <ul class="checks">
+        <li>EC-12: retire all protocols while recovery popup is showing. Popup auto-dismisses. On next app launch, <code>recoveryEntryPendingResolution == false</code>.</li>
+        <li>EC-16: create one daily protocol. Skip 2 days to trigger recovery. Verify: <code>normalizeRecoveryDomain</code> fires, <code>recoveryEligibleCount == 1 &lt; 2</code>, recovery exits immediately without requiring 7 clean days. Protocol returns to <code>.active</code>.</li>
+        <li>EC-16: verify the above works even if the user hasn't opened the recovery popup yet (pending resolution was true).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PHASE D ═══════════════ -->
+  <div class="phase-header" id="phase-d">
+    <span class="phase-label p2">Phase D — Simulation Coverage</span>
+  </div>
+
+  <!-- ─── STEP 12 ─── -->
+  <div class="step" id="step-12">
+    <div class="step-head">
+      <div class="step-badge p2">12</div>
+      <div class="step-head-meta">
+        <h3>Add simulation coverage for all new edge cases (T-35 – T-44)</h3>
+        <div class="step-meta-row">
+          <span class="pill p2">P2</span>
+          <span class="meta-item">⏱ ~2 hr</span>
+          <span class="meta-item">📁 CommitmentSystemSimulation.swift (or new RecoverySimulation.swift)</span>
+          <span class="meta-item">🔗 All EC-8 through EC-16</span>
+          <span class="meta-item">Do after Steps 1–11</span>
+        </div>
+      </div>
+    </div>
+    <div class="step-body">
+      <h4>Background</h4>
+      <p>The codebase uses simulation functions (e.g., <code>CommitmentSystemSimulation.swift</code>) for DevOptions seeding and assertion. These serve as informal regression tests. Add one simulation function per new edge case so each scenario can be re-run manually via DevOptions after any future refactor.</p>
+
+      <h4>Simulations to write</h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Test</th><th>Function name</th><th>What it asserts</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>T-35</td>
+              <td><code>simulateDualRecoveryTriggerProtocolSelection()</code></td>
+              <td>Two protocols cross threshold in same tick → trigger = highest-violation one</td>
+            </tr>
+            <tr>
+              <td>T-36</td>
+              <td><code>simulateAdditionalRecoveryWhilePendingResolution()</code></td>
+              <td>Third protocol enters recovery mid-popup → trigger unchanged, ViewModel count reflects 2+</td>
+            </tr>
+            <tr>
+              <td>T-37 / T-38</td>
+              <td><code>simulateLockExpiryDuringRecovery()</code></td>
+              <td>Lock expires on paused protocol → stale ID cleared, <code>.completed</code> treated as terminal</td>
+            </tr>
+            <tr>
+              <td>T-39</td>
+              <td><code>simulateZeroFeasibleDayRestoration()</code></td>
+              <td>Session protocol restored Sunday → no violation at week-end, target was 0</td>
+            </tr>
+            <tr>
+              <td>T-40</td>
+              <td><code>simulateAllProtocolsRetiredDuringRecovery()</code></td>
+              <td>All protocols retired → popup auto-dismisses, <code>recoveryEntryPendingResolution = false</code></td>
+            </tr>
+            <tr>
+              <td>T-41</td>
+              <td><code>simulateSuspendedProtocolPlanLeakage()</code></td>
+              <td>Advance 3 weeks with suspended protocol → no <code>.active</code> allocations generated for it</td>
+            </tr>
+            <tr>
+              <td>T-42</td>
+              <td><code>simulateAllRecoveryNoPauseCandidates()</code></td>
+              <td>All non-suspended protocols in <code>.recovery</code> → <code>recoveryEntryRequiresPauseSelection = false</code></td>
+            </tr>
+            <tr>
+              <td>T-43</td>
+              <td><code>simulateSingleProtocolRecoveryNormalization()</code></td>
+              <td>1 protocol in recovery → normalization exits recovery immediately via &lt;2 path</td>
+            </tr>
+            <tr>
+              <td>T-44</td>
+              <td><code>simulateThresholdMigrationPass()</code></td>
+              <td>Existing 2-violation protocol with new threshold of 2 → migration transitions it to <code>.recovery</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Structure for each simulation function</h4>
+      <pre><code><span class="c">// Template: each simulation builds a known state, runs one or more ticks,</span>
+<span class="c">// then asserts the expected outcome via precondition() or print statements.</span>
+<span class="k">func</span> <span class="f">simulateSingleProtocolRecoveryNormalization</span>() -> <span class="t">Bool</span> {
+    <span class="k">var</span> system = CommitmentSystem.empty()
+    <span class="k">let</span> engine = CommitmentSystemEngine()
+    <span class="c">// Build a system with exactly 1 daily protocol in recovery</span>
+    <span class="k">var</span> protocol1 = NonNegotiableEngine().create(...)
+    protocol1.state = .recovery
+    system.nonNegotiables = [protocol1]
+    system.recoveryEntryPendingResolution = <span class="k">true</span>
+    <span class="c">// Run normalization</span>
+    engine.normalizeRecoveryDomain(in: &system)
+    <span class="c">// Assert: protocol is active, recovery state cleared</span>
+    <span class="k">let</span> passed = system.nonNegotiables[<span class="n">0</span>].state == .active
+        && !system.recoveryEntryPendingResolution
+    print(<span class="s">"T-43 simulateSingleProtocolRecoveryNormalization: \(passed ? "PASS" : "FAIL")"</span>)
+    <span class="k">return</span> passed
+}</code></pre>
+
+      <h4>Acceptance checks</h4>
+      <ul class="checks">
+        <li>All 9 simulation functions exist and can be triggered from DevOptions without crashing.</li>
+        <li>Each function prints PASS when run against the post-Steps-1-11 codebase.</li>
+        <li>Each function prints FAIL when the relevant fix is reverted (regression detection).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════ EXECUTION ORDER ═══════════════ -->
+  <h2 id="order">Execution Order & Dependencies</h2>
+
+  <div class="callout info">Each step in Phase A and Phase B is independent — they touch different functions and can be implemented and committed in any order within the phase. Step 11 depends on Step 1 completing first (it relies on the fixed candidate filter). Step 12 should be done last.</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Order</th><th>Step</th><th>Depends on</th><th>Commit message hint</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1st</td><td>Step 1 — Fix pause candidate filter</td><td>—</td><td><code>fix: only offer active protocols as recovery pause candidates</code></td></tr>
+        <tr><td>2nd</td><td>Step 2 — Pause coordinator rollback</td><td>—</td><td><code>fix: add rollback to pause coordinator if plan store fails</code></td></tr>
+        <tr><td>3rd</td><td>Step 3 — Verify regulator filter</td><td>—</td><td><code>fix: verify suspended protocols excluded from regulator candidates</code></td></tr>
+        <tr><td>4th</td><td>Step 4 — isTerminal + decode validation</td><td>—</td><td><code>fix: extend recovery validation to treat .completed as terminal</code></td></tr>
+        <tr><td>5th</td><td>Step 5 — Atomic retirement finalization</td><td>—</td><td><code>fix: finalize paused allocations immediately on retirement</code></td></tr>
+        <tr><td>6th</td><td>Step 6 — Zero-target week guard</td><td>—</td><td><code>fix: guard zero effectiveWeeklyTarget from producing violations</code></td></tr>
+        <tr><td>7th</td><td>Step 7 — Threshold migration</td><td>—</td><td><code>fix: one-time migration pass for users over new violation threshold</code></td></tr>
+        <tr><td>8th</td><td>Step 8 — referenceDate cleanup</td><td>—</td><td><code>refactor: remove or implement unused referenceDate parameters</code></td></tr>
+        <tr><td>9th</td><td>Step 9 — Best-violation trigger</td><td>—</td><td><code>fix: pick highest-violation protocol as recovery trigger</code></td></tr>
+        <tr><td>10th</td><td>Step 10 — Multi-protocol popup copy</td><td>—</td><td><code>fix: show recovery count in popup entry copy when multiple protocols affected</code></td></tr>
+        <tr><td>11th</td><td>Step 11 — Empty-system guard + single-protocol audit</td><td>Step 1, Step 4</td><td><code>fix: clear recovery state when system becomes empty; audit single-protocol normalization</code></td></tr>
+        <tr><td>12th</td><td>Step 12 — Simulation coverage</td><td>Steps 1–11</td><td><code>test: add simulation coverage for recovery edge cases T-35 to T-44</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout good">
+    <strong>Definition of done:</strong> All 12 steps committed. All acceptance checks pass manually. All 9 simulation functions print PASS in DevOptions. No protocol can enter <code>.suspended</code> state as a result of being in recovery. No stale recovery ID references a terminal protocol. Recovery popup never shows selecting a recovering protocol as a pause candidate.
+  </div>
+
+  <div class="footer">
+    <p>Locked IN Internal Document · Recovery Mode Tightening Plan · May 2026</p>
+    <p>Based on source audit of: <code>CommitmentSystemStore.swift</code> · <code>CommitmentSystemEngine.swift</code> · <code>NonNegotiableEngine.swift</code> · <code>PlanRegulatorEngine.swift</code> · <code>CommitmentSystem.swift</code> · <code>RecoveryModeViewModel.swift</code> · <code>RecoveryModePopup.swift</code></p>
+    <p>Reference documents: <code>recovery-mode-behavior-spec.html</code> (v2) · <code>violation-system-analysis.html</code> (v2)</p>
+  </div>
+
+</div>
+</body>
+</html>

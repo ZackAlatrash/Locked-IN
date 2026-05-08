@@ -378,17 +378,22 @@ private extension PlanScreen {
     }
 
     func canPlaceAtSlot(day: Date, slot: PlanSlot, protocolId: UUID?) -> Bool {
-        guard walkthroughController.isActive else { return true }
-        guard let step = activePlanningWalkthroughStep else { return true }
+        guard let protocolId else { return false }
 
-        switch step {
-        case .planningSelectSlot:
-            guard let protocolId, protocolId == walkthroughProtocolId else { return false }
-            guard DateRules.startOfDay(day) == DateRules.startOfDay(appClock.now) else { return false }
-            return viewModel.validateProtocolPlacement(protocolId: protocolId, day: day, slot: slot).isAllowed
-        default:
-            return false
+        if walkthroughController.isActive {
+            guard let step = activePlanningWalkthroughStep else {
+                return viewModel.validateProtocolPlacement(protocolId: protocolId, day: day, slot: slot).isAllowed
+            }
+            switch step {
+            case .planningSelectSlot:
+                guard protocolId == walkthroughProtocolId else { return false }
+                guard DateRules.startOfDay(day) == DateRules.startOfDay(appClock.now) else { return false }
+            default:
+                return false
+            }
         }
+
+        return viewModel.validateProtocolPlacement(protocolId: protocolId, day: day, slot: slot).isAllowed
     }
 
     func canHandleDrop(payload: String, day: Date, slot: PlanSlot) -> Bool {
@@ -736,15 +741,28 @@ private extension PlanScreen {
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
 
-                HStack(spacing: 6) {
-                    Text(item.isDisabled ? "PAUSED" : "\(item.remainingCount) REMAINING")
-                        .font(.caption2.weight(.black))
-                        .fontDesign(.monospaced)
-                        .foregroundColor(item.isDisabled ? textMuted : tone)
-                    Text(item.durationLabel)
-                        .font(.caption2.weight(.bold))
-                        .fontDesign(.monospaced)
-                        .foregroundColor(textMuted)
+                if item.isDisabled {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("PAUSED")
+                            .font(.caption2.weight(.black))
+                            .fontDesign(.monospaced)
+                            .foregroundColor(textMuted)
+                        Text("Paused during recovery · Resumes after recovery")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundColor(textMuted.opacity(0.65))
+                            .lineLimit(1)
+                    }
+                } else {
+                    HStack(spacing: 6) {
+                        Text("\(item.remainingCount) REMAINING")
+                            .font(.caption2.weight(.black))
+                            .fontDesign(.monospaced)
+                            .foregroundColor(tone)
+                        Text(item.durationLabel)
+                            .font(.caption2.weight(.bold))
+                            .fontDesign(.monospaced)
+                            .foregroundColor(textMuted)
+                    }
                 }
             }
 
@@ -762,7 +780,7 @@ private extension PlanScreen {
                 .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
-        .disabled(canSelectQueueProtocol(item.protocolId) == false)
+        .disabled(item.isDisabled || canSelectQueueProtocol(item.protocolId) == false)
 
         let secondaryAction = Menu {
             Button {
@@ -821,6 +839,10 @@ private extension PlanScreen {
             y: 0
         )
         .opacity(item.isDisabled ? 0.65 : 1)
+        .accessibilityLabel(item.title)
+        .accessibilityValue(item.isDisabled
+            ? "Paused during recovery. Planning and completion are unavailable until recovery ends."
+            : "\(item.remainingCount) remaining this week")
         .planWalkthroughFrame(.protocolCard(item.protocolId))
         .contextMenu {
             Button {
@@ -1166,6 +1188,11 @@ private extension PlanScreen {
                 .buttonStyle(.plain)
                 .disabled(first.status.isInteractive == false || isPlanningManualPlacementWalkthroughStep)
                 .opacity(first.status.isInteractive && isPlanningManualPlacementWalkthroughStep == false ? 1 : 0.6)
+                .accessibilityLabel(first.title)
+                .accessibilityValue(
+                    first.status == .paused ? "Paused during recovery" :
+                    first.status == .skippedDueToRecovery ? "Skipped due to recovery" : ""
+                )
                 .overlay(alignment: .bottomLeading) {
                     if first.status.isInteractive == false {
                         Text(first.status == .paused ? "PAUSED" : "SKIPPED")
@@ -1453,6 +1480,11 @@ private extension PlanScreen {
         .buttonStyle(.plain)
         .disabled(isInteractive == false || isPlanningManualPlacementWalkthroughStep)
         .opacity(isInteractive && isPlanningManualPlacementWalkthroughStep == false ? 1 : 0.62)
+        .accessibilityLabel(allocation.title)
+        .accessibilityValue(
+            allocation.status == .paused ? "Paused during recovery" :
+            allocation.status == .skippedDueToRecovery ? "Skipped due to recovery" : ""
+        )
     }
 
     func draftPreviewBadge(title: String, tone: Color, icon: String) -> some View {

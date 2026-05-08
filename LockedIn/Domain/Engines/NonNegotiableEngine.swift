@@ -94,7 +94,8 @@ struct NonNegotiableEngine {
 
         let weekId = DateRules.weekID(for: date, calendar: calendar)
         let completionKind = try determineCompletionKind(nn, date: date, weekId: weekId)
-        nn.completions.append(CompletionRecord(date: date, weekId: weekId, kind: completionKind))
+        let inRecovery = nn.state == .recovery || nn.state == .suspended
+        nn.completions.append(CompletionRecord(date: date, weekId: weekId, kind: completionKind, wasRecoveryRelated: inRecovery))
         return CompletionDecision(kind: completionKind)
     }
 
@@ -147,12 +148,18 @@ struct NonNegotiableEngine {
                 if !didCompleteOnDay {
                     let stateBefore = nn.state
                     let violationCountBefore = nn.violationCount(inWindow: windowIndex)
+                    let wasRecoveryRelated = isRecoveryRelatedViolation(
+                        stateBefore: stateBefore,
+                        mode: nn.definition.mode,
+                        violationCountBefore: violationCountBefore
+                    )
                     nn.violations.append(
                         Violation(
                             date: dayCursor,
                             kind: .missedDailyCompliance,
                             windowIndex: windowIndex,
-                            weekId: DateRules.weekID(for: dayCursor, calendar: calendar)
+                            weekId: DateRules.weekID(for: dayCursor, calendar: calendar),
+                            wasRecoveryRelated: wasRecoveryRelated
                         )
                     )
                     updateRecoveryState(
@@ -239,12 +246,18 @@ struct NonNegotiableEngine {
             alreadyHasWeeklyViolation == false
 
         if shouldAppendMissedWeekly {
+            let wasRecoveryRelated = isRecoveryRelatedViolation(
+                stateBefore: stateBefore,
+                mode: nn.definition.mode,
+                violationCountBefore: violationCountBefore
+            )
             nn.violations.append(
                 Violation(
                     date: date,
                     kind: .missedWeeklyFrequency,
                     windowIndex: weeklyWindowIndex,
-                    weekId: weekId
+                    weekId: weekId,
+                    wasRecoveryRelated: wasRecoveryRelated
                 )
             )
         }
@@ -329,12 +342,18 @@ struct NonNegotiableEngine {
 
         let stateBefore = nn.state
         let violationCountBefore = nn.violationCount(inWindow: windowIndex)
+        let wasRecoveryRelated = isRecoveryRelatedViolation(
+            stateBefore: stateBefore,
+            mode: nn.definition.mode,
+            violationCountBefore: violationCountBefore
+        )
         nn.violations.append(
             Violation(
                 date: today,
                 kind: .missedWeeklyFrequency,
                 windowIndex: windowIndex,
-                weekId: weekId
+                weekId: weekId,
+                wasRecoveryRelated: wasRecoveryRelated
             )
         )
         updateRecoveryState(
@@ -711,6 +730,16 @@ struct NonNegotiableEngine {
                 reason: reason
             )
         }
+    }
+
+    private func isRecoveryRelatedViolation(
+        stateBefore: NonNegotiableState,
+        mode: NonNegotiableMode,
+        violationCountBefore: Int
+    ) -> Bool {
+        stateBefore == .recovery ||
+            stateBefore == .suspended ||
+            violationCountBefore + 1 >= recoveryViolationThreshold(for: mode)
     }
 
     private func recoveryViolationThreshold(for mode: NonNegotiableMode) -> Int {

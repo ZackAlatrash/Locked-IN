@@ -54,13 +54,17 @@ struct CommitmentSystem: Codable, Equatable {
 
         let nonRetiredProtocolIds = Set(
             nonNegotiables
-                .filter { $0.state != .retired }
+                .filter { !$0.state.isTerminal }
                 .map(\.id)
         )
 
-        if let pausedId = recoveryPausedProtocolId,
-           nonRetiredProtocolIds.contains(pausedId) == false {
-            recoveryPausedProtocolId = nil
+        // recoveryPausedProtocolId must point to a .suspended protocol specifically.
+        // An .active reference means recovery ended already; clear it (REC-EC-05).
+        if let pausedId = recoveryPausedProtocolId {
+            let isSuspended = nonNegotiables.first(where: { $0.id == pausedId })?.state == .suspended
+            if !isSuspended {
+                recoveryPausedProtocolId = nil
+            }
         }
 
         if let triggerId = recoveryEntryTriggerProtocolId,

@@ -128,7 +128,10 @@ private extension RecoveryModePopup {
             DailyCheckInCard {
                 VStack(alignment: .leading, spacing: 10) {
                     if viewModel.requiresPauseSelection {
-                        Text("Too many violations occurred inside the current 14-day window. To continue, pause one protocol while recovery stabilizes the system.")
+                        let countLabel = viewModel.recoveryProtocolCount > 1
+                            ? "\(viewModel.recoveryProtocolCount) protocols have entered recovery."
+                            : "A protocol has entered recovery."
+                        Text("\(countLabel) Too many violations occurred inside the current 14-day window. To continue, pause one protocol while recovery stabilizes the system.")
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(textMuted)
                         Text("You can resume automatically after 7 clean days.")

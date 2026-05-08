@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recovery Mode Current State and Edge Cases - Locked IN</title>
+  <style>
+    :root {
+      --bg: #f6f3ee;
+      --panel: #fffdfa;
+      --ink: #172033;
+      --muted: #5e6675;
+      --line: #d9d3c9;
+      --red: #a62626;
+      --red-soft: #fbe8e8;
+      --amber: #8a5a00;
+      --amber-soft: #fff3d6;
+      --green: #16633f;
+      --green-soft: #e7f6ee;
+      --blue: #22577a;
+      --blue-soft: #e9f1fb;
+      --purple: #5c3a8a;
+      --purple-soft: #f0e8fb;
+      --mono: "SFMono-Regular", "Menlo", "Consolas", monospace;
+      --sans: "Inter", "Helvetica Neue", "Arial", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+
+    .wrap {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 34px 24px 72px;
+    }
+
+    h1, h2, h3 { line-height: 1.2; margin: 0 0 12px; }
+    h1 { font-size: 34px; }
+    h2 {
+      margin-top: 34px;
+      padding-bottom: 9px;
+      border-bottom: 2px solid var(--line);
+      font-size: 22px;
+    }
+    h3 { margin-top: 20px; font-size: 17px; }
+    p { margin: 0 0 13px; }
+    ul, ol { margin: 0 0 16px 22px; }
+    li { margin-bottom: 7px; }
+    code {
+      font-family: var(--mono);
+      font-size: 0.9em;
+      background: rgba(0,0,0,0.05);
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    .hero, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 10px 26px rgba(23,32,51,0.05);
+    }
+    .hero { padding: 28px; }
+    .panel { padding: 18px 20px; margin-top: 16px; }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .pill, .tag {
+      display: inline-block;
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .pill {
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      background: #faf7f2;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .tag {
+      padding: 3px 8px;
+      font-size: 11px;
+      margin: 0 4px 4px 0;
+    }
+    .p0 { background: var(--red-soft); color: var(--red); }
+    .p1 { background: var(--amber-soft); color: var(--amber); }
+    .p2 { background: var(--green-soft); color: var(--green); }
+    .info { background: var(--blue-soft); color: var(--blue); }
+    .open { background: var(--purple-soft); color: var(--purple); }
+
+    .callout {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 13px 15px;
+      background: #fbf8f3;
+      margin: 14px 0;
+      font-size: 14px;
+    }
+    .callout.good { border-color: #b8dfca; background: var(--green-soft); }
+    .callout.warn { border-color: #efcf8d; background: var(--amber-soft); }
+    .callout.bad { border-color: #edb7b7; background: var(--red-soft); }
+    .callout.info { border-color: #abc8e8; background: var(--blue-soft); color: var(--ink); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 15px;
+      background: var(--panel);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin: 14px 0 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      font-size: 13.2px;
+    }
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    th {
+      background: #f1ece3;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+    }
+    tr:last-child td { border-bottom: 0; }
+
+    .score {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 2px;
+    }
+    .small { color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <h1>Recovery Mode Current State and Edge Cases</h1>
+    <p>This document compares the current recovery-mode implementation against the intended enhanced behavior described in <code>documents/recovery-mode-behavior-spec.html</code>. It uses the current Swift code as source of truth and lists the edge cases still worth adding, with a recommended fix for each.</p>
+    <div class="meta">
+      <span class="pill">Project: <code>Locked IN</code></span>
+      <span class="pill">Date: <code>2026-05-06</code></span>
+      <span class="pill">Source: code review + existing recovery docs</span>
+      <span class="pill">Status: current-state audit</span>
+    </div>
+    <div class="callout info">
+      <strong>Bottom line:</strong> recovery mode is much stronger than the old behavior spec suggests. Several old P0/P1 gaps are already fixed. The remaining risk is less about the main happy path and more about catch-up evaluation, stale persisted state, atomicity between stores, and duplicated eligibility logic drifting across engine, store, plan, and check-in surfaces.
+    </div>
+  </section>
+
+  <h2>1. Current State Snapshot</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="score">Good</div>
+      <p><strong>Entry:</strong> protocol-level recovery entry now derives the violation count from <code>violations</code>, not legacy <code>Window.weeklyViolationCount</code>. Current thresholds are <code>daily = 2</code>, <code>session = 1</code>.</p>
+      <p class="small">Refs: <code>NonNegotiableEngine.updateRecoveryState</code>, <code>recoveryViolationThreshold</code>.</p>
+    </div>
+    <div class="card">
+      <div class="score">Good</div>
+      <p><strong>Entry flow:</strong> the store detects first entry, sets pending resolution, trigger ID, pause requirement, clears stale paused ID, resets clean-day streak, and backdates evaluation day.</p>
+      <p class="small">Refs: <code>CommitmentSystemStore.handleRecoveryTransition</code>.</p>
+    </div>
+    <div class="card">
+      <div class="score">Mixed</div>
+      <p><strong>Pause flow:</strong> there is now a single view-model call into <code>pauseProtocolForRecoveryWithPlanSync</code>, and double-pause is guarded. It is still not a true transaction because domain state is persisted before plan allocation persistence is guaranteed.</p>
+    </div>
+    <div class="card">
+      <div class="score">Mixed</div>
+      <p><strong>Exit:</strong> seven clean days exits recovery and restores suspended protocols if capacity allows. Plan allocation cleanup is still coordinated by <code>MainAppView</code>, not by the store/domain exit operation itself.</p>
+    </div>
+  </div>
+
+  <h2>2. Current vs Intended Behavior</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Area</th>
+          <th>Intended Enhanced Behavior</th>
+          <th>Current Implementation</th>
+          <th>Assessment</th>
+          <th>Recommended Next Step</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Recovery entry threshold</td>
+          <td>Enter when current-window violations cross mode-specific threshold.</td>
+          <td>Implemented using derived <code>violationCount(inWindow:)</code>. Current values are <code>daily = 2</code>, <code>session = 1</code>, while the old spec still says <code>daily = 3</code>, <code>session = 2</code>.</td>
+          <td><span class="tag p2">Implemented</span> <span class="tag open">Spec stale</span></td>
+          <td>Update the old spec or add a migration note explaining the new stricter thresholds.</td>
+        </tr>
+        <tr>
+          <td>Popup re-presentation</td>
+          <td>Pending recovery resolution must survive restart and re-present.</td>
+          <td>Persisted fields exist; simulations cover context after restart. Presentation depends on <code>MainAppView.evaluateRecoveryEntryPresentation</code>.</td>
+          <td><span class="tag p2">Mostly implemented</span></td>
+          <td>Add one UI-level/manual checklist around actual sheet presentation after force quit.</td>
+        </tr>
+        <tr>
+          <td>Pause candidates</td>
+          <td>Old plan says candidates should be active only. Current engine allows active candidates first, then multiple recovery protocols as fallback.</td>
+          <td><code>recoveryPauseCandidateIds</code> returns active protocols when available; if none exist and more than one recovery protocol exists, it returns recovery protocols.</td>
+          <td><span class="tag p1">Policy mismatch</span></td>
+          <td>Decide the product rule. Either make active-only strict, or keep recovery fallback and update popup copy/spec to explicitly allow it.</td>
+        </tr>
+        <tr>
+          <td>Pause atomicity</td>
+          <td>Domain suspend and plan allocation pause must succeed or fail together.</td>
+          <td>The view model calls one coordinator, but <code>pauseProtocolForRecovery</code> persists before <code>PlanStore.pauseAllocations</code>. <code>pauseAllocations</code> swallows save failures.</td>
+          <td><span class="tag p0">Partial</span></td>
+          <td>Make plan pause/finalize operations throwing and move persistence so either both stores save or the domain mutation rolls back.</td>
+        </tr>
+        <tr>
+          <td>Clean-day evaluation</td>
+          <td>On restart or skipped days, recovery should catch up all closed days since <code>lastRecoveryEvaluationDay</code>.</td>
+          <td><code>evaluateRecoveryDay</code> evaluates only yesterday once per call, even if several days were missed.</td>
+          <td><span class="tag p0">Gap</span></td>
+          <td>Loop from <code>lastRecoveryEvaluationDay + 1 day</code> through yesterday, applying clean/dirty logic per day.</td>
+        </tr>
+        <tr>
+          <td>Recovery exit cleanup</td>
+          <td>When recovery exits, domain state and plan allocation cleanup should be consistent.</td>
+          <td>Domain exit happens in <code>CommitmentSystemEngine</code>; plan cleanup happens later in <code>MainAppView</code> when it notices there are no recovery protocols.</td>
+          <td><span class="tag p1">Fragile</span></td>
+          <td>Move recovery-exit finalization into a store-level coordinator that receives <code>PlanStore</code>, or emit an explicit exit event consumed exactly once.</td>
+        </tr>
+        <tr>
+          <td>Retired paused protocol</td>
+          <td>Retiring the paused protocol should immediately terminalize its paused allocations.</td>
+          <td>Implemented when <code>retireNonNegotiable(..., planStore:)</code> is called with a plan store. If callers omit <code>planStore</code>, finalization cannot happen.</td>
+          <td><span class="tag p1">Mostly implemented</span></td>
+          <td>Require the plan-sync retirement path from UI, and add a defensive repair pass for retired paused allocations on plan refresh.</td>
+        </tr>
+        <tr>
+          <td>Post-decode stale IDs</td>
+          <td>Invalid recovery IDs should be repaired on load.</td>
+          <td>Decode clears IDs that point to retired/missing protocols, but it does not require <code>recoveryPausedProtocolId</code> to point to a <code>.suspended</code> protocol, nor does it repair orphaned suspended protocols.</td>
+          <td><span class="tag p1">Partial</span></td>
+          <td>Add full recovery-state normalization after decode or immediately after repository load.</td>
+        </tr>
+        <tr>
+          <td>Post-restoration weekly feasibility</td>
+          <td>A protocol restored mid-week should not immediately re-enter recovery if the weekly target was impossible.</td>
+          <td>Implemented in domain engine for suspended protocols restored via <code>recoveryRestoredAt</code>. Store/logs/daily-check-in/plan still contain older duplicated initial-grace logic and do not fully mirror post-restoration logic.</td>
+          <td><span class="tag p1">Domain good, surfaces drift</span></td>
+          <td>Move weekly target/grace/feasibility calculations to one shared policy/helper and replace duplicate store/view-model implementations.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>3. Edge Cases To Add</h2>
+  <div class="callout warn">
+    These are the edge cases I would add before calling recovery mode production-hard. Each case includes the current risk and a recommended fix.
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Edge Case</th>
+          <th>Current Risk</th>
+          <th>Recommended Fix</th>
+          <th>Priority</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>REC-EC-01</td>
+          <td>App is closed for several days while already in recovery.</td>
+          <td>Only yesterday is evaluated, so a 5-day absence counts as one recovery day. Earlier dirty days can be skipped for streak purposes.</td>
+          <td>Change <code>evaluateRecoveryDay</code> into a catch-up loop over each closed day since <code>lastRecoveryEvaluationDay</code>. Add simulation: last evaluated Monday, reopen Friday, mixed Tue/Wed/Thu outcomes produce the correct final streak.</td>
+          <td><span class="tag p0">P0</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-02</td>
+          <td>Recovery catch-up runs after daily/weekly violation catch-up added old violations.</td>
+          <td>If new violations are dated before yesterday, the single-day recovery evaluator may not reset streak for those dirty days.</td>
+          <td>Same catch-up loop as REC-EC-01, using the violation log for each evaluated day. Add test where reopening after 4 days writes violations on day 2 and day 3.</td>
+          <td><span class="tag p0">P0</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-03</td>
+          <td>Domain pause succeeds but plan allocation pause fails to persist.</td>
+          <td>The protocol is <code>.suspended</code>, but future allocations may remain <code>.active</code>, making the plan contradict policy.</td>
+          <td>Make <code>PlanStore.pauseAllocations</code> throw on save failure. Have <code>pauseProtocolForRecoveryWithPlanSync</code> prepare both mutations and persist both, or roll back the domain mutation if plan persistence fails.</td>
+          <td><span class="tag p0">P0</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-04</td>
+          <td>Recovery exits outside <code>MainAppView</code> presentation lifecycle.</td>
+          <td>Paused allocations may remain <code>.paused</code> until a UI pass notices no protocol is in recovery.</td>
+          <td>Move exit cleanup to a store coordinator such as <code>runDailyIntegrityTick(referenceDate:planStore:)</code>, or persist a one-time <code>recoveryExitPendingPlanFinalization</code> event.</td>
+          <td><span class="tag p1">P1</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-05</td>
+          <td>Decoded <code>recoveryPausedProtocolId</code> points to an active protocol.</td>
+          <td>Current decode keeps any non-retired ID, so a stale paused ID can survive even when the referenced protocol is not suspended.</td>
+          <td>On decode/load, clear <code>recoveryPausedProtocolId</code> unless the referenced protocol exists and is <code>.suspended</code>. Add fixture coverage.</td>
+          <td><span class="tag p1">P1</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-06</td>
+          <td>A protocol is <code>.suspended</code> but <code>recoveryPausedProtocolId</code> is nil.</td>
+          <td>The invariant is orphaned. Policy blocks the protocol, but recovery exit may not know whether to restore it intentionally.</td>
+          <td>Add a load-time repair rule: if exactly one suspended protocol exists during recovery and paused ID is nil, set it; otherwise mark as corrupt and normalize by restoring or requiring explicit user resolution.</td>
+          <td><span class="tag p1">P1</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-07</td>
+          <td>Decoded <code>lastRecoveryEvaluationDay</code> is in the future because of clock changes or old test data.</td>
+          <td>Recovery clean-day evaluation stalls until real time catches up.</td>
+          <td>Normalize <code>lastRecoveryEvaluationDay</code> to at most yesterday during store load, using <code>AppClock.now</code> or the current reference date.</td>
+          <td><span class="tag p1">P1</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-08</td>
+          <td>Decoded <code>recoveryCleanDayStreak</code> is greater than 7.</td>
+          <td>The value is logically invalid. It may display incorrect progress until the next evaluation mutates it.</td>
+          <td>Clamp to <code>0...6</code> while still in recovery, or immediately run exit normalization if the value is <code>&gt;= 7</code>.</td>
+          <td><span class="tag p1">P1</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-09</td>
+          <td>Pause candidate fallback selects a <code>.recovery</code> protocol when no active protocols exist.</td>
+          <td>This can be valid, but it contradicts popup copy that says "active protocol" and old implementation-plan guidance.</td>
+          <td>Choose one rule. If fallback remains, update copy to "choose one protocol" and immediately run normalization after pausing a recovery protocol. If active-only is desired, remove the recovery fallback.</td>
+          <td><span class="tag p1">P1</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-10</td>
+          <td>Pausing a recovery protocol leaves fewer than two recovery-eligible protocols.</td>
+          <td>Early-exit normalization uses <code>recoveryEligibleCount &lt; 2</code>, but it is not called after pause. Recovery can continue in a state that normalization would exit.</td>
+          <td>After any pause, call <code>normalizeRecoveryDomain</code>. If it exits recovery, clear the pending flow and finalize allocations consistently.</td>
+          <td><span class="tag p1">P1</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-11</td>
+          <td>Recovery entry popup remains unresolved for days while DevOptions/background ticks continue.</td>
+          <td>Recovery can progress or exit before the user completes the entry decision. The modal UI normally prevents this, but test/runtime paths can bypass it.</td>
+          <td>While <code>recoveryEntryPendingResolution</code> is true, either pause recovery clean-day progression or require popup resolution before evaluating exit.</td>
+          <td><span class="tag p1">P1</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-12</td>
+          <td><code>runSystemIntegrityCheck</code> is called instead of <code>runDailyIntegrityTick</code>.</td>
+          <td>It evaluates violations and windows but does not call <code>evaluateRecoveryDay</code>, so recovery progress can lag depending on which integrity path the app uses.</td>
+          <td>Make the two integrity paths consistent or document one as violation-only. Prefer adding <code>evaluateRecoveryDay</code> to <code>runSystemIntegrityCheck</code>.</td>
+          <td><span class="tag p1">P1</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-13</td>
+          <td>Recovery protocols exit mid-week without each protocol meeting its own weekly target.</td>
+          <td>Seven clean days require only one counted completion somewhere in the system. A high-frequency recovery protocol can exit still short for the current ISO week and re-enter at week-end.</td>
+          <td>Either set <code>recoveryRestoredAt</code> on protocols leaving <code>.recovery</code> too, or strengthen clean-day rules so active recovery protocols must remain mathematically able to satisfy their own weekly targets.</td>
+          <td><span class="tag p1">P1</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-14</td>
+          <td>Daily Check-In, Plan, logs, and store helpers use older initial-grace logic.</td>
+          <td>UI surfaces may tell the user no work is required when the engine would enforce a shortfall, especially for Tuesday/Wednesday low-frequency session starts.</td>
+          <td>Extract one shared weekly requirement service used by <code>NonNegotiableEngine</code>, <code>CommitmentSystemEngine</code>, <code>CommitmentSystemStore</code>, <code>PlanStore</code>, and <code>DailyCheckInViewModel</code>.</td>
+          <td><span class="tag p0">P0</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-15</td>
+          <td>Multiple suspended protocols exist from legacy data or capacity enforcement.</td>
+          <td>Current pause guard prevents adding another suspended protocol through the popup, but load-time and capacity paths can still leave multiple suspended protocols without matching paused IDs.</td>
+          <td>Add normalization that detects multiple suspended protocols, restores extras if capacity allows, and otherwise records an explicit repair-required state or terminalizes stale paused allocations.</td>
+          <td><span class="tag p1">P1</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-16</td>
+          <td>Retired paused protocol is retired through a call site that does not pass <code>planStore</code>.</td>
+          <td>Domain state is repaired, but paused allocations may remain until full recovery exit or a UI cleanup pass.</td>
+          <td>Make retirement-with-plan-sync the only UI path. Add a defensive <code>PlanStore</code> repair on refresh: paused allocation for retired/missing protocol becomes <code>.skippedDueToRecovery</code>.</td>
+          <td><span class="tag p1">P1</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-17</td>
+          <td>Recovery exit when suspended protocol cannot be restored because capacity is full.</td>
+          <td><code>resumeSuspendedIfCapacityAllows</code> can leave the protocol suspended. Since no protocol is in recovery, policy may still block that protocol but the system is considered stable.</td>
+          <td>Define product behavior: either force restoration by retiring/asking user to choose, or introduce a non-recovery paused state with clear UI copy. Add simulation for suspended-left-behind after exit.</td>
+          <td><span class="tag p1">P1</span></td>
+        </tr>
+        <tr>
+          <td>REC-EC-18</td>
+          <td>Extra completion on a day with no counted completion during recovery.</td>
+          <td>Extra completions do not satisfy clean-day rules, which is probably correct, but this should be explicit because users may interpret "I did work" differently.</td>
+          <td>Add UI copy in recovery check-in: only counted completions move recovery forward. Add simulation confirming extra-only day resets or does not increment streak.</td>
+          <td><span class="tag p2">P2</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>4. Recommended Implementation Order</h2>
+  <div class="panel">
+    <ol>
+      <li><strong>P0 - Recovery catch-up loop:</strong> fix <code>evaluateRecoveryDay</code> so skipped days are evaluated one by one.</li>
+      <li><strong>P0 - Shared weekly requirement logic:</strong> remove stale grace/target duplication from store, plan, and check-in surfaces.</li>
+      <li><strong>P0 - True pause transaction:</strong> make domain pause and allocation pause atomic or rollbackable.</li>
+      <li><strong>P1 - Load-time recovery normalization:</strong> repair future evaluation dates, invalid paused IDs, orphaned suspended protocols, and over-limit streaks.</li>
+      <li><strong>P1 - Exit finalization ownership:</strong> make recovery exit cleanup store-owned or event-driven, not only view-owned.</li>
+      <li><strong>P1 - Candidate policy decision:</strong> decide whether recovery protocols can be pause candidates and align code, copy, and tests.</li>
+      <li><strong>P1 - Re-entry prevention after exit:</strong> handle mid-week exit for protocols that were in <code>.recovery</code>, not only suspended protocols.</li>
+      <li><strong>P2 - Copy and coverage polish:</strong> explicit extra-completion rule, UI restart check, strictness checks, and DevOptions recipes.</li>
+    </ol>
+  </div>
+
+  <h2>5. Manual Validation Checklist</h2>
+  <div class="panel">
+    <ul>
+      <li><strong>Restart pending popup:</strong> seed <code>In Recovery</code>, force quit before resolving popup, relaunch, confirm popup reappears.</li>
+      <li><strong>Pause sync:</strong> choose a pause candidate with future plan allocations; confirm protocol becomes suspended and future allocations become paused.</li>
+      <li><strong>Retire paused protocol:</strong> after pausing, retire it after lock end with the UI path; confirm its paused allocations become skipped immediately.</li>
+      <li><strong>Seven clean days:</strong> in recovery, complete one counted protocol per day for seven closed days; confirm recovery exits and future paused allocations restore.</li>
+      <li><strong>Dirty skipped days:</strong> while in recovery, skip several days at once; confirm the clean-day streak reflects every missed day after REC-EC-01 is implemented.</li>
+      <li><strong>Post-restoration week:</strong> exit recovery mid-week with a restored 5x/week session protocol; confirm the first partial week does not immediately re-enter recovery.</li>
+    </ul>
+  </div>
+
+  <h2>6. Source Files Reviewed</h2>
+  <div class="panel">
+    <ul>
+      <li><code>LockedIn/Domain/Engines/NonNegotiableEngine.swift</code> - recovery thresholds and protocol state transition.</li>
+      <li><code>LockedIn/Domain/Engines/CommitmentSystemEngine.swift</code> - clean-day evaluation, normalization, capacity handling, restoration.</li>
+      <li><code>LockedIn/Application/CommitmentSystemStore.swift</code> - recovery entry context, popup flags, pause coordinator, retirement normalization.</li>
+      <li><code>LockedIn/Domain/Models/CommitmentSystem.swift</code> - persisted recovery fields and decode defaults.</li>
+      <li><code>LockedIn/Application/PlanStore.swift</code> - allocation pause/finalization and recovery placement strictness.</li>
+      <li><code>LockedIn/Features/Recovery/ViewModels/RecoveryModeViewModel.swift</code> and <code>RecoveryModePopup.swift</code> - popup flow, option ranking, copy.</li>
+      <li><code>LockedIn/Features/DailyCheckIn/ViewModels/DailyCheckInViewModel.swift</code> - recovery-aware check-in and duplicated target logic.</li>
+      <li><code>LockedIn/Application/DevOptionsController.swift</code> - recovery seed scenario and simulated clock integrity tick.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

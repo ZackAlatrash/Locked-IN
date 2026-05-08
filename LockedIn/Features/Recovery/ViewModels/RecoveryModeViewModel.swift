@@ -11,6 +11,7 @@ final class RecoveryModeViewModel: ObservableObject {
     @Published private(set) var requiresPauseSelection = false
     @Published private(set) var isPendingResolution = false
     @Published private(set) var warningMessage: String?
+    @Published private(set) var recoveryProtocolCount = 0
 
     private let commitmentStore: CommitmentSystemStore
     private let planStore: PlanStore
@@ -45,6 +46,7 @@ final class RecoveryModeViewModel: ObservableObject {
 
         isPendingResolution = true
         requiresPauseSelection = context.requiresPauseSelection
+        recoveryProtocolCount = commitmentStore.system.nonNegotiables.filter { $0.state == .recovery }.count
         triggerProtocolTitle = context.triggerProtocolId.flatMap { commitmentStore.nonNegotiable(id: $0)?.definition.title }
         pausedProtocolTitle = context.pausedProtocolId.flatMap { commitmentStore.nonNegotiable(id: $0)?.definition.title }
 

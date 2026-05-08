@@ -71,6 +71,40 @@ final class CommitmentSystemStore: ObservableObject {
         }
     }
 
+    /// One-time pass that re-evaluates recovery state for protocols evaluated under the old
+    /// higher thresholds (daily=3, session=2) that are now below the new thresholds (daily=2, session=1).
+    func runThresholdMigrationIfNeeded(referenceDate: Date = Date()) {
+        let sentinelKey = "didRunThresholdMigration20260506"
+        guard !UserDefaults.standard.bool(forKey: sentinelKey) else { return }
+        defer { UserDefaults.standard.set(true, forKey: sentinelKey) }
+
+        let thresholdForMode: (NonNegotiableMode) -> Int = { mode in
+            switch mode {
+            case .daily: return 2
+            case .session: return 1
+            }
+        }
+
+        var updated = system
+        var anyChanged = false
+
+        for i in updated.nonNegotiables.indices {
+            let nn = updated.nonNegotiables[i]
+            guard nn.state == .active else { continue }
+            guard let currentWindow = nn.windows.last(where: {
+                referenceDate >= $0.startDate && referenceDate < $0.endDate
+            }) else { continue }
+            let violationCount = nn.violationCount(inWindow: currentWindow.index)
+            if violationCount >= thresholdForMode(nn.definition.mode) {
+                updated.nonNegotiables[i].state = .recovery
+                anyChanged = true
+            }
+        }
+
+        guard anyChanged else { return }
+        applySystemUpdate(updated, referenceDate: referenceDate)
+    }
+
     @discardableResult
     func createNonNegotiable(
         definition: NonNegotiableDefinition,
@@ -194,6 +228,12 @@ final class CommitmentSystemStore: ObservableObject {
         let decision = policy.canRetire(nn: target, at: referenceDate)
         guard decision.allowed else {
             throw CommitmentStoreError.policyDenied(decision.reason ?? .generic(message: "Retire action blocked."))
+        }
+
+        // LIF-EC-09: Log when a paused protocol is retired without planStore. Paused plan
+        // allocations will be repaired by PlanStore.repairPausedAllocations on next refresh.
+        if planStore == nil && (target.state == .suspended || system.recoveryPausedProtocolId == id) {
+            Self.logger.warning("retireNonNegotiable: retiring paused protocol \(id) without planStore — stale paused allocations will repair on next PlanStore refresh.")
         }
 
         var updated = system
@@ -369,6 +409,7 @@ final class CommitmentSystemStore: ObservableObject {
         systemEngine.evaluateWeekCatchUp(referenceDate: currentDate, in: &updated, calendar: calendar)
         systemEngine.evaluateIntraWeekSessionCompliance(currentDate: currentDate, in: &updated)
         systemEngine.advanceWindows(currentDate: currentDate, in: &updated)
+        systemEngine.evaluateRecoveryDay(referenceDate: currentDate, in: &updated, calendar: calendar)
         applySystemUpdate(updated, referenceDate: currentDate)
     }
 
@@ -390,6 +431,7 @@ final class CommitmentSystemStore: ObservableObject {
         systemEngine.evaluateIntraWeekSessionCompliance(currentDate: referenceDate, in: &updated)
         systemEngine.advanceWindows(currentDate: referenceDate, in: &updated)
         systemEngine.evaluateRecoveryDay(referenceDate: referenceDate, in: &updated, calendar: calendar)
+        _ = systemEngine.normalizeRecoveryDomain(in: &updated, referenceDate: referenceDate)
 
         let recoveryIdsAfter = Set(updated.nonNegotiables.filter { $0.state == .recovery }.map(\.id.uuidString)).sorted()
         if hadSessionProtocol || recoveryIdsAfter.isEmpty == false || recoveryIdsBefore != recoveryIdsAfter {
@@ -465,9 +507,12 @@ final class CommitmentSystemStore: ObservableObject {
         planStore: PlanStore,
         referenceDate: Date = Date()
     ) throws {
+        let systemSnapshot = system
         try pauseProtocolForRecovery(protocolId: protocolId)
         guard system.recoveryPausedProtocolId == protocolId,
               nonNegotiable(id: protocolId)?.state == .suspended else {
+            system = systemSnapshot
+            persistSystem()
             return
         }
 
@@ -810,7 +855,7 @@ final class CommitmentSystemStore: ObservableObject {
         if decision.clearedPausedProtocolId,
            let pausedProtocolIdBeforeNormalization,
            normalized.recoveryPausedProtocolId == nil,
-           normalized.nonNegotiables.first(where: { $0.id == pausedProtocolIdBeforeNormalization })?.state == .retired {
+           normalized.nonNegotiables.first(where: { $0.id == pausedProtocolIdBeforeNormalization })?.state.isTerminal == true {
             planStore?.finalizeRecoveryAllocationStatuses(
                 for: pausedProtocolIdBeforeNormalization,
                 referenceDate: referenceDate
@@ -833,9 +878,10 @@ final class CommitmentSystemStore: ObservableObject {
             let enteredRecovery = updated.nonNegotiables
                 .filter { $0.state == .recovery && previousRecoveryIds.contains($0.id) == false }
                 .sorted { lhs, rhs in
-                    if lhs.createdAt != rhs.createdAt {
-                        return lhs.createdAt < rhs.createdAt
-                    }
+                    let lhsViolations = lhs.windows.last.map { lhs.violationCount(inWindow: $0.index) } ?? 0
+                    let rhsViolations = rhs.windows.last.map { rhs.violationCount(inWindow: $0.index) } ?? 0
+                    if lhsViolations != rhsViolations { return lhsViolations > rhsViolations }
+                    if lhs.createdAt != rhs.createdAt { return lhs.createdAt < rhs.createdAt }
                     return lhs.id.uuidString < rhs.id.uuidString
                 }
 
@@ -860,13 +906,7 @@ final class CommitmentSystemStore: ObservableObject {
     }
 
     private func recoveryPauseCandidateIds(in system: CommitmentSystem) -> [UUID] {
-        let activeCandidates = sortedNonNegotiableIds(in: system) { $0.state == .active }
-        if activeCandidates.isEmpty == false {
-            return activeCandidates
-        }
-
-        let recoveryCandidates = sortedNonNegotiableIds(in: system) { $0.state == .recovery }
-        return recoveryCandidates.count > 1 ? recoveryCandidates : []
+        return sortedNonNegotiableIds(in: system) { $0.state == .active }
     }
 
     private func sortedNonNegotiableIds(

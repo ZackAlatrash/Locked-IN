@@ -97,6 +97,7 @@ struct LockedInAppRoot: View {
                 planStore.clearAllAllocations()
                 UserDefaults.standard.set(true, forKey: protocolResetKey)
             }
+            commitmentSystemStore.runThresholdMigrationIfNeeded(referenceDate: appClock.now)
             commitmentSystemStore.runDailyIntegrityTick(referenceDate: appClock.now)
             // Crash recovery: restore stash if a walkthrough restart was interrupted
             if commitmentSystemStore.hasWalkthroughStash && !walkthroughController.isActive {

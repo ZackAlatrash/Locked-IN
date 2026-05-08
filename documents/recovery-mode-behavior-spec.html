@@ -343,10 +343,11 @@
       <span class="pill">Project: <code>Locked IN</code></span>
       <span class="pill">Branch: <code>Accessibility</code></span>
       <span class="pill">Based on audit: <code>2026-05-04</code></span>
-      <span class="pill">Status: <code>Draft v1</code></span>
+      <span class="pill">Updated: <code>2026-05-06</code></span>
+      <span class="pill">Status: <code>v2 — Post-Implementation Review</code></span>
     </div>
     <div class="callout info" style="margin-top:20px;">
-      <strong>Source of truth:</strong> this document is derived solely from the Phase 1 source audit. Behavior described as <span class="tag proposed">Proposed</span> is not yet verified in code and is explicitly marked. Everything else reflects observed implementation.
+      <strong>Source of truth:</strong> v1 was derived from the Phase 1 source audit. v2 (this version) was updated after recovery mode implementation was completed — gap statuses reflect the current source, new edge cases (EC-8–EC-16) and new gaps (G-11–G-12) were added, and a Current State vs Specification comparison section was inserted. Behavior described as <span class="tag proposed">Proposed</span> is not yet verified in code and is explicitly marked.
     </div>
   </section>
 
@@ -362,8 +363,9 @@
         <li><a href="#intended-flow">Intended Recovery Mode Flow</a></li>
         <li><a href="#state-model">State Model</a></li>
         <li><a href="#invariants">Required Invariants</a></li>
-        <li><a href="#edge-cases">Edge Cases</a></li>
-        <li><a href="#gap-list">Gap List</a></li>
+        <li><a href="#edge-cases">Edge Cases (EC-1 – EC-7)</a></li>
+        <li><a href="#current-vs-spec">Current State vs Specification</a></li>
+        <li><a href="#gap-list">Gap List (G-1 – G-12)</a></li>
         <li><a href="#impl-order">Recommended Implementation Order</a></li>
         <li><a href="#test-plan">Test Plan</a></li>
         <li><a href="#ai-assignment">AI Tool Assignment</a></li>
@@ -437,13 +439,13 @@
         <tbody>
           <tr>
             <td>Daily compliance violations to enter recovery</td>
-            <td><code>3</code></td>
-            <td><code>NonNegotiableEngine.recoveryViolationThreshold</code> (line 586)</td>
-            <td>Per 14-day window.</td>
+            <td><code>2</code> <small style="color:#9f1d1d;">(lowered from 3)</small></td>
+            <td><code>NonNegotiableEngine.recoveryViolationThreshold</code></td>
+            <td>Per 14-day window. Threshold was tightened after initial implementation.</td>
           </tr>
           <tr>
             <td>Session / weekly violations to enter recovery</td>
-            <td><code>2</code></td>
+            <td><code>1</code> <small style="color:#9f1d1d;">(lowered from 2)</small></td>
             <td><code>NonNegotiableEngine.updateRecoveryState</code></td>
             <td>Per 14-day window.</td>
           </tr>
@@ -819,6 +821,187 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════
+       §6.5 CURRENT STATE VS SPECIFICATION
+  ════════════════════════════════════════════════════════════ -->
+  <h2 id="current-vs-spec">6.5 Current State vs Specification</h2>
+
+  <div class="callout info">This section was added after the recovery mode implementation was completed. It compares what the spec described as the target against what is actually in the source code today.</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Gap #</th>
+          <th>Description</th>
+          <th>Status</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>G-1</strong></td>
+          <td>Pause candidates include <code>.recovery</code> protocols</td>
+          <td><span class="tag p0">Still Open</span></td>
+          <td><code>recoveryPauseCandidateIds()</code> falls back to <code>.recovery</code> protocols when no <code>.active</code> candidates exist. This is semantically wrong — pausing an already-struggling protocol provides no capacity relief.</td>
+        </tr>
+        <tr>
+          <td><strong>G-2</strong></td>
+          <td>Pause action split across two stores with no transaction</td>
+          <td><span class="tag p0">Still Open</span></td>
+          <td><code>pauseProtocolForRecoveryWithPlanSync()</code> exists as a coordinator but has no rollback. If <code>planStore.pauseAllocations()</code> fails after <code>CommitmentSystemStore</code> has already suspended the protocol, the stores are in inconsistent state.</td>
+        </tr>
+        <tr>
+          <td><strong>G-3</strong></td>
+          <td>Unused <code>referenceDate</code> parameters</td>
+          <td><span class="tag p1">Partially Addressed</span></td>
+          <td>Some functions now use the date parameter; others still ignore it. API surface is still misleading in places.</td>
+        </tr>
+        <tr>
+          <td><strong>G-4</strong></td>
+          <td>No coverage for popup presentation path</td>
+          <td><span class="tag p2">Resolved</span></td>
+          <td>Popup observes <code>isPendingResolution</code> and calls <code>onResolved()</code> callback when it changes. Presentation is conditionally driven by live state. No formal test target yet, but the logic is wired correctly.</td>
+        </tr>
+        <tr>
+          <td><strong>G-5</strong></td>
+          <td>Allocations for retired paused protocol not immediately finalized</td>
+          <td><span class="tag p1">Still Open</span></td>
+          <td><code>applyPostMutationRecoveryNormalization()</code> does call <code>finalizeRecoveryAllocationStatuses</code> when the paused protocol is detected as retired — but only via the normalization path triggered on mutation, not atomically with the retirement action itself.</td>
+        </tr>
+        <tr>
+          <td><strong>G-6</strong></td>
+          <td>No coverage for RecoveryModeViewModel option ranking</td>
+          <td><span class="tag p2">Resolved</span></td>
+          <td>Ranking is implemented: violations × 100 + weeklyLoad × 10 + plannedLoads. First option is auto-marked recommended. The formula is in place; formal test coverage is still absent.</td>
+        </tr>
+        <tr>
+          <td><strong>G-7</strong></td>
+          <td>No coverage for placement strictness during recovery</td>
+          <td><span class="tag p2">Resolved</span></td>
+          <td><code>shouldApplyRecoveryStrictness()</code> is called inside <code>validatePlacement()</code> and actively reduces the daily placement cap during recovery.</td>
+        </tr>
+        <tr>
+          <td><strong>G-8</strong></td>
+          <td>Post-decode validation missing for <code>recoveryPausedProtocolId</code></td>
+          <td><span class="tag p1">Partially Addressed</span></td>
+          <td><code>CommitmentSystem.init(from:)</code> now validates that <code>recoveryPausedProtocolId</code> and <code>recoveryEntryTriggerProtocolId</code> reference a non-retired protocol. Does not verify the referenced protocol is actually in <code>.suspended</code> state, nor that the paused protocol is different from the trigger protocol.</td>
+        </tr>
+        <tr>
+          <td><strong>G-9</strong></td>
+          <td>Weekly protocols immediately re-violate after restoration</td>
+          <td><span class="tag p1">Partially Addressed</span></td>
+          <td><code>isPostRestorationPartialWeek()</code> is now called inside <code>effectiveWeeklyTarget()</code> and reduces the required target based on available days in the restoration week. However it does not grant full week immunity — a protocol restored with zero remaining feasible days could still fire an immediate end-of-week violation.</td>
+        </tr>
+        <tr>
+          <td><strong>G-10</strong></td>
+          <td>No guard against double-pause</td>
+          <td><span class="tag p1">Partially Addressed</span></td>
+          <td>A guard exists at the top of <code>pauseProtocolForRecovery()</code> that checks for an existing <code>.suspended</code> protocol, but it throws (not a precondition) and the error is silently swallowed in <code>confirmPauseSelection()</code>. A rapid double-tap would surface a warning message to the user, not a crash, but the first pause would be the only one applied.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>New Capabilities Not in Original Spec</h3>
+  <div class="panel section-card">
+    <ul>
+      <li><strong>Recovery Scoring Algorithm:</strong> <code>RecoveryModeViewModel</code> ranks pause candidates using a weighted formula — violations in current window × 100, weekly load × 10, planned load this week × 1. First option is automatically flagged as recommended.</li>
+      <li><strong>Post-Restoration Week Grace:</strong> <code>isPostRestorationPartialWeek()</code> in <code>CommitmentSystemEngine</code> proportionally reduces the effective weekly target for the restoration week so the first partial week does not immediately re-trigger recovery.</li>
+      <li><strong>Capacity Enforcement Bypass:</strong> <code>enforceCapacityIfNeeded()</code> short-circuits when recovery entry is pending, preventing capacity pressure from suspending additional protocols while the user has not yet resolved the popup.</li>
+      <li><strong>Two-Overload Plan Finalization:</strong> <code>PlanStore.finalizeRecoveryAllocationStatuses</code> has two overloads — one for full exit (takes a set of restorable IDs) and one for single-protocol retirement during recovery.</li>
+      <li><strong>Violation-Based Candidate Ranking:</strong> Candidates in the pause selection step show violation counts and planned weekly load, giving the user meaningful data to guide their decision.</li>
+    </ul>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       NEW EDGE CASES
+  ════════════════════════════════════════════════════════════ -->
+
+  <div class="panel section-card" style="margin-top:28px;">
+    <h3>EC-8 — Two Protocols Cross Recovery Threshold in the Same Tick</h3>
+    <p>If two protocols both accumulate enough violations to cross the recovery threshold within a single tick (e.g., the app is opened after several missed days and the catch-up loop processes multiple days at once):</p>
+    <ul>
+      <li>Both protocols transition to <code>.recovery</code> in the same <code>applySystemUpdate</code> call.</li>
+      <li><code>handleRecoveryTransition</code> detects the first time the system enters recovery. The trigger protocol ID is set to the first protocol found in the recovery state — determined by array order, not by which protocol hit the threshold first.</li>
+      <li>If the user views the recovery popup, the trigger protocol shown may not be the one with the most violations (it depends on array ordering, not ranking). The candidate list will, however, include all <code>.active</code> protocols for selection.</li>
+    </ul>
+    <div class="callout warn"><strong>Recommended fix:</strong> In <code>handleRecoveryTransition</code>, when identifying the trigger protocol, prefer the protocol with the highest violation count in its current window rather than using array order. This ensures the most egregious failure is highlighted in the popup entry step.</div>
+
+    <h3>EC-9 — Recovery Entry While Previous <code>recoveryEntryPendingResolution</code> is Still True</h3>
+    <p>If the system is already in recovery with <code>recoveryEntryPendingResolution = true</code> (user has not dismissed the popup) and an additional protocol crosses the recovery threshold:</p>
+    <ul>
+      <li><code>handleRecoveryTransition</code> checks whether the system was already in recovery before this transition. Since it was, it does not overwrite the trigger protocol ID or reset the pending resolution flag — the existing popup flow continues unchanged.</li>
+      <li>The newly-recovered protocol does not appear as a trigger in the popup, and the user may not realize a second protocol has also entered recovery.</li>
+      <li>The confirmed step will show the full list of protocols in recovery, so this is not entirely invisible — but the entry copy will only reference the original trigger protocol.</li>
+    </ul>
+    <div class="callout warn"><strong>Recommended fix:</strong> When an additional protocol enters recovery while pending resolution is already active, update the popup's entry copy to reflect that multiple protocols are now in recovery, not just the original trigger. Consider surfacing a count: "2 protocols have entered recovery mode."</div>
+
+    <h3>EC-10 — Lock Period Expires During Recovery</h3>
+    <p>A protocol's 28/60/90-day lock period ends while the system is in recovery mode. The lock expiry triggers the protocol to complete (<code>.completed</code> or <code>.retired</code>).</p>
+    <ul>
+      <li>If the completed protocol was the trigger protocol, <code>recoveryEntryTriggerProtocolId</code> now references a completed protocol. The post-decode validation clears stale <code>recoveryPausedProtocolId</code> references but may not catch a completed (as opposed to retired) trigger protocol.</li>
+      <li>If the completed protocol was the only one in <code>.recovery</code>, <code>normalizeRecoveryDomain</code> should detect fewer than 2 eligible protocols and exit recovery early.</li>
+      <li>If the completed protocol was the paused (<code>.suspended</code>) protocol, <code>recoveryPausedProtocolId</code> would reference a protocol that is now <code>.completed</code>. The guard currently checks for <code>.retired</code> state — it is unclear whether <code>.completed</code> is also treated as invalid.</li>
+    </ul>
+    <div class="callout warn"><strong>Recommended fix:</strong> Expand the paused-protocol validity check to treat <code>.completed</code> the same as <code>.retired</code> for the purpose of clearing stale references. Verify that <code>normalizeRecoveryDomain</code> and the post-decode validator both handle the <code>.completed</code> case explicitly, not just <code>.retired</code>.</div>
+
+    <h3>EC-11 — Recovery Exits Mid-Day (Streak Reaches 7 Before Violation Evaluation)</h3>
+    <p>The daily tick runs violation evaluation first, then clean-day evaluation. The order is: <code>evaluateDailyCompliance</code> → <code>evaluateWeekCatchUp</code> → <code>evaluateIntraWeekSession</code> → <code>advanceWindows</code> → <code>evaluateRecoveryDay</code>. This ordering means violations are always recorded before the clean-day streak is checked — correct. However consider the reverse scenario:</p>
+    <ul>
+      <li>User is on clean-day streak of 6. App opens on day 7 (the exit day). No violations today. Streak reaches 7 → recovery exits, all protocols transition to <code>.active</code>.</li>
+      <li>Because violation evaluation runs first, any missed days from the previous window are caught. If a violation is found and recorded during the same tick, the streak resets to 0 before the exit check — correct. Recovery does not exit.</li>
+      <li>The ordering is sound. However: after recovery exits in this tick, the violation evaluation stage has already run and found no violations. Later in the same day, if the user opens the app again (scene activation fires another tick), the violation evaluation runs again. For daily mode, <code>lastDailyComplianceCheckedDay</code> prevents double evaluation of the same day — safe. For session mode, the intra-week check is idempotent — safe.</li>
+    </ul>
+    <div class="callout good"><strong>No immediate fix required.</strong> The tick ordering is correct and idempotent guards prevent double-evaluation. Document this ordering as an invariant: violation evaluation must always precede clean-day evaluation in the pipeline.</div>
+
+    <h3>EC-12 — All Protocols Retire During Recovery (Empty System)</h3>
+    <p>The user retires every protocol while in recovery mode — for example, they decide to start fresh and delete everything:</p>
+    <ul>
+      <li>As each protocol is retired, <code>applyPostMutationRecoveryNormalization</code> runs <code>normalizeRecoveryDomain</code>. When recovery-eligible count drops below 2, recovery exits.</li>
+      <li>However, if all protocols are retired including the paused one, <code>resumeSuspendedIfCapacityAllows</code> has nothing to restore.</li>
+      <li><code>PlanStore.finalizeRecoveryAllocationStatuses</code> is called with an empty restorable set — all remaining paused allocations become <code>.skippedDueToRecovery</code>. This is correct.</li>
+      <li>The recovery popup, if still showing, now has no valid trigger protocol. <code>recoveryEntryContext()</code> should return <code>nil</code> because no protocols are in <code>.recovery</code> state, causing the popup to auto-dismiss. <strong>Verify this path is covered.</strong></li>
+    </ul>
+    <div class="callout warn"><strong>Recommended fix:</strong> Add an explicit guard in <code>recoveryEntryContext()</code> that returns <code>nil</code> if <code>nonNegotiables</code> is empty, even if <code>recoveryEntryPendingResolution</code> is still <code>true</code>. Also call <code>clearRecoveryEntryState()</code> in the normalization path when the system becomes fully empty.</div>
+
+    <h3>EC-13 — Plan Allocation Accumulation During Long Recovery</h3>
+    <p>If recovery lasts many weeks, <code>pauseAllocations()</code> marks all future allocations as <code>.paused</code> at pause-time. However, the plan regulator continues to generate new allocations in subsequent weeks. Those new allocations are created with <code>.active</code> status, not <code>.paused</code>.</p>
+    <ul>
+      <li>Newly generated allocations for the suspended protocol after the initial pause are NOT automatically paused — they receive the default <code>.active</code> status.</li>
+      <li>This means the suspended protocol's future plan slots will be partially paused (those that existed at pause time) and partially active (those generated by the regulator afterward), creating an inconsistent plan view.</li>
+      <li>The current implementation of <code>pauseAllocations()</code> only operates at the moment of pause — it is not a live subscription that catches future additions.</li>
+    </ul>
+    <div class="callout warn"><strong>Recommended fix:</strong> In <code>PlanRegulatorEngine</code> (or when allocations are placed), check if the target protocol is <code>.suspended</code> and if so, create new allocations with <code>.paused</code> status instead of <code>.active</code>. Alternatively, filter suspended protocols out of the regulator's scheduling candidates entirely so no new allocations are generated while suspended.</div>
+
+    <h3>EC-14 — Threshold Change Retroactively Affects Existing Violation Counts</h3>
+    <p>The violation thresholds were recently lowered (daily: 3→2, session: 2→1). An existing user who had accumulated 2 daily violations in their current window — previously safe under the old threshold of 3 — is now over the new threshold of 2.</p>
+    <ul>
+      <li>Recovery entry is triggered only when <code>updateRecoveryState</code> is called, which happens only when a new violation is appended. Old violations that were already recorded do not re-trigger the check.</li>
+      <li>This means the threshold change is NOT retroactive — a user with 2 existing violations in their window stays in <code>.active</code> state until a third violation is recorded (even though the new threshold is 2).</li>
+      <li>This is safe behavior (no surprise recovery entry on app update) but creates a temporary window of inconsistency where a user "should" be in recovery but isn't.</li>
+    </ul>
+    <div class="callout warn"><strong>Recommended fix:</strong> After any threshold change, run a post-migration integrity pass that calls <code>updateRecoveryState</code> for every active protocol whose current window violation count meets or exceeds the new threshold. Guard this with a UserDefaults migration sentinel (e.g., <code>didRunThresholdMigration20260506</code>) so it only fires once.</div>
+
+    <h3>EC-15 — Recovery Shortfall Suppression Leaks Into Next Week</h3>
+    <p>When a suspended protocol is restored at recovery exit, <code>recoveryRestoredAt</code> is set on the protocol. <code>isPostRestorationPartialWeek()</code> uses this date to grant a reduced target for the restoration week only — it checks if the recovery week ID matches the current week ID. This is correct.</p>
+    <ul>
+      <li>However, if recovery exits late on a Sunday (the last day of the week), the restoration week is week N. One tick later — after midnight, on Monday of week N+1 — the week ID changes. <code>isPostRestorationPartialWeek</code> now compares week N+1 to week N and returns false. Grace expires correctly.</li>
+      <li>The issue is when the tick fires multiple times on Sunday (app backgrounded and foregrounded). Each time, the same partial-week grace applies. The result is the same because the method is idempotent — but if the week boundary is crossed between two ticks on the same session, the grace computation changes mid-session.</li>
+      <li>More critically: the feasibility check in <code>isPostRestorationPartialWeek</code> computes available days from <code>recoveryRestoredAt</code>. If the restored protocol has its weekly target reduced to 0 (restored with zero feasible days), the clean-day evaluation uses <code>effectiveWeeklyTarget = 0</code>, meaning no completion is required that day. But the violation engine also uses this function — if the week then ends with 0 completions and a target of 0, is a violation suppressed? It should be, but verify that both callers handle the zero-target case identically.</li>
+    </ul>
+    <div class="callout warn"><strong>Recommended fix:</strong> Add an explicit guard in <code>evaluateWeekIfNeeded</code> and <code>reconcileSessionViolations</code>: if <code>effectiveWeeklyTarget == 0</code>, skip violation recording entirely for that week. This makes the zero-target case an unambiguous no-op in both the violation engine and the clean-day engine.</div>
+
+    <h3>EC-16 — Single-Protocol System: No Candidate to Pause, but Popup Flow Is Not Skipped Completely</h3>
+    <p>When only one protocol exists and it enters recovery, <code>recoveryEntryRequiresPauseSelection = false</code> (there are no other protocols to pause). The popup shows only the entry step and the confirmed step, skipping the select-protocol step. This is correct.</p>
+    <ul>
+      <li>However, the clean-day evaluation still requires the single recovering protocol to have at least one completion per day (for daily mode) or hit its weekly target (for session mode) to count a day as clean. With only one protocol in recovery and nothing else active, every missed day resets the streak — potentially trapping the user in permanent recovery if they have a single daily protocol they cannot consistently complete.</li>
+      <li>There is no UX mechanism to communicate that the user's only way out is 7 consecutive days of completing the one protocol — no guidance is shown after the popup closes.</li>
+      <li>There is also no early-exit mechanism for this scenario. The only exits are 7 clean days or normalization (fewer than 2 eligible protocols). A single protocol in recovery is exactly 1 eligible protocol — which is below the &lt;2 threshold, so normalization should exit recovery immediately.</li>
+    </ul>
+    <div class="callout warn"><strong>Recommended fix:</strong> Audit <code>normalizeRecoveryDomain</code>: if <code>recoveryEligibleCount &lt; 2</code> and only one protocol has ever been in the system (not retired), verify whether the normalization exit fires correctly. If a single-protocol system can be permanently stuck in recovery without normalization exiting, add a rule: when the system has exactly 1 non-retired protocol and it is in recovery with no suspended protocol, exit recovery automatically (the concept of capacity-load management does not apply to a single protocol).</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
        §7 GAP LIST
   ════════════════════════════════════════════════════════════ -->
   <h2 id="gap-list">7. Gap List</h2>
@@ -831,6 +1014,7 @@
         <tr>
           <th>#</th>
           <th>Gap</th>
+          <th>Status</th>
           <th>Risk</th>
           <th>Affected Files / Functions</th>
           <th>Recommended Fix</th>
@@ -841,81 +1025,109 @@
         <tr>
           <td><strong>G-1</strong></td>
           <td>Pause candidates include <code>.recovery</code> protocols, which the popup copy says should not be selectable ("Select exactly one <em>active</em> protocol").</td>
+          <td><span class="tag p0">Still Open</span></td>
           <td>A user could pause the only recovering protocol, leaving the system with zero recovery protocols and a dangling paused reference, with no immediate normalization pass triggered.</td>
-          <td><code>CommitmentSystemStore.swift:403–418</code> (<code>recoveryEntryContext</code>), <code>RecoveryModePopup.swift:176–177</code></td>
-          <td>Filter candidates in <code>recoveryEntryContext</code> to only include protocols in <code>.active</code> state. Update popup copy to match. Run normalization if the resulting eligible set is empty.</td>
+          <td><code>CommitmentSystemStore.recoveryPauseCandidateIds()</code>, <code>RecoveryModePopup.swift</code></td>
+          <td>Filter candidates to only <code>.active</code> state. If no active protocols exist, set <code>recoveryEntryRequiresPauseSelection = false</code> rather than falling back to <code>.recovery</code> protocols.</td>
           <td><span class="p-badge P0">P0</span></td>
         </tr>
         <tr>
           <td><strong>G-2</strong></td>
           <td>Pause action is split across two stores with no transactional guarantee.</td>
-          <td>If <code>CommitmentSystemStore.pauseProtocolForRecovery</code> succeeds but <code>PlanStore.pauseAllocations</code> fails (crash, rejection, etc.), the domain shows the protocol as suspended but allocations remain active — plan and domain are inconsistent.</td>
-          <td><code>RecoveryModeViewModel.swift:137–143</code>, <code>CommitmentSystemStore.swift:421–439</code>, <code>PlanStore.swift:329–346</code></td>
-          <td>Introduce a single <code>pauseProtocolForRecovery(protocolId:)</code> coordinator on <code>CommitmentSystemStore</code> that calls both stores in one function and verifies both succeed before persisting.</td>
+          <td><span class="tag p0">Still Open</span></td>
+          <td><code>pauseProtocolForRecoveryWithPlanSync()</code> coordinator exists but has no rollback. If <code>PlanStore.pauseAllocations</code> fails after the commitment store suspends the protocol, stores are inconsistent.</td>
+          <td><code>CommitmentSystemStore.pauseProtocolForRecoveryWithPlanSync()</code>, <code>PlanStore.pauseAllocations()</code></td>
+          <td>Add rollback: if <code>pauseAllocations()</code> fails, restore the protocol from <code>.suspended</code> back to its prior state and clear <code>recoveryPausedProtocolId</code> before re-throwing.</td>
           <td><span class="p-badge P0">P0</span></td>
         </tr>
         <tr>
           <td><strong>G-3</strong></td>
-          <td>Unused <code>referenceDate</code> parameters on <code>recoveryEntryContext(referenceDate:)</code> and <code>pauseProtocolForRecovery(protocolId:referenceDate:)</code>.</td>
-          <td>API surface misleads callers into believing date injection is active, making it harder to write reliable simulated-date tests. Future callers may pass a date expecting it to affect behavior — it does not.</td>
-          <td><code>CommitmentSystemStore.swift:398–423</code></td>
-          <td>Either remove the parameter and use <code>AppClock.now</code> internally, or implement the date injection so tests can pass a reference date. Do not leave the parameter as dead code.</td>
+          <td>Unused <code>referenceDate</code> parameters on some public store functions.</td>
+          <td><span class="tag p1">Partially Addressed</span></td>
+          <td>API surface misleads callers into believing date injection is active in all functions. Future callers may pass a date expecting it to affect behavior where it does not.</td>
+          <td><code>CommitmentSystemStore.swift</code></td>
+          <td>Audit all public recovery methods. Either fully implement date injection or remove the parameter and use <code>AppClock.now</code> internally. No mixed API surface.</td>
           <td><span class="p-badge P1">P1</span></td>
         </tr>
         <tr>
           <td><strong>G-4</strong></td>
-          <td>No automated coverage for the recovery popup presentation path (<code>MainAppView.evaluateRecoveryEntryPresentation</code>, <code>AppRouter</code>, scene activation).</td>
-          <td>The critical path that determines whether the user sees the recovery popup at all has zero formal test coverage. Regressions are invisible until manual QA.</td>
-          <td><code>MainAppView.swift:248</code>, <code>AppRouter.swift:39–43</code>, <code>RecoveryModePopup.swift</code></td>
-          <td>Add simulation coverage for: popup triggered on entry, popup not re-triggered after resolution, popup re-presented on app restart with pending resolution. Convert to XCTest when test target is added.</td>
+          <td>No automated coverage for the recovery popup presentation path.</td>
+          <td><span class="tag p2">Resolved (logic)</span></td>
+          <td>Popup presentation is live-driven by <code>isPendingResolution</code> state. No formal test target yet, but regressions in the presentation logic are now observable from state changes.</td>
+          <td><code>MainAppView.swift</code>, <code>AppRouter.swift</code>, <code>RecoveryModePopup.swift</code></td>
+          <td>Add formal simulation coverage when test target is added. For now the wiring is correct.</td>
           <td><span class="p-badge P1">P1</span></td>
         </tr>
         <tr>
           <td><strong>G-5</strong></td>
-          <td>Plan allocations for a retired paused protocol are not immediately finalized on retirement — only on full recovery exit.</td>
-          <td>Between retirement and recovery exit, those allocations remain in <code>.paused</code> state. If the user views the plan during that window, retired-protocol allocations appear interactive or visually paused with no explanation.</td>
-          <td><code>CommitmentSystemStore.swift</code> (retirement path), <code>PlanStore.swift:finalizeRecoveryAllocationStatuses</code></td>
-          <td>When <code>normalizeRecoveryDomain</code> clears a retired paused protocol's ID, immediately call <code>PlanStore.finalizeRecoveryAllocationStatuses</code> for that protocol ID alone, marking its allocations as <code>.skippedDueToRecovery</code>.</td>
+          <td>Plan allocations for a retired paused protocol are not immediately finalized on retirement.</td>
+          <td><span class="tag p1">Still Open</span></td>
+          <td>The normalization path does call <code>finalizeRecoveryAllocationStatuses</code> when detecting a retired paused protocol, but only on the next mutation — not atomically with the retirement action itself.</td>
+          <td><code>CommitmentSystemStore.applyPostMutationRecoveryNormalization()</code>, <code>PlanStore.finalizeRecoveryAllocationStatuses()</code></td>
+          <td>Call the single-protocol overload of <code>finalizeRecoveryAllocationStatuses</code> inside the retirement path directly, before returning from the retirement action, not in the post-mutation normalization pass.</td>
           <td><span class="p-badge P1">P1</span></td>
         </tr>
         <tr>
           <td><strong>G-6</strong></td>
           <td>No automated coverage for <code>RecoveryModeViewModel</code> option ranking.</td>
-          <td>The recommended protocol shown to the user is derived from a multi-factor score. A score regression could silently change which protocol is highlighted as the suggested pause target.</td>
-          <td><code>RecoveryModeViewModel.swift:51–97</code></td>
-          <td>Add simulation assertions (or XCTests) verifying that the highest-violation protocol ranks first, that planned-load tiebreakers work, and that an empty candidate list returns an empty array without crashing.</td>
+          <td><span class="tag p2">Resolved (logic)</span></td>
+          <td>Ranking is implemented: violations × 100 + weeklyLoad × 10 + plannedLoads. First result is auto-marked recommended. No regression test exists for the formula.</td>
+          <td><code>RecoveryModeViewModel.swift</code></td>
+          <td>Add simulation assertions verifying highest-violation protocol ranks first, tiebreakers work, and empty candidate list returns empty array without crash.</td>
           <td><span class="p-badge P2">P2</span></td>
         </tr>
         <tr>
           <td><strong>G-7</strong></td>
-          <td>No coverage for manual plan placement strictness during recovery (<code>PlanStore.shouldApplyRecoveryStrictness</code>).</td>
-          <td>A regression in the strictness gate could allow over-scheduling during recovery, defeating the capacity-protection intent.</td>
-          <td><code>PlanStore.swift:1259</code></td>
-          <td>Add a simulation case that attempts to place an allocation while a protocol is in <code>.recovery</code>, and asserts that <code>shouldApplyRecoveryStrictness</code> returns <code>true</code>.</td>
+          <td>No coverage for manual plan placement strictness during recovery.</td>
+          <td><span class="tag p2">Resolved (logic)</span></td>
+          <td><code>shouldApplyRecoveryStrictness()</code> is called inside <code>validatePlacement()</code> and actively reduces the daily cap. The logic is wired; no test covers it.</td>
+          <td><code>PlanStore.shouldApplyRecoveryStrictness()</code>, <code>PlanStore.validatePlacement()</code></td>
+          <td>Add simulation case asserting <code>shouldApplyRecoveryStrictness</code> returns <code>true</code> while in recovery and <code>false</code> when all protocols are active.</td>
           <td><span class="p-badge P2">P2</span></td>
         </tr>
         <tr>
           <td><strong>G-8</strong></td>
-          <td>Post-decode normalization does not validate that <code>recoveryPausedProtocolId</code> references a currently valid, non-retired protocol.</td>
-          <td>An old JSON document with a now-retired protocol ID in <code>recoveryPausedProtocolId</code> could silently keep a stale ID, violating Invariant I1 and causing the suspended badge to appear on a non-existent or retired card.</td>
-          <td><code>CommitmentSystem.swift</code> (<code>init(from:)</code>)</td>
-          <td>Add a post-decode validation step in <code>CommitmentSystem.init(from:)</code> that checks <code>recoveryPausedProtocolId</code> against the decoded protocol list and clears it if no match is found.</td>
+          <td>Post-decode validation missing for <code>recoveryPausedProtocolId</code>.</td>
+          <td><span class="tag p1">Partially Addressed</span></td>
+          <td>Validation exists for <code>.retired</code> state but not for <code>.completed</code> state, and does not verify the referenced protocol is actually <code>.suspended</code> or that paused ≠ trigger protocol.</td>
+          <td><code>CommitmentSystem.init(from:)</code></td>
+          <td>Extend post-decode validation to also clear stale IDs if the protocol is <code>.completed</code>, and assert that <code>recoveryPausedProtocolId ≠ recoveryEntryTriggerProtocolId</code>.</td>
           <td><span class="p-badge P1">P1</span></td>
         </tr>
         <tr>
           <td><strong>G-9</strong></td>
-          <td>Weekly-frequency protocols may accumulate violations immediately after restoration if the remaining days in the current week cannot satisfy the target.</td>
-          <td>A user exits recovery on Thursday; their weekly-frequency protocol is restored; by Sunday the week-end evaluation fires and records a <code>.missedWeeklyFrequency</code> violation because 3 days were not enough. This could immediately re-trigger recovery.</td>
-          <td><code>NonNegotiableEngine.evaluateWeekIfNeeded</code>, <code>CommitmentSystemEngine.requiresCountedCompletionForRecovery</code>, <code>CommitmentSystemEngine.feasibleCompletionDays</code></td>
-          <td>Extend feasibility logic to detect that a restored protocol has a partial week remaining and either exempt the first post-restoration week or pro-rate the target.</td>
+          <td>Weekly-frequency protocols may accumulate violations immediately after restoration.</td>
+          <td><span class="tag p1">Partially Addressed</span></td>
+          <td><code>isPostRestorationPartialWeek()</code> now reduces the weekly target for the restoration week, but does not handle the zero-feasible-day case where target becomes 0 but a violation might still fire.</td>
+          <td><code>CommitmentSystemEngine.effectiveWeeklyTarget()</code>, <code>NonNegotiableEngine.evaluateWeekIfNeeded()</code></td>
+          <td>Guard: if <code>effectiveWeeklyTarget == 0</code>, skip violation recording for that week entirely in both the violation engine and the clean-day engine. See also EC-15.</td>
           <td><span class="p-badge P1">P1</span></td>
         </tr>
         <tr>
           <td><strong>G-10</strong></td>
-          <td>Invariant I10 (only one suspended protocol at a time) is not explicitly enforced by a guard in <code>pauseProtocolForRecovery</code>.</td>
-          <td>If the function is called twice (bug, double-tap) a second protocol could enter <code>.suspended</code> state while another is already suspended, corrupting the one-to-one invariant.</td>
-          <td><code>CommitmentSystemStore.swift:421–439</code></td>
-          <td>Add a precondition guard at the top of <code>pauseProtocolForRecovery</code> that asserts no protocol is already in <code>.suspended</code> state before proceeding.</td>
+          <td>Invariant I10 (only one suspended protocol) not explicitly enforced with hard guard.</td>
+          <td><span class="tag p1">Partially Addressed</span></td>
+          <td>A guard exists in <code>pauseProtocolForRecovery()</code> that throws if another protocol is already suspended. However the error is surfaced as a user warning in the ViewModel, not a precondition failure — a rapid double-tap produces one warning, not a crash. Correct behavior, but the second call still executes into the guard.</td>
+          <td><code>CommitmentSystemStore.pauseProtocolForRecovery()</code></td>
+          <td>No further action needed unless the warning UX is considered insufficient. The existing guard correctly prevents a second protocol from entering <code>.suspended</code> state.</td>
+          <td><span class="p-badge P1">P1</span></td>
+        </tr>
+        <tr>
+          <td><strong>G-11</strong></td>
+          <td>New allocations generated by the plan regulator for a suspended protocol during recovery are created as <code>.active</code>, not <code>.paused</code>.</td>
+          <td><span class="tag p0">New — Open</span></td>
+          <td>During a long recovery, the regulator continues scheduling future weeks. New allocations for the suspended protocol are inserted with <code>.active</code> status (the default). The plan view will show a mix of <code>.paused</code> (from the initial pause) and <code>.active</code> (newly generated) slots for the same suspended protocol — an inconsistency.</td>
+          <td><code>PlanRegulatorEngine.swift</code>, <code>PlanStore.swift</code> (allocation creation path)</td>
+          <td>In the regulator or allocation-insertion path, check if the target protocol is <code>.suspended</code>. If so, either skip creating the allocation entirely or create it with <code>.paused</code> status. The simpler fix is to exclude suspended protocols from the regulator's candidate set entirely.</td>
+          <td><span class="p-badge P0">P0</span></td>
+        </tr>
+        <tr>
+          <td><strong>G-12</strong></td>
+          <td>Threshold changes are not retroactively applied to existing violation counts.</td>
+          <td><span class="tag p1">New — Open</span></td>
+          <td>Recovery entry only fires when a new violation is appended via <code>updateRecoveryState</code>. A user with existing violations at or above the new (lower) threshold stays in <code>.active</code> until a fresh violation is recorded, even if they are over the threshold under the new rules.</td>
+          <td><code>NonNegotiableEngine.updateRecoveryState()</code>, <code>CommitmentSystemStore</code> (app launch path)</td>
+          <td>Add a one-time migration pass (guarded by a UserDefaults sentinel) that calls <code>updateRecoveryState</code> for every active protocol whose current window violation count already meets or exceeds the current threshold. Fire this on first launch after any threshold change.</td>
           <td><span class="p-badge P1">P1</span></td>
         </tr>
       </tbody>
@@ -927,58 +1139,86 @@
   ════════════════════════════════════════════════════════════ -->
   <h2 id="impl-order">8. Recommended Implementation Order</h2>
 
-  <div class="callout info">Steps are sized for individual Codex / Gemini / Claude tasks. Each step should be a single commit or PR.</div>
+  <div class="callout info">Steps are sized for individual Codex / Claude tasks. Each step should be a single commit or PR. Gaps marked <span class="tag p2">Resolved</span> still need simulation coverage added when a test target exists.</div>
 
   <div class="panel section-card">
     <h3>Phase A — Correctness Fixes (P0)</h3>
     <ol>
       <li>
-        <strong>A1 — Fix candidate filter in <code>recoveryEntryContext</code> (Gap G-1).</strong><br>
-        Change the candidate list to only include protocols in <code>.active</code> state. Update any popup copy that says "active protocol" to match the enforced behavior. Add a simulation assertion that no <code>.recovery</code> protocol appears in the candidate list.
+        <strong>A1 — Fix candidate filter to exclude <code>.recovery</code> protocols (Gap G-1).</strong><br>
+        In <code>recoveryPauseCandidateIds()</code>, return only <code>.active</code> protocols. If the result is empty, set <code>recoveryEntryRequiresPauseSelection = false</code> rather than falling back to <code>.recovery</code> protocols. Update popup entry copy to explicitly say "active protocol." Add assertion: no <code>.recovery</code> protocol in candidate list.
       </li>
       <li>
-        <strong>A2 — Introduce a single-call coordinator for the pause action (Gap G-2).</strong><br>
-        Move the two-store pause sequence from <code>RecoveryModeViewModel.confirmPauseSelection</code> into a new function on <code>CommitmentSystemStore</code>. The ViewModel calls one function; both stores are updated inside it. Add Invariant I9 guard.
+        <strong>A2 — Add rollback to the two-store pause coordinator (Gap G-2).</strong><br>
+        <code>pauseProtocolForRecoveryWithPlanSync()</code> already exists as a coordinator. Add a rollback block: if <code>PlanStore.pauseAllocations()</code> throws or fails, reverse the commitment store change before re-throwing. The ViewModel already catches errors and shows a warning — ensure the rollback leaves both stores in their original state.
       </li>
       <li>
-        <strong>A3 — Add Invariant I10 guard in <code>pauseProtocolForRecovery</code> (Gap G-10).</strong><br>
-        One-liner precondition. Can be done alongside A2.
+        <strong>A3 — Exclude suspended protocols from the plan regulator's candidate set (Gap G-11).</strong><br>
+        In <code>PlanRegulatorEngine</code>, filter out any protocol in <code>.suspended</code> state when building the scheduling candidate list. This prevents new allocations from being generated for suspended protocols, eliminating the <code>.active</code> / <code>.paused</code> inconsistency. Alternative: creation path checks suspension status and forces <code>.paused</code> status on new allocations for suspended protocols.
       </li>
     </ol>
 
     <h3>Phase B — Correctness Fixes (P1)</h3>
     <ol start="4">
       <li>
-        <strong>B1 — Resolve or remove unused <code>referenceDate</code> parameters (Gap G-3).</strong><br>
-        Decide: remove the parameter and use <code>AppClock.now</code>, or implement it. Whichever is chosen, the API must match what callers can rely on.
+        <strong>B1 — Extend post-decode validation for stale recovery IDs (Gap G-8).</strong><br>
+        In <code>CommitmentSystem.init(from:)</code>, also clear <code>recoveryPausedProtocolId</code> if the referenced protocol is <code>.completed</code> (not just <code>.retired</code>). Add assertion that paused ID ≠ trigger ID. Write a test using a hand-crafted JSON fixture with each stale scenario.
       </li>
       <li>
-        <strong>B2 — Add post-decode validation for <code>recoveryPausedProtocolId</code> (Gap G-8).</strong><br>
-        Inside <code>CommitmentSystem.init(from:)</code>, after decoding, check the ID against the decoded protocol list. Clear if not found. Write a migration test using a hand-crafted JSON fixture with a stale ID.
+        <strong>B2 — Finalize allocations atomically on retirement (Gap G-5).</strong><br>
+        In the retirement code path (before returning from the retirement action, not in post-mutation normalization), call <code>PlanStore.finalizeRecoveryAllocationStatuses(protocolId:)</code> with an empty restorable set for the retired protocol. Verify no paused allocation remains for a retired protocol after this call.
       </li>
       <li>
-        <strong>B3 — Finalize allocations immediately on retired-paused-protocol retirement (Gap G-5).</strong><br>
-        In the normalization path that clears a retired paused ID, call <code>PlanStore.finalizeRecoveryAllocationStatuses</code> for that specific ID with an empty restorable set (all become <code>.skippedDueToRecovery</code>).
+        <strong>B3 — Guard zero-target week against false violations (Gap G-9 + EC-15).</strong><br>
+        In <code>evaluateWeekIfNeeded</code> and the proposed <code>reconcileSessionViolations</code>, add: <code>guard effectiveWeeklyTarget > 0 else { continue }</code>. Mirror the same guard in the clean-day evaluation (<code>evaluateRecoveryDay</code>). Write a simulation that restores a session protocol with zero feasible days remaining and confirms no violation fires at week-end.
       </li>
       <li>
-        <strong>B4 — Fix weekly-frequency post-restoration feasibility (Gap G-9).</strong><br>
-        Extend <code>requiresCountedCompletionForRecovery</code> / <code>feasibleCompletionDays</code> to detect a partial week at restoration and pro-rate or exempt accordingly. Write a simulation that restores a weekly protocol on Thursday and confirms no immediate violation at week-end.
+        <strong>B4 — One-time migration pass for threshold changes (Gap G-12).</strong><br>
+        Add a UserDefaults sentinel (e.g., <code>didRunThresholdMigration20260506</code>). On first launch after update, iterate all active protocols and call <code>updateRecoveryState</code> for any whose current window violation count meets or exceeds the current threshold. This brings existing users into recovery mode correctly after a threshold tightening.
+      </li>
+      <li>
+        <strong>B5 — Resolve unused <code>referenceDate</code> parameters (Gap G-3).</strong><br>
+        Audit all public recovery methods on <code>CommitmentSystemStore</code>. Either remove the parameter and use <code>AppClock.now</code> internally, or fully implement date injection so simulation tests can rely on it. No mixed API surface permitted.
       </li>
     </ol>
 
-    <h3>Phase C — Coverage &amp; Observability (P1 / P2)</h3>
-    <ol start="8">
+    <h3>Phase C — Edge Case Hardening</h3>
+    <ol start="9">
       <li>
-        <strong>C1 — Add simulation coverage for the popup presentation path (Gap G-4).</strong><br>
-        Write assertions in a new <code>runRecoveryPopupPresentationSimulation</code> function: context returns non-nil when pending, returns nil after resolution, re-presents after a simulated restart.
+        <strong>C1 — Prefer highest-violation protocol as trigger when multiple hit threshold simultaneously (EC-8).</strong><br>
+        In <code>handleRecoveryTransition</code>, when setting <code>recoveryEntryTriggerProtocolId</code>, choose the protocol with the highest current-window violation count from among the newly-recovered protocols rather than relying on array order.
       </li>
       <li>
-        <strong>C2 — Add simulation coverage for <code>RecoveryModeViewModel</code> ranking (Gap G-6).</strong><br>
-        Write assertions that the highest-violation protocol ranks first, load tiebreakers work, and an empty candidate list is safe.
+        <strong>C2 — Update popup copy when additional protocols enter recovery mid-flow (EC-9).</strong><br>
+        If <code>recoveryEntryPendingResolution</code> is already true and another protocol enters recovery, update the entry step copy to reflect a count of how many protocols are in recovery ("2 protocols have entered recovery mode"). The trigger protocol ID remains unchanged.
       </li>
       <li>
-        <strong>C3 — Add simulation coverage for recovery placement strictness (Gap G-7).</strong><br>
-        Assert <code>shouldApplyRecoveryStrictness</code> returns <code>true</code> when a protocol is in <code>.recovery</code>, and <code>false</code> when all are active.
+        <strong>C3 — Expand <code>.completed</code> handling in normalization paths (EC-10).</strong><br>
+        In <code>normalizeRecoveryDomain</code> and the post-decode validator, treat <code>.completed</code> the same as <code>.retired</code> when checking whether a paused or trigger protocol reference is still valid. Audit all <code>state == .retired</code> checks and replace with a helper <code>isTerminal</code> predicate that covers both states.
+      </li>
+      <li>
+        <strong>C4 — Verify single-protocol normalization exit (EC-16).</strong><br>
+        Audit <code>normalizeRecoveryDomain</code>: confirm that a system with exactly 1 non-retired protocol in <code>.recovery</code> (and no suspended protocol) correctly exits recovery via the <code>recoveryEligibleCount &lt; 2</code> path. Add a simulation case for this scenario.
+      </li>
+      <li>
+        <strong>C5 — Empty-system guard in <code>recoveryEntryContext()</code> (EC-12).</strong><br>
+        Add a guard that returns <code>nil</code> when <code>system.nonNegotiables</code> is empty, regardless of the value of <code>recoveryEntryPendingResolution</code>. Call <code>clearRecoveryEntryState()</code> in normalization when the system becomes fully empty.
+      </li>
+    </ol>
+
+    <h3>Phase D — Coverage &amp; Observability (P1 / P2)</h3>
+    <ol start="14">
+      <li>
+        <strong>D1 — Add simulation coverage for popup presentation path (Gap G-4).</strong><br>
+        Write assertions: context returns non-nil when pending, nil after resolution, re-presents after simulated restart. Convert to XCTest when test target exists.
+      </li>
+      <li>
+        <strong>D2 — Add simulation coverage for <code>RecoveryModeViewModel</code> ranking (Gap G-6).</strong><br>
+        Assert highest-violation protocol ranks first, tiebreakers work, empty candidate list is safe.
+      </li>
+      <li>
+        <strong>D3 — Add simulation coverage for recovery placement strictness (Gap G-7).</strong><br>
+        Assert <code>shouldApplyRecoveryStrictness</code> returns <code>true</code> in recovery and <code>false</code> when all protocols are active.
       </li>
     </ol>
   </div>
@@ -1243,6 +1483,75 @@
           <td>Recovery exits between launches; popup is not re-presented.</td>
           <td><code>recoveryEntryContext()</code> returns nil.</td>
           <td><code>CommitmentSystemStore.recoveryEntryContext</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>New Edge Case Coverage (EC-8 – EC-16)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Test Description</th><th>Expected Outcome</th><th>Key Function</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>T-35</td>
+          <td>Two protocols cross the threshold in the same tick. Trigger ID is set to the highest-violation protocol, not array-order first.</td>
+          <td><code>recoveryEntryTriggerProtocolId</code> = ID of the protocol with more violations.</td>
+          <td><code>CommitmentSystemStore.handleRecoveryTransition</code></td>
+        </tr>
+        <tr>
+          <td>T-36</td>
+          <td>A third protocol enters recovery while <code>recoveryEntryPendingResolution = true</code>. Trigger ID unchanged; popup count copy updates.</td>
+          <td>Trigger ID unchanged. Entry copy reflects 2+ protocols in recovery.</td>
+          <td><code>CommitmentSystemStore.handleRecoveryTransition</code></td>
+        </tr>
+        <tr>
+          <td>T-37</td>
+          <td>Protocol whose lock expires (transitions to <code>.completed</code>) while in recovery. <code>recoveryPausedProtocolId</code> cleared if it pointed to that protocol.</td>
+          <td>Stale paused ID cleared; no suspended badge on completed protocol card.</td>
+          <td><code>CommitmentSystemEngine.normalizeRecoveryDomain</code></td>
+        </tr>
+        <tr>
+          <td>T-38</td>
+          <td>Post-decode validation clears stale <code>recoveryPausedProtocolId</code> when the referenced protocol is <code>.completed</code>.</td>
+          <td>ID cleared on decode; no dangling reference.</td>
+          <td><code>CommitmentSystem.init(from:)</code></td>
+        </tr>
+        <tr>
+          <td>T-39</td>
+          <td>Session protocol restored on Sunday (zero feasible days remain). End-of-week evaluation fires with <code>effectiveWeeklyTarget = 0</code>. No violation recorded.</td>
+          <td>Zero violations for the restoration week. No immediate re-trigger of recovery.</td>
+          <td><code>CommitmentSystemEngine.effectiveWeeklyTarget</code>, <code>NonNegotiableEngine.evaluateWeekIfNeeded</code></td>
+        </tr>
+        <tr>
+          <td>T-40</td>
+          <td>All protocols retired while recovery is active. System becomes empty. Recovery popup auto-dismisses.</td>
+          <td><code>recoveryEntryContext()</code> returns nil. <code>AppRouter.presentRecoveryEntry = false</code>.</td>
+          <td><code>CommitmentSystemStore.recoveryEntryContext</code>, <code>CommitmentSystemEngine.normalizeRecoveryDomain</code></td>
+        </tr>
+        <tr>
+          <td>T-41</td>
+          <td>Regulator generates new allocations for a suspended protocol. Those allocations are created with <code>.paused</code> status (or not created at all).</td>
+          <td>No <code>.active</code> allocation exists for a <code>.suspended</code> protocol.</td>
+          <td><code>PlanRegulatorEngine</code> (scheduling candidate filter)</td>
+        </tr>
+        <tr>
+          <td>T-42</td>
+          <td>No <code>.active</code> protocols remain to pause (all are in <code>.recovery</code>). <code>recoveryEntryRequiresPauseSelection = false</code>.</td>
+          <td>Popup skips select-protocol step. No <code>.recovery</code> protocol appears in candidate list.</td>
+          <td><code>CommitmentSystemStore.recoveryPauseCandidateIds</code></td>
+        </tr>
+        <tr>
+          <td>T-43</td>
+          <td>Single-protocol system with protocol in recovery. <code>normalizeRecoveryDomain</code> exits recovery via the &lt;2 eligible path.</td>
+          <td>Recovery exits immediately. Protocol transitions to <code>.active</code>.</td>
+          <td><code>CommitmentSystemEngine.normalizeRecoveryDomain</code></td>
+        </tr>
+        <tr>
+          <td>T-44</td>
+          <td>Threshold migration sentinel fires on launch after threshold tightening. Existing protocols with violation counts ≥ new threshold enter recovery.</td>
+          <td>Protocol enters <code>.recovery</code> without recording a new violation. Migration sentinel prevents second firing.</td>
+          <td><code>CommitmentSystemStore</code> (app launch path)</td>
         </tr>
       </tbody>
     </table>

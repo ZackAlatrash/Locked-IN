@@ -1299,7 +1299,9 @@ private extension CockpitLogsScreen {
                 goalPercent: goal,
                 violationReason: "",
                 eventType: isExtra ? .extra : .completed,
-                isRecoveryRelated: owner.map(isRecoveryRelated(owner:)) ?? false
+                // Prefer persisted flag (LIF-EC-16); fall back to current state heuristic for
+                // records written before wasRecoveryRelated was added.
+                isRecoveryRelated: completion.wasRecoveryRelated || (owner.map(isRecoveryRelated(owner:)) ?? false)
             )
         }
 
@@ -1324,7 +1326,9 @@ private extension CockpitLogsScreen {
                 goalPercent: 0,
                 violationReason: violationReason(violation.kind),
                 eventType: .violated,
-                isRecoveryRelated: owner.map(isRecoveryRelated(owner:)) ?? false
+                // Prefer persisted flag (LIF-EC-16); fall back to current state heuristic for
+                // records written before wasRecoveryRelated was added.
+                isRecoveryRelated: violation.wasRecoveryRelated || (owner.map(isRecoveryRelated(owner:)) ?? false)
             )
         }
 
